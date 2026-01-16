@@ -16,17 +16,16 @@ const uploadGiveawayPhotos = async (req, res) => {
 
     const photos = Array.isArray(req.files.photos) ? req.files.photos : [req.files.photos];
 
-    if (photos.length > 5) {
+    // Vérifier le nombre total de photos (existantes + nouvelles)
+    const existingPhotosCount = await GiveawayPhoto.countDocuments({});
+    if (existingPhotosCount + photos.length > 5) {
       return res.status(400).json({
         success: false,
-        message: 'Maximum 5 photos autorisées',
+        message: `Maximum 5 photos autorisées. Vous en avez déjà ${existingPhotosCount}. Vous ne pouvez ajouter que ${5 - existingPhotosCount} de plus.`,
       });
     }
 
-    // Supprimer les anciennes photos
-    await GiveawayPhoto.deleteMany({});
-
-    // Convertir et uploader les nouvelles photos
+    // Convertir et ajouter les nouvelles photos (sans supprimer les anciennes)
     const uploadedPhotos = [];
     
     for (let i = 0; i < photos.length; i++) {
@@ -51,11 +50,14 @@ const uploadGiveawayPhotos = async (req, res) => {
       });
     }
 
+    // Récupérer toutes les photos (anciennes + nouvelles)
+    const allPhotos = await GiveawayPhoto.find({}).select('_id filename');
+
     res.json({
       success: true,
       message: `${uploadedPhotos.length} photo(s) uploadée(s) avec succès!`,
       data: {
-        photos: uploadedPhotos,
+        photos: allPhotos,
       },
     });
   } catch (error) {

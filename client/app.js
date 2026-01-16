@@ -545,12 +545,30 @@ document.getElementById('uploadPhotosBtn').addEventListener('click', async () =>
     return;
   }
 
+  // Afficher la modal d'upload
+  const uploadModal = document.getElementById('uploadModal');
+  const progressFill = document.getElementById('progressFill');
+  const uploadStatus = document.getElementById('uploadStatus');
+  uploadModal.classList.remove('hidden');
+  progressFill.style.width = '0%';
+  uploadStatus.textContent = 'Préparation de l\'upload...';
+
   const formData = new FormData();
   for (let i = 0; i < files.length; i++) {
     formData.append('photos', files[i]);
   }
 
   try {
+    // Simuler la progression jusqu'à 80% pendant le chargement
+    const progressInterval = setInterval(() => {
+      const current = parseInt(progressFill.style.width);
+      if (current < 80) {
+        progressFill.style.width = (current + Math.random() * 20) + '%';
+      }
+    }, 300);
+
+    uploadStatus.textContent = `Envoi de ${files.length} photo(s)...`;
+
     const response = await fetch('/api/giveaway/photos', {
       method: 'POST',
       headers: {
@@ -559,26 +577,46 @@ document.getElementById('uploadPhotosBtn').addEventListener('click', async () =>
       body: formData,
     });
 
+    clearInterval(progressInterval);
+    progressFill.style.width = '90%';
+    uploadStatus.textContent = 'Traitement du serveur...';
+
     const data = await response.json();
 
+    progressFill.style.width = '100%';
+    uploadStatus.textContent = '✅ Téléchargement réussi!';
+
     if (!response.ok) {
+      progressFill.style.width = '100%';
+      uploadStatus.textContent = `❌ ${data.message || 'Erreur lors de l\'upload'}`;
+      setTimeout(() => {
+        uploadModal.classList.add('hidden');
+      }, 2000);
       uploadMessage.textContent = `❌ ${data.message || 'Erreur lors de l\'upload'}`;
       uploadMessage.className = 'message-box error';
       return;
     }
 
+    // Mettre à jour les photos (ajouter les nouvelles)
     giveawayPhotos = data.data.photos;
     displayAdminGiveawayPhotos();
     displayPublicGiveawayPhotos();
+
     uploadMessage.textContent = `✅ ${data.message}`;
     uploadMessage.className = 'message-box success';
     fileInput.value = '';
 
     setTimeout(() => {
+      uploadModal.classList.add('hidden');
       uploadMessage.textContent = '';
-    }, 3000);
+    }, 2000);
   } catch (error) {
     console.error('Erreur lors de l\'upload:', error);
+    progressFill.style.width = '100%';
+    uploadStatus.textContent = '❌ Erreur de connexion';
+    setTimeout(() => {
+      uploadModal.classList.add('hidden');
+    }, 2000);
     uploadMessage.textContent = '❌ Erreur de connexion';
     uploadMessage.className = 'message-box error';
   }
