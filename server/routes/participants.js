@@ -28,14 +28,13 @@ router.get('/', getParticipants);
 /**
  * POST /api/participants
  * Ajouter un participant
- * Protégé par rate limiting et anti-spam
+ * Protégé par rate limiting et validation
  */
 router.post(
   '/',
   participantLimiter,
   validateIp,
   validateParticipantName,
-  checkAntiSpam,
   addParticipant
 );
 

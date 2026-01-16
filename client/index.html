@@ -6,6 +6,7 @@
   <title>Dragon Ball Legend Giveaway</title>
   <link rel="icon" type="image/jpeg" href="assets/dragon-ball-icon.jpg">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="photos-simplified.css">
 </head>
 <body>
   <!-- Vidéo de fond -->
@@ -17,7 +18,27 @@
   <!-- Overlay sombre -->
   <div class="overlay"></div>
 
-  <!-- Modal d'authentification admin -->
+  <!-- Modal d'authentification admin (simple) -->
+  <div id="adminLoginModal" class="modal hidden">
+    <div class="modal-content">
+      <button id="closeAdminLoginModal" class="close-modal-btn">&times;</button>
+      <h2>🔐 Connexion Admin</h2>
+      <p>Entrez le mot de passe pour accéder à la gestion du giveaway</p>
+      <input
+        type="password"
+        id="adminLoginPassword"
+        class="input"
+        placeholder="Mot de passe admin"
+      >
+      <div class="modal-buttons">
+        <button id="adminLoginSubmitBtn" class="btn btn-primary">Se Connecter</button>
+        <button id="closeAdminLoginBtn" class="btn btn-secondary">Annuler</button>
+      </div>
+      <div id="adminLoginMessage" class="message-box"></div>
+    </div>
+  </div>
+
+  <!-- Modal d'authentification admin (pour la roulette) -->
   <div id="adminModal" class="modal hidden">
     <div class="modal-content">
       <h2>🔐 Connexion Admin</h2>
@@ -29,10 +50,33 @@
         placeholder="Mot de passe admin"
       >
       <div class="modal-buttons">
-        <button id="adminLoginBtn" class="btn btn-primary">Se Connecter</button>
+        <button id="adminRoulettLoginBtn" class="btn btn-primary">Se Connecter</button>
         <button id="adminCancelBtn" class="btn btn-secondary">Annuler</button>
       </div>
       <div id="adminMessage" class="message-box"></div>
+    </div>
+  </div>
+
+  <!-- Modal de participation -->
+  <div id="participationModal" class="modal hidden">
+    <div class="modal-content participation-modal">
+      <button id="closeParticipationModal" class="close-modal-btn">&times;</button>
+      <div id="participationContent"></div>
+    </div>
+  </div>
+
+  <!-- Modal de galerie photos -->
+  <div id="galleryModal" class="modal hidden">
+    <div class="gallery-modal-content">
+      <button id="closeGalleryModal" class="close-modal-btn">&times;</button>
+      <div class="gallery-container">
+        <button id="prevPhotoBtn" class="gallery-nav-btn prev">❮</button>
+        <div class="gallery-image-wrapper">
+          <img id="galleryImage" src="" alt="Photo du giveaway" class="gallery-image">
+        </div>
+        <button id="nextPhotoBtn" class="gallery-nav-btn next">❯</button>
+      </div>
+      <div id="galleryCounter" class="gallery-counter"></div>
     </div>
   </div>
 
@@ -40,9 +84,14 @@
   <div class="container">
     <!-- En-tête -->
     <header class="header">
-      <img src="assets/dragon-ball-icon.jpg" alt="Dragon Ball" class="header-icon">
-      <h1>Dragon Ball Legend</h1>
-      <p>Giveaway - Participez et tentez de gagner des prix incroyables!</p>
+      <div class="header-top">
+        <img src="assets/dragon-ball-icon.jpg" alt="Dragon Ball" class="header-icon">
+        <div class="header-content">
+          <h1>Dragon Ball Legend</h1>
+          <p>Giveaway - Participez et tentez de gagner des prix incroyables!</p>
+        </div>
+        <button id="adminLoginBtn" class="btn btn-secondary header-admin-btn">🔐 Admin</button>
+      </div>
     </header>
 
     <!-- Section du formulaire -->
@@ -99,6 +148,34 @@
           Réinitialiser pour une nouvelle chance
         </button>
       </div>
+    </section>
+
+    <!-- Section Admin Giveaway -->
+    <section class="giveaway-section" id="adminGiveawaySection" style="display:none;">
+      <h2>🎁 Gestion du Giveaway (Admin)</h2>
+      <div class="giveaway-card">
+        <div class="giveaway-upload">
+          <h3>📸 Uploader les photos (Max 5)</h3>
+          <input type="file" id="giveawayPhotos" accept="image/*" multiple class="file-input">
+          <button id="uploadPhotosBtn" class="btn btn-primary">Uploader</button>
+          <div id="uploadMessage" class="message-box"></div>
+        </div>
+
+        <div id="giveawayPhotosContainer" class="photos-container hidden">
+          <div id="giveawayPhotosList" class="photos-list"></div>
+          <button id="clearPhotosBtn" class="btn btn-secondary">Supprimer tout</button>
+        </div>
+        <p id="noPhotosMessage" class="empty-message">Aucune photo uploadée</p>
+      </div>
+    </section>
+
+    <!-- Section Affichage des photos (visible à tous) -->
+    <section class="giveaway-display-section">
+      <h2>📷 Photos du Giveaway</h2>
+      <div id="publicGiveawayPhotosContainer" class="photos-container hidden">
+        <div id="publicGiveawayPhotosList" class="photos-list"></div>
+      </div>
+      <p id="noPublicPhotosMessage" class="empty-message">Aucune photo pour le moment...</p>
     </section>
 
     <!-- Liste des participants -->

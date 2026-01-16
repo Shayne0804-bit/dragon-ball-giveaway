@@ -1,0 +1,78 @@
+/* ===========================
+   MODAL DE PARTICIPATION
+   =========================== */
+.participation-modal {
+  max-width: 500px;
+  position: relative;
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: none;
+  border: none;
+  color: var(--primary-color);
+  font-size: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.close-modal-btn:hover {
+  transform: rotate(90deg);
+  color: #ff6b6b;
+}
+
+#participationContent {
+  text-align: center;
+}
+
+#participationContent h2 {
+  font-size: 1.8rem;
+  color: var(--primary-color);
+  margin-bottom: 20px;
+}
+
+#participationContent .success-message {
+  color: #4CAF50;
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(76, 175, 80, 0.1);
+  border-left: 4px solid #4CAF50;
+  border-radius: 4px;
+}
+
+#participationContent .error-message {
+  color: #ff6b6b;
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(255, 107, 107, 0.1);
+  border-left: 4px solid #ff6b6b;
+  border-radius: 4px;
+}
+
+#participationContent .countdown {
+  background: rgba(255, 159, 0, 0.1);
+  border: 2px solid var(--primary-color);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 15px 0;
+  font-size: 1.2rem;
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+#participationContent .countdown-timer {
+  font-size: 1.8rem;
+  color: #ff6b6b;
+  margin-top: 10px;
+  font-family: 'Courier New', monospace;
+}
+
+#participationContent .close-btn {
+  margin-top: 20px;
+}
