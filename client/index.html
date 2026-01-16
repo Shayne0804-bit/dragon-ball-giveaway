@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragon Ball Legend Giveaway</title>
+  <link rel="icon" type="image/jpeg" href="assets/dragon-ball-icon.jpg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Vidéo de fond -->
+  <video id="backgroundVideo" class="background-video" autoplay muted loop>
+    <source src="assets/background.mp4" type="video/mp4">
+    Votre navigateur ne supporte pas les vidéos HTML5
+  </video>
+
+  <!-- Overlay sombre -->
+  <div class="overlay"></div>
+
+  <!-- Modal d'authentification admin -->
+  <div id="adminModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>🔐 Connexion Admin</h2>
+      <p>Seul l'admin peut lancer la roulette</p>
+      <input
+        type="password"
+        id="adminPassword"
+        class="input"
+        placeholder="Mot de passe admin"
+      >
+      <div class="modal-buttons">
+        <button id="adminLoginBtn" class="btn btn-primary">Se Connecter</button>
+        <button id="adminCancelBtn" class="btn btn-secondary">Annuler</button>
+      </div>
+      <div id="adminMessage" class="message-box"></div>
+    </div>
+  </div>
+
+  <!-- Conteneur principal -->
+  <div class="container">
+    <!-- En-tête -->
+    <header class="header">
+      <img src="assets/dragon-ball-icon.jpg" alt="Dragon Ball" class="header-icon">
+      <h1>Dragon Ball Legend</h1>
+      <p>Giveaway - Participez et tentez de gagner des prix incroyables!</p>
+    </header>
+
+    <!-- Section du formulaire -->
+    <section class="form-section">
+      <form id="participantForm" class="form">
+        <div class="form-group">
+          <input
+            type="text"
+            id="nameInput"
+            class="input"
+            placeholder="Entrez votre nom"
+            maxlength="20"
+            required
+          >
+          <span class="input-info">2-20 caractères (lettres, chiffres, espaces)</span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+          ✨ Participer au Giveaway
+        </button>
+
+        <div id="messageBox" class="message-box"></div>
+      </form>
+    </section>
+
+    <!-- Statistiques -->
+    <div class="stats">
+      <div class="stat-card">
+        <h3>👥 Participants</h3>
+        <p id="participantCount" class="stat-number">0</p>
+      </div>
+      <div class="stat-card">
+        <h3>🏆 Gagnants</h3>
+        <p id="winnerCount" class="stat-number">0</p>
+      </div>
+    </div>
+
+    <!-- Section de la roulette -->
+    <section class="roulette-section">
+      <h2>🎡 La Grande Roulette</h2>
+      <div class="roulette-container">
+        <canvas id="wheelCanvas" width="300" height="300" class="wheel"></canvas>
+        <div class="pointer"></div>
+      </div>
+
+      <button id="spinButton" class="btn btn-success">
+        🎯 Lancer la Roulette
+      </button>
+
+      <div id="winnerDisplay" class="winner-display hidden">
+        <h3>🏆 GAGNANT! 🏆</h3>
+        <p id="winnerName" class="winner-name">-</p>
+        <button id="resetButton" class="btn btn-secondary">
+          Réinitialiser pour une nouvelle chance
+        </button>
+      </div>
+    </section>
+
+    <!-- Liste des participants -->
+    <section class="participants-section">
+      <h2>📋 Participants Actuels</h2>
+      <div id="participantsList" class="participants-list">
+        <p class="empty-message">Aucun participant pour le moment...</p>
+      </div>
+    </section>
+
+    <!-- Historique des gagnants -->
+    <section class="winners-section">
+      <h2>🏅 Historique des Gagnants</h2>
+      <div id="winnersList" class="winners-list">
+        <p class="empty-message">Aucun gagnant pour le moment...</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Spinner de chargement -->
+  <div id="loadingSpinner" class="spinner hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

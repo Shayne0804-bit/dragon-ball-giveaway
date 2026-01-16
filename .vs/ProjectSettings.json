@@ -1,0 +1,14 @@
+{
+  "CurrentProjectSetting": null,
+  
+  "github.copilot.exclude": {
+    "**/*.mp4": true,
+    "**/*.webm": true,
+    "**/*.mov": true,
+    "**/*.png": true,
+    "**/*.jpg": true,
+    "**/*.jpeg": true
+  }
+
+
+}
