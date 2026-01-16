@@ -9,8 +9,6 @@ const connectDB = async () => {
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/giveaways';
 
     const conn = await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       // Options pour la production
       retryWrites: true,
       w: 'majority',
