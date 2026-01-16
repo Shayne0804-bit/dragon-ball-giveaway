@@ -281,8 +281,10 @@ async function loadGiveawayPhotos() {
     const data = await response.json();
 
     if (data.success) {
+      // Stocker les données complètes (avec _id)
       giveawayPhotos = data.data.photos;
       displayPublicGiveawayPhotos();
+      displayAdminGiveawayPhotos();
     }
   } catch (error) {
     console.error('Erreur lors du chargement des photos:', error);
@@ -310,7 +312,8 @@ function displayPublicGiveawayPhotos() {
   giveawayPhotos.forEach((photo, index) => {
     const photoItem = document.createElement('div');
     photoItem.className = 'photo-item';
-    photoItem.innerHTML = `<img src="${photo}" alt="Giveaway photo ${index + 1}">`;
+    // Utiliser l'ID pour construire l'URL de la photo
+    photoItem.innerHTML = `<img src="/api/giveaway/photos/${photo._id}" alt="Giveaway photo ${index + 1}">`;
     
     // Ajouter l'événement de clic pour ouvrir la galerie
     photoItem.addEventListener('click', () => {
@@ -339,7 +342,8 @@ function displayGalleryPhoto() {
   const prevBtn = document.getElementById('prevPhotoBtn');
   const nextBtn = document.getElementById('nextPhotoBtn');
 
-  img.src = giveawayPhotos[currentGalleryIndex];
+  // Utiliser l'ID pour construire l'URL
+  img.src = `/api/giveaway/photos/${giveawayPhotos[currentGalleryIndex]._id}`;
   counter.textContent = `${currentGalleryIndex + 1} / ${giveawayPhotos.length}`;
 
   // Désactiver les boutons si on est aux limites
@@ -424,16 +428,15 @@ function displayAdminGiveawayPhotos() {
   photosList.innerHTML = '';
 
   giveawayPhotos.forEach((photo, index) => {
-    const filename = photo.split('/').pop();
     const photoItem = document.createElement('div');
     photoItem.className = 'photo-item';
     photoItem.innerHTML = `
-      <img src="${photo}" alt="Giveaway photo ${index + 1}">
-      <button class="delete-photo-btn" data-filename="${filename}">🗑️</button>
+      <img src="/api/giveaway/photos/${photo._id}" alt="Giveaway photo ${index + 1}">
+      <button class="delete-photo-btn" data-photo-id="${photo._id}">🗑️</button>
     `;
 
     photoItem.querySelector('.delete-photo-btn').addEventListener('click', () => {
-      deleteGiveawayPhoto(filename);
+      deleteGiveawayPhoto(photo._id);
     });
 
     photosList.appendChild(photoItem);
@@ -584,13 +587,13 @@ document.getElementById('uploadPhotosBtn').addEventListener('click', async () =>
 /**
  * Supprimer une photo du giveaway
  */
-async function deleteGiveawayPhoto(filename) {
+async function deleteGiveawayPhoto(photoId) {
   if (!confirm('Êtes-vous sûr de vouloir supprimer cette photo?')) {
     return;
   }
 
   try {
-    const response = await fetch(`/api/giveaway/photos/${filename}`, {
+    const response = await fetch(`/api/giveaway/photos/${photoId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${adminToken}`,
@@ -600,7 +603,8 @@ async function deleteGiveawayPhoto(filename) {
     const data = await response.json();
 
     if (response.ok) {
-      giveawayPhotos = giveawayPhotos.filter((photo) => !photo.includes(filename));
+      // Filtrer la photo par son ID MongoDB
+      giveawayPhotos = giveawayPhotos.filter((photo) => photo._id !== photoId);
       displayAdminGiveawayPhotos();
       displayPublicGiveawayPhotos();
     }

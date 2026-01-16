@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   uploadGiveawayPhotos,
   getGiveawayPhotos,
+  getGiveawayPhotoById,
   deleteAllGiveawayPhotos,
   deleteGiveawayPhoto,
 } = require('../controllers/giveawayController');
@@ -13,6 +14,12 @@ const { verifyAdminToken } = require('../middlewares/adminAuth');
  * Récupérer les photos du giveaway (accessible à tous)
  */
 router.get('/photos', getGiveawayPhotos);
+
+/**
+ * GET /api/giveaway/photos/:id
+ * Récupérer une photo spécifique par ID (accessible à tous)
+ */
+router.get('/photos/:id', getGiveawayPhotoById);
 
 /**
  * POST /api/giveaway/photos
@@ -27,9 +34,9 @@ router.post('/photos', verifyAdminToken, uploadGiveawayPhotos);
 router.delete('/photos', verifyAdminToken, deleteAllGiveawayPhotos);
 
 /**
- * DELETE /api/giveaway/photos/:filename
- * Supprimer une photo spécifique (admin seulement)
+ * DELETE /api/giveaway/photos/:id
+ * Supprimer une photo spécifique par ID (admin seulement)
  */
-router.delete('/photos/:filename', verifyAdminToken, deleteGiveawayPhoto);
+router.delete('/photos/:id', verifyAdminToken, deleteGiveawayPhoto);
 
 module.exports = router;
