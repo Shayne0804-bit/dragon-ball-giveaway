@@ -78,18 +78,16 @@
     </div>
   </div>
 
-  <!-- Modal de galerie photos -->
-  <div id="galleryModal" class="modal hidden">
-    <div class="gallery-modal-content">
-      <button id="closeGalleryModal" class="close-modal-btn">&times;</button>
-      <div class="gallery-container">
-        <button id="prevPhotoBtn" class="gallery-nav-btn prev">❮</button>
-        <div class="gallery-image-wrapper">
-          <img id="galleryImage" src="" alt="Photo du giveaway" class="gallery-image">
-        </div>
-        <button id="nextPhotoBtn" class="gallery-nav-btn next">❯</button>
-      </div>
-      <div id="galleryCounter" class="gallery-counter"></div>
+  <!-- Viewer fullscreen pour les photos -->
+  <div id="fullscreenViewer" class="fullscreen-viewer hidden">
+    <div class="viewer-header">
+      <button id="closeViewer" class="close-btn">✕</button>
+      <span id="viewerCounter" class="viewer-counter"></span>
+    </div>
+    <div class="viewer-content">
+      <button id="prevViewer" class="viewer-nav-btn prev">❮</button>
+      <img id="viewerImage" src="" alt="Photo" class="viewer-image">
+      <button id="nextViewer" class="viewer-nav-btn next">❯</button>
     </div>
   </div>
 

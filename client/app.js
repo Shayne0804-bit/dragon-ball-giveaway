@@ -330,17 +330,17 @@ function displayPublicGiveawayPhotos() {
 function openGallery(index) {
   currentGalleryIndex = index;
   displayGalleryPhoto();
-  document.getElementById('galleryModal').classList.remove('hidden');
+  document.getElementById('fullscreenViewer').classList.remove('hidden');
 }
 
 /**
  * Afficher la photo actuelle dans la galerie
  */
 function displayGalleryPhoto() {
-  const img = document.getElementById('galleryImage');
-  const counter = document.getElementById('galleryCounter');
-  const prevBtn = document.getElementById('prevPhotoBtn');
-  const nextBtn = document.getElementById('nextPhotoBtn');
+  const img = document.getElementById('viewerImage');
+  const counter = document.getElementById('viewerCounter');
+  const prevBtn = document.getElementById('prevViewer');
+  const nextBtn = document.getElementById('nextViewer');
 
   // Utiliser l'ID pour construire l'URL
   img.src = `/api/giveaway/photos/${giveawayPhotos[currentGalleryIndex]._id}`;
@@ -354,14 +354,14 @@ function displayGalleryPhoto() {
 /**
  * Fermer la galerie
  */
-function closeGallery() {
-  document.getElementById('galleryModal').classList.add('hidden');
+function closeViewer() {
+  document.getElementById('fullscreenViewer').classList.add('hidden');
 }
 
 /**
  * Aller à la photo précédente
  */
-document.getElementById('prevPhotoBtn').addEventListener('click', () => {
+document.getElementById('prevViewer').addEventListener('click', () => {
   if (currentGalleryIndex > 0) {
     currentGalleryIndex--;
     displayGalleryPhoto();
@@ -371,7 +371,7 @@ document.getElementById('prevPhotoBtn').addEventListener('click', () => {
 /**
  * Aller à la photo suivante
  */
-document.getElementById('nextPhotoBtn').addEventListener('click', () => {
+document.getElementById('nextViewer').addEventListener('click', () => {
   if (currentGalleryIndex < giveawayPhotos.length - 1) {
     currentGalleryIndex++;
     displayGalleryPhoto();
@@ -379,16 +379,16 @@ document.getElementById('nextPhotoBtn').addEventListener('click', () => {
 });
 
 /**
- * Fermer la galerie en cliquant sur le X
+ * Fermer le viewer en cliquant sur le X
  */
-document.getElementById('closeGalleryModal').addEventListener('click', closeGallery);
+document.getElementById('closeViewer').addEventListener('click', closeViewer);
 
 /**
- * Fermer la galerie en cliquant sur le fond
+ * Fermer le viewer en cliquant sur le fond
  */
-document.getElementById('galleryModal').addEventListener('click', (e) => {
-  if (e.target.id === 'galleryModal') {
-    closeGallery();
+document.getElementById('fullscreenViewer').addEventListener('click', (e) => {
+  if (e.target.id === 'fullscreenViewer') {
+    closeViewer();
   }
 });
 
@@ -396,16 +396,16 @@ document.getElementById('galleryModal').addEventListener('click', (e) => {
  * Navigation au clavier
  */
 document.addEventListener('keydown', (e) => {
-  if (document.getElementById('galleryModal').classList.contains('hidden')) {
+  if (document.getElementById('fullscreenViewer').classList.contains('hidden')) {
     return;
   }
   
   if (e.key === 'ArrowLeft') {
-    document.getElementById('prevPhotoBtn').click();
+    document.getElementById('prevViewer').click();
   } else if (e.key === 'ArrowRight') {
-    document.getElementById('nextPhotoBtn').click();
+    document.getElementById('nextViewer').click();
   } else if (e.key === 'Escape') {
-    closeGallery();
+    closeViewer();
   }
 });
 
