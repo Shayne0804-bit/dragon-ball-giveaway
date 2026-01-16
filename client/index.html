@@ -38,6 +38,58 @@
     </div>
   </div>
 
+  <!-- Modal pour créer un nouveau giveaway -->
+  <div id="createGiveawayModal" class="modal hidden">
+    <div class="modal-content giveaway-form-modal">
+      <button id="closeCreateGiveawayModal" class="close-modal-btn">&times;</button>
+      <h2>🎁 Créer un Nouveau Giveaway</h2>
+      
+      <div class="form-group">
+        <label for="giveawayName">Nom du Giveaway</label>
+        <input type="text" id="giveawayName" class="input" placeholder="Ex: Dragon Ball Z" maxlength="50">
+      </div>
+
+      <div class="form-group">
+        <label for="giveawayDesc">Description (optionnel)</label>
+        <textarea id="giveawayDesc" class="input" placeholder="Décrivez votre giveaway..." maxlength="500" rows="3"></textarea>
+      </div>
+
+      <div class="duration-group">
+        <div class="form-group">
+          <label for="giveawayDays">Durée (jours)</label>
+          <input type="number" id="giveawayDays" class="input" min="0" max="365" value="0">
+        </div>
+        <div class="form-group">
+          <label for="giveawayHours">Durée (heures)</label>
+          <input type="number" id="giveawayHours" class="input" min="0" max="23" value="0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="giveawayPhotosInput">📸 Photos du Giveaway (Max 5)</label>
+        <input type="file" id="giveawayPhotosInput" class="file-input" accept="image/*" multiple>
+      </div>
+
+      <div id="createGiveawayMessage" class="message-box"></div>
+
+      <div class="modal-buttons">
+        <button id="createGiveawayBtn" class="btn btn-primary">Créer le Giveaway</button>
+        <button id="cancelCreateGiveawayBtn" class="btn btn-secondary">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal pour sélectionner un giveaway -->
+  <div id="selectGiveawayModal" class="modal hidden">
+    <div class="modal-content giveaway-select-modal">
+      <button id="closeSelectGiveawayModal" class="close-modal-btn">&times;</button>
+      <h2>🎡 Giveaways en Cours</h2>
+      <div id="giveawaysList" class="giveaways-list">
+        <p class="empty-message">Chargement des giveaways...</p>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal d'authentification admin (pour la roulette) -->
   <div id="adminModal" class="modal hidden">
     <div class="modal-content">

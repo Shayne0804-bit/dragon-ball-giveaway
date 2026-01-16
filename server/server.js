@@ -11,6 +11,7 @@ const { globalLimiter, getClientIp } = require('./middlewares/rateLimiter');
 // Importer les routes
 const participantRoutes = require('./routes/participants');
 const giveawayRoutes = require('./routes/giveaway');
+const giveawaysRoutes = require('./routes/giveaways');
 
 // Importer la configuration
 const { connectDB } = require('./config/database');
@@ -59,6 +60,7 @@ app.use(express.static(path.join(__dirname, '../client')));
 
 app.use('/api/participants', participantRoutes);
 app.use('/api/giveaway', giveawayRoutes);
+app.use('/api/giveaways', giveawaysRoutes);
 
 // Route de test
 app.get('/api/health', (req, res) => {

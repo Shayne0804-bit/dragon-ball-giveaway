@@ -1075,3 +1075,133 @@ body {
      } 
  }  
  
+/* ===========================
+   MODAL GIVEAWAY FORM
+   =========================== */
+
+.giveaway-form-modal {
+  max-width: 500px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.giveaway-form-modal h2 {
+  margin-bottom: 20px;
+  color: var(--primary-color);
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--light-text);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 15px;
+  background: rgba(255, 159, 0, 0.1);
+  border: 1px solid var(--primary-color);
+  border-radius: 6px;
+  color: var(--light-text);
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #ffb700;
+  background: rgba(255, 159, 0, 0.2);
+}
+
+.duration-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.file-input {
+  cursor: pointer;
+}
+
+/* ===========================
+   MODAL GIVEAWAY SELECT
+   =========================== */
+
+.giveaway-select-modal {
+  max-width: 600px;
+  max-height: 80vh;
+}
+
+.giveaway-select-modal h2 {
+  margin-bottom: 20px;
+  color: var(--primary-color);
+}
+
+.giveaways-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 15px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.giveaway-card {
+  background: rgba(255, 159, 0, 0.1);
+  border: 2px solid var(--primary-color);
+  border-radius: 10px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.giveaway-card:hover {
+  background: rgba(255, 159, 0, 0.2);
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(255, 159, 0, 0.3);
+}
+
+.giveaway-card h3 {
+  color: var(--primary-color);
+  margin-bottom: 10px;
+  font-size: 1.2rem;
+}
+
+.giveaway-card p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 5px 0;
+}
+
+.giveaway-timer {
+  color: #4CAF50;
+  font-weight: bold;
+  margin-top: 10px;
+  font-size: 0.95rem;
+}
+
+.giveaway-card.completed {
+  opacity: 0.6;
+  border-color: rgba(255, 159, 0, 0.3);
+}
+
+.giveaway-card.completed .giveaway-timer {
+  color: #888;
+}
+
+@media (max-width: 600px) {
+  .giveaways-list {
+    grid-template-columns: 1fr;
+  }
+
+  .duration-group {
+    grid-template-columns: 1fr;
+  }
+}
