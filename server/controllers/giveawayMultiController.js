@@ -34,9 +34,11 @@ const createGiveaway = async (req, res) => {
       durationDays: durationDays || 0,
       durationHours: durationHours || 0,
       endDate,
+      status: 'active',
     });
 
     await giveaway.save();
+    console.log(`[CREATE] Giveaway créé: ${giveaway._id} - ${name}`);
 
     res.json({
       success: true,
@@ -50,6 +52,7 @@ const createGiveaway = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la création du giveaway',
+      error: error.message,
     });
   }
 };
@@ -63,6 +66,11 @@ const getGiveaways = async (req, res) => {
     const giveaways = await Giveaway.find({ status: 'active' })
       .populate('photos')
       .sort({ createdAt: -1 });
+
+    console.log(`[GIVEAWAYS] ${giveaways.length} giveaways actifs trouvés`);
+    giveaways.forEach(g => {
+      console.log(`  - ${g.name}: ${g.photos ? g.photos.length : 0} photo(s)`);
+    });
 
     res.json({
       success: true,
@@ -86,14 +94,19 @@ const getGiveaways = async (req, res) => {
 const getGiveawayById = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`[GIVEAWAY] Récupération du giveaway: ${id}`);
+    
     const giveaway = await Giveaway.findById(id).populate('photos');
 
     if (!giveaway) {
+      console.log(`[GIVEAWAY] Giveaway non trouvé: ${id}`);
       return res.status(404).json({
         success: false,
         message: 'Giveaway non trouvé',
       });
     }
+
+    console.log(`[GIVEAWAY] Giveaway trouvé: ${giveaway.name} (${giveaway.photos ? giveaway.photos.length : 0} photos)`);
 
     res.json({
       success: true,

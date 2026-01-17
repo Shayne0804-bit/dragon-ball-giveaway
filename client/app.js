@@ -298,33 +298,105 @@ async function loadGiveawayPhotos() {
  * Afficher les photos du giveaway (visible à tous)
  */
 function displayPublicGiveawayPhotos() {
+  const photosSection = document.getElementById('photosSection');
   const container = document.getElementById('publicGiveawayPhotosContainer');
   const photosList = document.getElementById('publicGiveawayPhotosList');
   const noPhotosMessage = document.getElementById('noPublicPhotosMessage');
 
-  if (giveawayPhotos.length === 0) {
-    container.classList.add('hidden');
-    noPhotosMessage.style.display = 'block';
+  console.log('🖼️ displayPublicGiveawayPhotos - Giveaway actuel:', currentGiveaway?.name);
+  console.log('🖼️ Photos du giveaway sélectionné:', giveawayPhotos.length);
+
+  // Vérifier qu'un giveaway est sélectionné
+  if (!currentGiveaway) {
+    photosSection.classList.add('hidden');
+    if (noPhotosMessage) noPhotosMessage.style.display = 'block';
+    console.log('ℹ️ Aucun giveaway sélectionné');
     return;
   }
 
+  if (!giveawayPhotos || giveawayPhotos.length === 0) {
+    photosSection.classList.add('hidden');
+    if (noPhotosMessage) noPhotosMessage.style.display = 'block';
+    console.log('ℹ️ Aucune photo pour ce giveaway');
+    return;
+  }
+
+  photosSection.classList.remove('hidden');
   container.classList.remove('hidden');
-  noPhotosMessage.style.display = 'none';
+  if (noPhotosMessage) noPhotosMessage.style.display = 'none';
   photosList.innerHTML = '';
 
+  // Afficher UNIQUEMENT les photos du giveaway courant
   giveawayPhotos.forEach((photo, index) => {
     const photoItem = document.createElement('div');
     photoItem.className = 'photo-item';
-    // Utiliser l'ID pour construire l'URL de la photo
-    photoItem.innerHTML = `<img src="/api/giveaway/photos/${photo._id}" alt="Giveaway photo ${index + 1}">`;
+    
+    // Gérer plusieurs formats de photo
+    const photoId = photo._id || photo.id || photo;
+    const photoUrl = `/api/giveaway/photos/${photoId}`;
+    
+    photoItem.innerHTML = `<img src="${photoUrl}" alt="Giveaway photo ${index + 1}" onerror="console.error('Erreur chargement photo:', '${photoUrl}')">`;
     
     // Ajouter l'événement de clic pour ouvrir la galerie
     photoItem.addEventListener('click', () => {
+      console.log('📸 Click sur photo:', index);
       openGallery(index);
     });
     
     photosList.appendChild(photoItem);
   });
+  
+  console.log(`✅ ${giveawayPhotos.length} photo(s) du giveaway "${currentGiveaway.name}" affichée(s)`);
+}
+
+/**
+ * Charger et afficher l'historique des gagnants
+ */
+async function loadWinners() {
+  try {
+    const response = await fetch(WINNERS_API);
+    const data = await response.json();
+    
+    if (data.success && Array.isArray(data.data.winners)) {
+      displayWinnersList(data.data.winners);
+    }
+  } catch (error) {
+    console.error('❌ Erreur lors du chargement des gagnants:', error);
+  }
+}
+
+/**
+ * Afficher la liste des gagnants
+ */
+function displayWinnersList(winners) {
+  const winnersList = document.getElementById('winnersList');
+  const winnerCountElement = document.getElementById('winnerCount');
+  
+  if (!winners || winners.length === 0) {
+    winnersList.innerHTML = '<p class="empty-message">Aucun gagnant pour le moment</p>';
+    winnerCountElement.textContent = '0';
+    return;
+  }
+  
+  winnerCountElement.textContent = winners.length;
+  
+  winnersList.innerHTML = winners.map((winner, index) => `
+    <div class="winner-item" style="padding: 15px; background: rgba(76, 175, 80, 0.05); border-left: 4px solid var(--success); margin-bottom: 12px; border-radius: 6px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <div style="font-weight: 700; color: var(--light); font-size: 16px;">🏆 ${winner.name || 'Anonyme'}</div>
+          <div style="color: var(--gray); font-size: 12px; margin-top: 4px;">
+            ${winner.date ? new Date(winner.date).toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Date non disponible'}
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="color: var(--success); font-weight: 700; font-size: 14px;">#${index + 1}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  
+  console.log(`✅ ${winners.length} gagnant(s) affichés`);
 }
 
 /**
@@ -472,6 +544,32 @@ document.getElementById('closeAdminLoginModal').addEventListener('click', closeA
 document.getElementById('closeAdminLoginBtn').addEventListener('click', closeAdminLoginModal);
 
 /**
+ * Boutons admin pour créer et sélectionner giveaways
+ */
+document.getElementById('createNewGiveawayBtn')?.addEventListener('click', () => {
+  document.getElementById('createGiveawayModal').classList.remove('hidden');
+  document.getElementById('giveawayName').value = '';
+  document.getElementById('giveawayDesc').value = '';
+  document.getElementById('giveawayDays').value = '0';
+  document.getElementById('giveawayHours').value = '0';
+  document.getElementById('giveawayPhotosInput').value = '';
+  document.getElementById('createGiveawayMessage').textContent = '';
+});
+
+document.getElementById('selectGiveawayBtn')?.addEventListener('click', async () => {
+  document.getElementById('selectGiveawayModal').classList.remove('hidden');
+  await loadGiveaways();
+});
+
+/**
+ * Bouton public pour sélectionner les giveaways
+ */
+document.getElementById('publicSelectGiveawayBtn')?.addEventListener('click', async () => {
+  document.getElementById('selectGiveawayModal').classList.remove('hidden');
+  await loadGiveaways();
+});
+
+/**
  * Soumettre la connexion admin
  */
 document.getElementById('adminLoginSubmitBtn').addEventListener('click', async () => {
@@ -507,7 +605,7 @@ document.getElementById('adminLoginSubmitBtn').addEventListener('click', async (
     messageBox.className = 'message-box success';
 
     // Afficher la section admin
-    document.getElementById('adminGiveawaySection').style.display = 'block';
+    document.getElementById('adminGiveawaySection').classList.remove('hidden');
 
     // Charger les photos existantes
     await loadGiveawayPhotos();
@@ -1164,7 +1262,7 @@ function closeAdminModal() {
 /**
  * Se connecter en tant qu'admin (pour la roulette)
  */
-document.getElementById('adminRoulettLoginBtn').addEventListener('click', async () => {
+document.getElementById('adminSubmitBtn').addEventListener('click', async () => {
   const password = document.getElementById('adminPassword').value;
 
   if (!password) {
@@ -1210,11 +1308,8 @@ document.getElementById('adminRoulettLoginBtn').addEventListener('click', async 
 });
 
 /**
- * Annuler la connexion admin
+ * Fonctions modales admin
  */
-document.getElementById('adminCancelBtn').addEventListener('click', () => {
-  closeAdminModal();
-});
 
 /**
  * Permettre l'entrée avec Entrée
@@ -1269,15 +1364,25 @@ setInterval(async () => {
  */
 async function loadGiveaways() {
   try {
+    console.log('📥 Chargement des giveaways...');
     const response = await fetch(GIVEAWAYS_API);
     const data = await response.json();
+    console.log('✅ Réponse API giveaways:', data);
 
-    if (data.success) {
-      allGiveaways = data.data.giveaways || [];
+    if (data.success && data.data && Array.isArray(data.data.giveaways)) {
+      allGiveaways = data.data.giveaways;
+      console.log(`✅ ${allGiveaways.length} giveaway(s) chargé(s):`);
+      allGiveaways.forEach((g, i) => {
+        console.log(`  [${i}] ${g.name} - ID: ${g._id} - Photos: ${Array.isArray(g.photos) ? g.photos.length : 0}`);
+      });
       displayGiveawaySelector();
+    } else {
+      console.error('❌ Erreur API: structure invalide', data);
+      document.getElementById('giveawaysList').innerHTML = '<p class="empty-message">Erreur lors du chargement</p>';
     }
   } catch (error) {
-    console.error('Erreur lors du chargement des giveaways:', error);
+    console.error('❌ Erreur fetch:', error);
+    document.getElementById('giveawaysList').innerHTML = '<p class="empty-message">Erreur de connexion</p>';
   }
 }
 
@@ -1287,35 +1392,108 @@ async function loadGiveaways() {
 function displayGiveawaySelector() {
   const giveawaysList = document.getElementById('giveawaysList');
   
-  if (allGiveaways.length === 0) {
+  if (!allGiveaways || allGiveaways.length === 0) {
     giveawaysList.innerHTML = '<p class="empty-message">Aucun giveaway disponible</p>';
     return;
   }
 
   giveawaysList.innerHTML = allGiveaways.map((g, index) => {
+    // Gestion sécurisée des données
+    const photosCount = Array.isArray(g.photos) ? g.photos.length : 0;
+    const participantCount = g.participantCount || 0;
+    
     const endDate = new Date(g.endDate);
     const now = new Date();
     const timeLeft = endDate - now;
     const isCompleted = timeLeft <= 0;
 
-    let timeDisplay = 'Terminé';
+    let timeDisplay = '⏰ Terminé';
     if (!isCompleted) {
       const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
       const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-      timeDisplay = `${days}j ${hours}h ${minutes}m`;
+      timeDisplay = `⏱️ ${days}j ${hours}h ${minutes}m`;
     }
 
     return `
-      <div class="giveaway-card ${isCompleted ? 'completed' : ''}" onclick="selectGiveaway('${g._id}')">
-        <h3>${g.name}</h3>
-        ${g.description ? `<p>${g.description}</p>` : ''}
-        <p>📸 ${g.photos ? g.photos.length : 0} photo(s)</p>
-        <p>👥 ${g.participantCount || 0} participant(s)</p>
-        <div class="giveaway-timer">${timeDisplay}</div>
+      <div class="giveaway-card ${isCompleted ? 'completed' : ''}" data-id="${g._id}">
+        <div class="giveaway-card-content">
+          <h3>${g.name || 'Giveaway sans nom'}</h3>
+          ${g.description ? `<p class="giveaway-desc">${g.description}</p>` : ''}
+          <div class="giveaway-info">
+            <span>📸 ${photosCount} photo(s)</span>
+            <span>👥 ${participantCount} participant(s)</span>
+          </div>
+          <div class="giveaway-timer">${timeDisplay}</div>
+        </div>
+        <button class="giveaway-select-btn" data-giveaway-id="${g._id}">
+          Sélectionner →
+        </button>
       </div>
     `;
   }).join('');
+  
+  // Ajouter les event listeners aux boutons
+  document.querySelectorAll('.giveaway-select-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const giveawayId = btn.getAttribute('data-giveaway-id');
+      console.log('🔘 Bouton cliqué, ID:', giveawayId);
+      selectGiveaway(giveawayId);
+    });
+  });
+}
+
+/**
+ * Afficher les informations du giveaway sélectionné
+ */
+function displayGiveawayInfo() {
+  const infoSection = document.getElementById('giveawayInfoSection');
+  const photosSection = document.getElementById('photosSection');
+  
+  if (!currentGiveaway) {
+    infoSection.classList.add('hidden');
+    photosSection.classList.add('hidden');
+    return;
+  }
+
+  infoSection.classList.remove('hidden');
+  photosSection.classList.remove('hidden');
+  
+  // Remplir les infos
+  document.getElementById('giveawayName').textContent = currentGiveaway.name || 'Giveaway sans nom';
+  document.getElementById('giveawayDescription').textContent = currentGiveaway.description || 'Aucune description';
+  
+  // Calculer le temps restant
+  const endDate = new Date(currentGiveaway.endDate);
+  const now = new Date();
+  const timeLeft = endDate - now;
+  
+  let timeDisplay = '⏰ Terminé';
+  if (timeLeft > 0) {
+    const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+    timeDisplay = `${days}j ${hours}h ${minutes}m`;
+  }
+  
+  document.getElementById('giveawayTimeLeft').textContent = timeDisplay;
+  document.getElementById('giveawayEndDate').textContent = endDate.toLocaleDateString('fr-FR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  
+  const photosCount = Array.isArray(currentGiveaway.photos) ? currentGiveaway.photos.length : 0;
+  const participantCount = currentGiveaway.participantCount || 0;
+  
+  document.getElementById('giveawayPhotoCount').textContent = photosCount;
+  document.getElementById('giveawayParticipantCount').textContent = participantCount;
+  
+  console.log('✅ Infos du giveaway affichées:', currentGiveaway.name);
 }
 
 /**
@@ -1323,18 +1501,68 @@ function displayGiveawaySelector() {
  */
 async function selectGiveaway(giveawayId) {
   try {
-    const response = await fetch(`${GIVEAWAYS_API}/${giveawayId}`);
+    console.log(`🎯 Sélection du giveaway: ${giveawayId}`);
+    
+    if (!giveawayId) {
+      console.error('❌ ID giveaway manquant');
+      alert('Erreur: ID giveaway manquant');
+      return;
+    }
+    
+    const url = `${GIVEAWAYS_API}/${giveawayId}`;
+    console.log(`📡 Appel API: ${url}`);
+    
+    const response = await fetch(url);
+    console.log(`📊 Status: ${response.status}`);
+    
     const data = await response.json();
+    console.log('✅ Réponse API giveaway:', data);
 
-    if (data.success) {
+    if (data.success && data.data && data.data.giveaway) {
       currentGiveaway = data.data.giveaway;
-      document.getElementById('selectGiveawayModal').classList.add('hidden');
+      giveawayPhotos = Array.isArray(data.data.giveaway.photos) ? data.data.giveaway.photos : [];
       
-      // Charger les photos du giveaway sélectionné
-      loadGiveawayPhotosForSelected();
+      console.log(`✅ Giveaway chargé: "${currentGiveaway.name}"`);
+      console.log(`✅ Photos reçues: ${giveawayPhotos.length}`);
+      giveawayPhotos.forEach((p, i) => {
+        console.log(`  [${i}] Photo ID: ${p._id || p.id}`);
+      });
+      
+      // Fermer la modal
+      const modal = document.getElementById('selectGiveawayModal');
+      if (modal) {
+        modal.classList.add('hidden');
+      }
+      
+      // Afficher les photos du giveaway
+      displayPublicGiveawayPhotos();
+      
+      // Afficher les infos du giveaway
+      displayGiveawayInfo();
+      
+      // Scroll vers la section infos
+      const infoCard = document.getElementById('giveawayInfoCard');
+      if (infoCard) {
+        setTimeout(() => {
+          infoCard.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+      
+      // Recharger la liste des giveaways SANS réinitialiser currentGiveaway
+      console.log('🔄 Rafraîchissement de la liste...');
+      const response2 = await fetch(GIVEAWAYS_API);
+      const data2 = await response2.json();
+      if (data2.success && Array.isArray(data2.data.giveaways)) {
+        allGiveaways = data2.data.giveaways;
+        displayGiveawaySelector();
+      }
+    } else {
+      console.error('❌ Réponse invalide:', data);
+      alert(`Erreur: ${data.message || 'Giveaway non trouvé'}`);
     }
   } catch (error) {
-    console.error('Erreur lors de la sélection du giveaway:', error);
+    console.error('❌ Erreur lors de la sélection du giveaway:', error);
+    alert('Erreur lors du chargement du giveaway');
   }
 }
 
@@ -1347,17 +1575,38 @@ async function loadGiveawayPhotosForSelected() {
     displayPublicGiveawayPhotos();
   }
 }
-
 /**
- * Ouvrir la modale de création de giveaway (admin)
+ * FONCTION DE DEBUG: Créer un giveaway de test
  */
-document.getElementById('adminLoginBtn').addEventListener('click', () => {
-  document.getElementById('adminLoginModal').classList.remove('hidden');
-  document.getElementById('adminLoginPassword').value = '';
-  document.getElementById('adminLoginMessage').textContent = '';
-});
+async function createTestGiveaway() {
+  console.log('Création d\'un giveaway de test...');
+  
+  const response = await fetch(GIVEAWAYS_API, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${adminToken}`,
+    },
+    body: JSON.stringify({
+      name: 'Test Giveaway ' + new Date().getTime(),
+      description: 'Ceci est un giveaway de test',
+      durationDays: 1,
+      durationHours: 0,
+    }),
+  });
+  
+  const data = await response.json();
+  console.log('Réponse giveaway test:', data);
+  
+  if (data.success) {
+    await loadGiveaways();
+  }
+}
 
-// Événements pour la création de giveaway
+// Exposer en window pour accés console
+window.createTestGiveaway = createTestGiveaway;
+
+// Fonction pour afficher tous les giveaways en console
 document.getElementById('createGiveawayBtn').addEventListener('click', async () => {
   const name = document.getElementById('giveawayName').value.trim();
   const description = document.getElementById('giveawayDesc').value.trim();
@@ -1365,6 +1614,12 @@ document.getElementById('createGiveawayBtn').addEventListener('click', async () 
   const hours = parseInt(document.getElementById('giveawayHours').value) || 0;
   const files = document.getElementById('giveawayPhotosInput').files;
   const message = document.getElementById('createGiveawayMessage');
+
+  if (!adminToken) {
+    message.textContent = '❌ Vous devez être connecté comme admin';
+    message.className = 'message-box error';
+    return;
+  }
 
   if (!name) {
     message.textContent = '❌ Le nom est requis';
@@ -1379,6 +1634,9 @@ document.getElementById('createGiveawayBtn').addEventListener('click', async () 
   }
 
   try {
+    console.log('📝 Création du giveaway...');
+    console.log(`📋 Token admin: ${adminToken ? '✅ Présent' : '❌ Manquant'}`);
+    
     // Créer le giveaway
     const giveawayResponse = await fetch(GIVEAWAYS_API, {
       method: 'POST',
@@ -1396,29 +1654,94 @@ document.getElementById('createGiveawayBtn').addEventListener('click', async () 
 
     const giveawayData = await giveawayResponse.json();
 
-    if (!giveawayResponse.ok) {
-      message.textContent = `❌ ${giveawayData.message}`;
+    console.log(`📡 Réponse serveur: ${giveawayResponse.status}`, giveawayData);
+
+    if (!giveawayResponse.ok || !giveawayData.success) {
+      message.textContent = `❌ ${giveawayData.message || 'Erreur lors de la création'}`;
       message.className = 'message-box error';
+      console.error('❌ Erreur créationGiveaway:', giveawayData);
       return;
     }
 
-    message.textContent = '✅ Giveaway créé avec succès!';
-    message.className = 'message-box success';
+    console.log('✅ Giveaway créé:', giveawayData.data.giveaway._id);
+    
+    // Uploader les photos si présentes
+    if (files && files.length > 0) {
+      console.log(`📸 Upload de ${files.length} photo(s)...`);
+      
+      const giveawayId = giveawayData.data.giveaway._id;
+      
+      for (let i = 0; i < Math.min(files.length, 5); i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        
+        reader.onload = async (e) => {
+          try {
+            const base64 = e.target.result;
+            
+            const photoResponse = await fetch('/api/giveaway/photos', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${adminToken}`,
+              },
+              body: JSON.stringify({
+                image: base64,
+                giveawayId: giveawayId,
+              }),
+            });
+            
+            const photoData = await photoResponse.json();
+            
+            if (photoData.success) {
+              console.log(`✅ Photo ${i + 1}/${files.length} uploadée`);
+            } else {
+              console.error(`❌ Erreur photo ${i + 1}:`, photoData.message);
+            }
+          } catch (error) {
+            console.error('❌ Erreur upload photo:', error);
+          }
+        };
+        
+        reader.readAsDataURL(file);
+      }
+      
+      // Attendre un peu que les uploads se terminent
+      setTimeout(() => {
+        message.textContent = '✅ Giveaway créé avec photos!';
+        message.className = 'message-box success';
+        
+        // Réinitialiser le formulaire
+        document.getElementById('giveawayName').value = '';
+        document.getElementById('giveawayDesc').value = '';
+        document.getElementById('giveawayDays').value = '0';
+        document.getElementById('giveawayHours').value = '0';
+        document.getElementById('giveawayPhotosInput').value = '';
+        
+        setTimeout(() => {
+          document.getElementById('createGiveawayModal').classList.add('hidden');
+          loadGiveaways();
+        }, 1000);
+      }, 500);
+    } else {
+      message.textContent = '✅ Giveaway créé (sans photos)';
+      message.className = 'message-box success';
 
-    // Réinitialiser le formulaire
-    document.getElementById('giveawayName').value = '';
-    document.getElementById('giveawayDesc').value = '';
-    document.getElementById('giveawayDays').value = '0';
-    document.getElementById('giveawayHours').value = '0';
-    document.getElementById('giveawayPhotosInput').value = '';
+      // Réinitialiser le formulaire
+      document.getElementById('giveawayName').value = '';
+      document.getElementById('giveawayDesc').value = '';
+      document.getElementById('giveawayDays').value = '0';
+      document.getElementById('giveawayHours').value = '0';
+      document.getElementById('giveawayPhotosInput').value = '';
 
-    // Fermer la modale après 2 secondes
-    setTimeout(() => {
-      document.getElementById('createGiveawayModal').classList.add('hidden');
-      loadGiveaways();
-    }, 2000);
+      // Fermer la modale après 2 secondes
+      setTimeout(() => {
+        document.getElementById('createGiveawayModal').classList.add('hidden');
+        loadGiveaways();
+      }, 2000);
+    }
   } catch (error) {
-    console.error('Erreur:', error);
+    console.error('❌ Erreur:', error);
     message.textContent = '❌ Erreur de création';
     message.className = 'message-box error';
   }
@@ -1437,6 +1760,21 @@ document.getElementById('closeSelectGiveawayModal').addEventListener('click', ()
   document.getElementById('selectGiveawayModal').classList.add('hidden');
 });
 
-// Charger les giveaways au démarrage
+// Bouton pour retourner (retirer la sélection)
+const clearGiveawayBtn = document.getElementById('clearGiveawayBtn');
+if (clearGiveawayBtn) {
+  clearGiveawayBtn.addEventListener('click', () => {
+    console.log('🔄 Retour à la liste des giveaways');
+    currentGiveaway = null;
+    giveawayPhotos = [];
+    document.getElementById('giveawayInfoSection').classList.add('hidden');
+    document.getElementById('photosSection').classList.add('hidden');
+    // Scroll vers le haut
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+// Charger les giveaways et gagnants au démarrage
 loadGiveaways();
+loadWinners();
 

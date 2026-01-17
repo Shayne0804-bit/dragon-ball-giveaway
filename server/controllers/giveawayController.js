@@ -3,10 +3,59 @@ const GiveawayPhoto = require('../models/GiveawayPhoto');
 /**
  * Uploader les photos du giveaway
  * POST /api/giveaway/photos
- * Les photos sont stockées en base64 dans MongoDB
+ * Accepte soit des fichiers multipart, soit du JSON base64
  */
 const uploadGiveawayPhotos = async (req, res) => {
   try {
+    // Gestion du JSON base64
+    if (req.body && req.body.image && req.body.giveawayId) {
+      const { image, giveawayId } = req.body;
+      const Giveaway = require('../models/Giveaway');
+      
+      console.log(`[PHOTO] Upload base64 pour giveaway ${giveawayId}`);
+      
+      // Vérifier que le giveaway existe
+      const giveaway = await Giveaway.findById(giveawayId);
+      if (!giveaway) {
+        return res.status(404).json({
+          success: false,
+          message: 'Giveaway non trouvé',
+        });
+      }
+      
+      // Convertir le base64 en buffer
+      const base64Data = image.replace(/^data:image\/(jpeg|jpg|png);base64,/, '');
+      
+      // Créer l'objet photo
+      const giveawayPhoto = new GiveawayPhoto({
+        filename: `giveaway_${giveawayId}_${Date.now()}.jpg`,
+        imageData: base64Data,
+        mimetype: 'image/jpeg',
+        size: Buffer.byteLength(base64Data, 'base64'),
+      });
+      
+      await giveawayPhoto.save();
+      console.log(`[PHOTO] Photo sauvegardée: ${giveawayPhoto._id}`);
+      
+      // Ajouter la photo au giveaway
+      if (!giveaway.photos) {
+        giveaway.photos = [];
+      }
+      giveaway.photos.push(giveawayPhoto._id);
+      await giveaway.save();
+      console.log(`[PHOTO] Photo liée au giveaway. Total: ${giveaway.photos.length}`);
+      
+      return res.json({
+        success: true,
+        message: 'Photo uploadée avec succès!',
+        data: {
+          photoId: giveawayPhoto._id,
+          filename: giveawayPhoto.filename,
+        },
+      });
+    }
+    
+    // Gestion des fichiers multipart (fichiers)
     if (!req.files || Object.keys(req.files).length === 0) {
       return res.status(400).json({
         success: false,

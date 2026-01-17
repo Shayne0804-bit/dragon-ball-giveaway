@@ -42,8 +42,8 @@ app.use(fileUpload({
 }));
 
 // Body parser
-app.use(express.json({ limit: '10kb' })); // Limiter la taille
-app.use(express.urlencoded({ limit: '10kb', extended: true }));
+app.use(express.json({ limit: '50mb' })); // Augmenter la limite pour les images base64
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Extraire l'IP du client
 app.use(getClientIp);
