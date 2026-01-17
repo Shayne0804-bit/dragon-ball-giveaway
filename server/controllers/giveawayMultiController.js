@@ -40,7 +40,7 @@ const createGiveaway = async (req, res) => {
     await giveaway.save();
     console.log(`[CREATE] Giveaway créé: ${giveaway._id} - ${name}`);
 
-    res.json({
+    res.status(201).json({
       success: true,
       message: 'Giveaway créé avec succès!',
       data: {
@@ -157,7 +157,7 @@ const updateGiveaway = async (req, res) => {
 
     await giveaway.save();
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Giveaway mis à jour avec succès!',
       data: {
@@ -189,7 +189,7 @@ const deleteGiveaway = async (req, res) => {
       });
     }
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Giveaway supprimé avec succès!',
     });

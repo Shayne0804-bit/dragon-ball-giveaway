@@ -45,7 +45,7 @@ const uploadGiveawayPhotos = async (req, res) => {
       await giveaway.save();
       console.log(`[PHOTO] Photo liée au giveaway. Total: ${giveaway.photos.length}`);
       
-      return res.json({
+      return res.status(201).json({
         success: true,
         message: 'Photo uploadée avec succès!',
         data: {
@@ -102,7 +102,7 @@ const uploadGiveawayPhotos = async (req, res) => {
     // Récupérer toutes les photos (anciennes + nouvelles)
     const allPhotos = await GiveawayPhoto.find({}).select('_id filename');
 
-    res.json({
+    res.status(201).json({
       success: true,
       message: `${uploadedPhotos.length} photo(s) uploadée(s) avec succès!`,
       data: {
@@ -183,7 +183,7 @@ const deleteAllGiveawayPhotos = async (req, res) => {
   try {
     await GiveawayPhoto.deleteMany({});
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Toutes les photos ont été supprimées',
     });
@@ -212,7 +212,7 @@ const deleteGiveawayPhoto = async (req, res) => {
       });
     }
 
-    res.json({
+    res.status(200).json({
       success: true,
       message: 'Photo supprimée',
     });

@@ -19,6 +19,11 @@ const participantSchema = new mongoose.Schema(
       required: [true, 'IP requise'],
       index: true,
     },
+    giveaway: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Giveaway',
+      index: true,
+    },
     createdAt: {
       type: Date,
       default: Date.now,

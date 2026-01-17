@@ -45,22 +45,32 @@ const loginAdmin = async (req, res) => {
 /**
  * Ajouter un participant
  * POST /api/participants
+ * Body: { name, giveawayId }
  */
 const addParticipant = async (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, giveawayId } = req.body;
     const ip = req.clientIp;
 
     // Vérifier si l'IP a déjà participé dans les 24 dernières heures
-    const lastParticipation = await Participant.findOne(
-      {
-        ip: ip,
-        createdAt: {
-          $gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 heures
-        },
+    // - Si giveawayId fourni: vérifier par IP + giveaway EXACT (isolement par giveaway)
+    // - Si pas de giveawayId: vérifier par IP uniquement (backward compatibility, legacy)
+    let antiSpamQuery = {
+      ip: ip,
+      createdAt: {
+        $gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 heures
       },
-      { name: 1, createdAt: 1 }
-    );
+    };
+
+    // Si un giveawayId est fourni, rechercher UNIQUEMENT la participation au MÊME giveaway
+    if (giveawayId) {
+      antiSpamQuery.giveaway = giveawayId;
+    } else {
+      // Si pas de giveawayId (legacy), vérifier UNIQUEMENT les participations SANS giveaway
+      antiSpamQuery.giveaway = null;
+    }
+
+    const lastParticipation = await Participant.findOne(antiSpamQuery, { name: 1, createdAt: 1, giveaway: 1 });
 
     if (lastParticipation) {
       // Calculer le temps avant la prochaine participation
@@ -69,9 +79,13 @@ const addParticipant = async (req, res) => {
       );
       const timeUntilNext = Math.ceil((nextAllowedTime - Date.now()) / 60000); // en minutes
 
+      // Message adapté selon si c'est lié à un giveaway ou non
+      const context = giveawayId ? ' à ce giveaway' : '';
+      const errorMessage = `⏱️ Vous avez déjà participé${context}! Vous pourrez reparticiper dans ${timeUntilNext} minutes.`;
+
       return res.status(429).json({
         success: false,
-        message: `⏱️ Vous avez déjà participé! Vous pourrez reparticiper dans ${timeUntilNext} minutes.`,
+        message: errorMessage,
         nextAllowedAt: nextAllowedTime,
       });
     }
@@ -80,17 +94,22 @@ const addParticipant = async (req, res) => {
     const participant = new Participant({
       name,
       ip,
+      giveaway: giveawayId || null,
     });
 
     // Sauvegarder dans la base
     await participant.save();
 
+    // Message dynamique selon le giveaway
+    const giveawayContext = giveawayId ? ' au giveaway sélectionné' : '';
+    
     res.status(201).json({
       success: true,
-      message: '⚡ Participation enregistrée avec succès! Revenez dans 24h pour reparticiper! ⚡',
+      message: `⚡ Participation enregistrée avec succès${giveawayContext}! Revenez dans 24h pour reparticiper! ⚡`,
       data: {
         id: participant._id,
         name: participant.name,
+        giveaway: giveawayId || null,
         nextAllowedAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
     });
@@ -115,11 +134,13 @@ const addParticipant = async (req, res) => {
 
 /**
  * Récupérer tous les participants
- * GET /api/participants
+ * GET /api/participants?giveawayId=xxx
  */
 const getParticipants = async (req, res) => {
   try {
-    const participants = await Participant.find({}, { ip: 0 }).sort({ createdAt: -1 });
+    const { giveawayId } = req.query;
+    const query = giveawayId ? { giveaway: giveawayId } : {};
+    const participants = await Participant.find(query, { ip: 0 }).sort({ createdAt: -1 });
 
     res.json({
       success: true,
@@ -137,12 +158,15 @@ const getParticipants = async (req, res) => {
 
 /**
  * Lancer la roulette et tirer un gagnant
- * POST /api/roulette
+ * POST /api/roulette?giveawayId=xxx
  */
 const drawWinner = async (req, res) => {
   try {
-    // Récupérer tous les participants
-    const participants = await Participant.find({});
+    const { giveawayId } = req.query;
+    
+    // Récupérer les participants du giveaway sélectionné
+    const query = giveawayId ? { giveaway: giveawayId } : {};
+    const participants = await Participant.find(query);
 
     if (participants.length === 0) {
       return res.status(400).json({
@@ -158,6 +182,7 @@ const drawWinner = async (req, res) => {
     // Sauvegarder le gagnant
     const winnerRecord = new Winner({
       name: winner.name,
+      giveaway: giveawayId || null,
     });
     await winnerRecord.save();
 
@@ -185,14 +210,40 @@ const drawWinner = async (req, res) => {
  */
 const resetParticipants = async (req, res) => {
   try {
-    await Participant.deleteMany({});
+    const { giveawayId } = req.query;
 
-    res.json({
-      success: true,
-      message: 'Liste des participants réinitialisée',
-    });
+    console.log(`[RESET] Réinitialisation des participants - giveawayId: ${giveawayId}`);
+
+    // Si un giveawayId est fourni, supprimer les participants et marquer le giveaway comme complété
+    if (giveawayId) {
+      const Giveaway = require('../models/Giveaway');
+      
+      // Supprimer les participants
+      const result = await Participant.deleteMany({ giveaway: giveawayId });
+      console.log(`[RESET] ${result.deletedCount} participant(s) supprimé(s) pour le giveaway ${giveawayId}`);
+
+      // Marquer le giveaway comme complété pour le rendre inaccessible
+      await Giveaway.findByIdAndUpdate(giveawayId, { status: 'completed' });
+      console.log(`[RESET] Giveaway ${giveawayId} marqué comme complété`);
+
+      res.json({
+        success: true,
+        message: `Liste réinitialisée - ${result.deletedCount} participant(s) supprimé(s)`,
+        deletedCount: result.deletedCount,
+      });
+    } else {
+      // Sinon supprimer TOUS les participants (comportement ancien)
+      const result = await Participant.deleteMany({});
+      console.log(`[RESET] ${result.deletedCount} participant(s) supprimé(s) au total`);
+
+      res.json({
+        success: true,
+        message: 'Liste des participants réinitialisée',
+        deletedCount: result.deletedCount,
+      });
+    }
   } catch (error) {
-    console.error('Erreur lors de la réinitialisation:', error);
+    console.error('❌ Erreur lors de la réinitialisation:', error);
     res.status(500).json({
       success: false,
       message: 'Erreur serveur',
@@ -202,11 +253,13 @@ const resetParticipants = async (req, res) => {
 
 /**
  * Récupérer l'historique des gagnants
- * GET /api/winners
+ * GET /api/winners?giveawayId=xxx
  */
 const getWinners = async (req, res) => {
   try {
-    const winners = await Winner.find({}).sort({ date: -1 }).limit(10);
+    const { giveawayId } = req.query;
+    const query = giveawayId ? { giveaway: giveawayId } : {};
+    const winners = await Winner.find(query).sort({ date: -1 }).limit(10);
 
     res.json({
       success: true,

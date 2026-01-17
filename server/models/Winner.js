@@ -10,6 +10,11 @@ const winnerSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Le nom du gagnant est requis'],
     },
+    giveaway: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Giveaway',
+      index: true,
+    },
     date: {
       type: Date,
       default: Date.now,

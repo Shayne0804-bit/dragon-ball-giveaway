@@ -95,6 +95,29 @@ function validateName(name) {
 }
 
 /**
+ * Mettre à jour l'état du formulaire de participation
+ */
+function updateFormState() {
+  const form = document.getElementById('participantForm');
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const nameInput = document.getElementById('nameInput');
+  
+  if (!currentGiveaway || !currentGiveaway._id) {
+    // Aucun giveaway sélectionné - désactiver le formulaire
+    form.style.opacity = '0.5';
+    form.style.pointerEvents = 'none';
+    submitBtn.disabled = true;
+    nameInput.placeholder = 'Sélectionnez d\'abord un giveaway...';
+  } else {
+    // Giveaway sélectionné - activer le formulaire
+    form.style.opacity = '1';
+    form.style.pointerEvents = 'auto';
+    submitBtn.disabled = false;
+    nameInput.placeholder = 'Entrez votre nom...';
+  }
+}
+
+/**
  * Démarrer le compte à rebours pour la prochaine participation
  */
 function startCountdown(nextAllowedTime) {
@@ -796,6 +819,12 @@ document.getElementById('clearPhotosBtn').addEventListener('click', async () => 
 document.getElementById('participantForm').addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  // Vérifier qu'un giveaway est sélectionné
+  if (!currentGiveaway || !currentGiveaway._id) {
+    showMessage('❌ Veuillez d\'abord sélectionner un giveaway!', 'error');
+    return;
+  }
+
   const nameInput = document.getElementById('nameInput');
   const name = nameInput.value;
 
@@ -809,12 +838,21 @@ document.getElementById('participantForm').addEventListener('submit', async (e) 
   try {
     setLoading(true);
 
+    // Inclure giveawayId si un giveaway est sélectionné
+    const bodyData = {
+      name: name.trim(),
+    };
+    
+    if (currentGiveaway && currentGiveaway._id) {
+      bodyData.giveawayId = currentGiveaway._id;
+    }
+
     const response = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ name: name.trim() }),
+      body: JSON.stringify(bodyData),
     });
 
     let data;
@@ -868,7 +906,12 @@ document.getElementById('participantForm').addEventListener('submit', async (e) 
  */
 async function fetchParticipants() {
   try {
-    const response = await fetch(API_URL);
+    let url = API_URL;
+    if (currentGiveaway && currentGiveaway._id) {
+      url += `?giveawayId=${currentGiveaway._id}`;
+    }
+    
+    const response = await fetch(url);
     const data = await response.json();
 
     if (data.success) {
@@ -885,6 +928,12 @@ async function fetchParticipants() {
  */
 function displayParticipants() {
   const list = document.getElementById('participantsList');
+  
+  // Vérifier que l'élément existe
+  if (!list) {
+    console.warn('⚠️ Element participantsList not found');
+    return;
+  }
 
   if (participants.length === 0) {
     list.innerHTML = '<p class="empty-message">Aucun participant pour le moment...</p>';
@@ -907,7 +956,12 @@ function displayParticipants() {
  */
 async function fetchWinners() {
   try {
-    const response = await fetch(WINNERS_API);
+    let url = WINNERS_API;
+    if (currentGiveaway && currentGiveaway._id) {
+      url += `?giveawayId=${currentGiveaway._id}`;
+    }
+    
+    const response = await fetch(url);
     const data = await response.json();
 
     if (data.success) {
@@ -923,6 +977,12 @@ async function fetchWinners() {
  */
 function displayWinners(winners) {
   const list = document.getElementById('winnersList');
+  
+  // Vérifier que l'élément existe
+  if (!list) {
+    console.warn('⚠️ Element winnersList not found');
+    return;
+  }
 
   if (!winners || winners.length === 0) {
     list.innerHTML = '<p class="empty-message">Aucun gagnant pour le moment...</p>';
@@ -950,10 +1010,8 @@ async function updateStats() {
   const count = participants.length;
   document.getElementById('participantCount').textContent = count;
 
-  // Recréer la roulette
-  if (count > 0) {
-    drawWheel();
-  }
+  // Recréer la roulette (même si vide, pour l'effacer)
+  drawWheel();
 }
 
 // ===========================
@@ -1112,7 +1170,13 @@ document.getElementById('spinButton').addEventListener('click', async () => {
  */
 async function drawWinnerAPI() {
   try {
-    const response = await fetch(ROULETTE_API, {
+    // Inclure giveawayId si un giveaway est sélectionné
+    let url = ROULETTE_API;
+    if (currentGiveaway && currentGiveaway._id) {
+      url += `?giveawayId=${currentGiveaway._id}`;
+    }
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1204,7 +1268,16 @@ document.getElementById('resetButton').addEventListener('click', async () => {
     try {
       setLoading(true);
 
-      const response = await fetch(RESET_API, {
+      // Vérifier qu'un giveaway est sélectionné
+      if (!currentGiveaway || !currentGiveaway._id) {
+        showMessage('❌ Aucun giveaway sélectionné', 'error');
+        return;
+      }
+
+      console.log('🔄 Réinitialisation des participants pour:', currentGiveaway.name);
+
+      // Appeler l'endpoint avec l'ID du giveaway
+      const response = await fetch(`${RESET_API}?giveawayId=${currentGiveaway._id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
@@ -1220,13 +1293,25 @@ document.getElementById('resetButton').addEventListener('click', async () => {
       }
 
       if (data.success) {
-        showMessage('Liste réinitialisée', 'success');
-        await updateStats();
-        document.getElementById('winnerDisplay').classList.add('hidden');
+        console.log('✅ Participants supprimés pour:', currentGiveaway.name);
+        showMessage('✅ Giveaway complété - Retour à la liste', 'success');
+        
+        // Recharger la liste des giveaways
+        await loadGiveaways();
+        
+        // Retourner à la sélection des giveaways
+        currentGiveaway = null;
+        giveawayPhotos = [];
+        document.getElementById('giveawayInfoSection').classList.add('hidden');
+        document.getElementById('photosSection').classList.add('hidden');
+        document.getElementById('selectGiveawayModal').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        showMessage(`❌ ${data.message || 'Erreur'}`, 'error');
       }
     } catch (error) {
-      console.error('Erreur:', error);
-      showMessage('Erreur lors de la réinitialisation', 'error');
+      console.error('❌ Erreur:', error);
+      showMessage('❌ Erreur lors de la réinitialisation', 'error');
     } finally {
       setLoading(false);
     }
@@ -1462,7 +1547,7 @@ function displayGiveawayInfo() {
   photosSection.classList.remove('hidden');
   
   // Remplir les infos
-  document.getElementById('giveawayName').textContent = currentGiveaway.name || 'Giveaway sans nom';
+  document.getElementById('selectedGiveawayName').textContent = currentGiveaway.name || 'Giveaway sans nom';
   document.getElementById('giveawayDescription').textContent = currentGiveaway.description || 'Aucune description';
   
   // Calculer le temps restant
@@ -1539,6 +1624,18 @@ async function selectGiveaway(giveawayId) {
       
       // Afficher les infos du giveaway
       displayGiveawayInfo();
+      
+      // Charger les participants du NOUVEAU giveaway
+      await updateStats();
+      
+      // Activer le formulaire de participation
+      updateFormState();
+      
+      // Masquer le message "Sélectionnez un giveaway"
+      const warningMsg = document.getElementById('selectGiveawayFirstMessage');
+      if (warningMsg) {
+        warningMsg.style.display = 'none';
+      }
       
       // Scroll vers la section infos
       const infoCard = document.getElementById('giveawayInfoCard');
@@ -1769,6 +1866,16 @@ if (clearGiveawayBtn) {
     giveawayPhotos = [];
     document.getElementById('giveawayInfoSection').classList.add('hidden');
     document.getElementById('photosSection').classList.add('hidden');
+    
+    // Afficher le message "Sélectionnez un giveaway"
+    const warningMsg = document.getElementById('selectGiveawayFirstMessage');
+    if (warningMsg) {
+      warningMsg.style.display = 'block';
+    }
+    
+    // Désactiver le formulaire de participation
+    updateFormState();
+    
     // Scroll vers le haut
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
@@ -1777,4 +1884,13 @@ if (clearGiveawayBtn) {
 // Charger les giveaways et gagnants au démarrage
 loadGiveaways();
 loadWinners();
+
+// Initialiser l'état du formulaire
+updateFormState();
+
+// Afficher le message initial
+const warningMsg = document.getElementById('selectGiveawayFirstMessage');
+if (warningMsg) {
+  warningMsg.style.display = 'block';
+}
 
