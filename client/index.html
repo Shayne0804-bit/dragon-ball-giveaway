@@ -9,198 +9,220 @@
   <link rel="stylesheet" href="photos-simplified.css">
 </head>
 <body>
-  <!-- Vidéo de fond -->
+  <!-- Background Video -->
   <video id="backgroundVideo" class="background-video" autoplay muted loop>
     <source src="assets/background.mp4" type="video/mp4">
   </video>
 
-  <!-- Overlay sombre -->
+  <!-- Overlay -->
   <div class="overlay"></div>
 
-  <!-- PAGE WRAPPER -->
+  <!-- Page Wrapper -->
   <div class="page-wrapper">
-    <!-- HEADER -->
+    <!-- Header -->
     <header class="main-header">
       <div class="header-container">
         <div class="header-logo">
+          <div class="logo-glow"></div>
           <img src="assets/dragon-ball-icon.jpg" alt="Dragon Ball" class="logo-icon">
           <div class="logo-text">
-            <h1>Dragon Ball Legend</h1>
+            <h1>Dragon Ball <span class="legend-highlight">Legend</span></h1>
             <p>Premium Giveaway Platform</p>
           </div>
         </div>
         <nav class="header-nav">
-          <button id="adminLoginBtn" class="btn btn-admin">🔐 Admin Panel</button>
+          <button id="adminLoginBtn" class="btn btn-admin">🔐 Admin</button>
         </nav>
       </div>
+      <div class="header-divider"></div>
     </header>
 
-    <!-- MAIN CONTENT -->
+    <!-- Main Content -->
     <main class="main-content">
-      <!-- HERO SECTION -->
-      <section class="hero-section">
-        <h2>Participez et Gagnez!</h2>
-        <p>Votre chance de gagner des prix incroyables vous attend</p>
-      </section>
-
-      <!-- ============================================
-           SECTION 1: GIVEAWAY SELECTOR
-           ============================================ -->
-      <div class="card card-full">
-        <div class="card-header">
-          <h3>🎁 Giveaways Disponibles</h3>
-        </div>
-        <div class="card-body">
-          <p style="margin-bottom: 15px; color: #999; font-size: 14px;">Sélectionnez un giveaway pour participer</p>
-          <button id="publicSelectGiveawayBtn" class="btn btn-secondary btn-block">🎡 Voir les Giveaways en Cours</button>
-        </div>
-      </div>
-
-      <!-- ============================================
-           SECTION 2: GIVEAWAY INFO
-           ============================================ -->
-      <div id="giveawayInfoSection" class="card card-full hidden">
-        <div class="card-header">
-          <div style="display: flex; align-items: center; gap: 15px; width: 100%;">
-            <div>
-              <h2 id="selectedGiveawayName" style="color: var(--primary); margin: 0; font-size: 32px;">-</h2>
-              <p id="giveawayDescription" style="color: #999; margin: 5px 0 0 0; font-size: 14px;">-</p>
+      <!-- Sections Wrapper -->
+      <div class="sections-wrapper">
+        <!-- Left Column -->
+        <div class="left-column">
+          <!-- Giveaway Selector Card -->
+          <div class="card card-modern">
+            <div class="card-header-modern">
+              <div class="card-icon-badge">🎁</div>
+              <div class="card-title-section">
+                <h3 class="card-title">Giveaways Disponibles</h3>
+                <p class="card-subtitle">Sélectionnez un giveaway pour participer</p>
+              </div>
+            </div>
+            <div class="card-body-modern">
+              <button id="publicSelectGiveawayBtn" class="btn btn-primary btn-block btn-lg">Voir les Giveaways</button>
             </div>
           </div>
-          <button id="clearGiveawayBtn" class="btn btn-sm btn-secondary">← Retour</button>
-        </div>
-        <div class="card-body">
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-            <!-- Temps Restant -->
-            <div style="background: rgba(76, 175, 80, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid var(--success);">
-              <div style="color: var(--gray); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">⏰ Temps Restant</div>
-              <p id="giveawayTimeLeft" style="font-size: 24px; font-weight: 700; color: var(--success); margin: 0;">-</p>
+
+          <!-- Giveaway Info Card -->
+          <div id="giveawayInfoSection" class="card card-modern hidden">
+            <div class="card-header-modern">
+              <div class="card-icon-badge">🎯</div>
+              <div class="card-title-section">
+                <h3 class="card-title" id="selectedGiveawayName">Giveaway Actif</h3>
+                <p class="card-subtitle" id="giveawayDescription">-</p>
+              </div>
+              <button id="clearGiveawayBtn" class="btn btn-sm btn-ghost">← Retour</button>
             </div>
-            <!-- Date Fin -->
-            <div style="background: rgba(255, 159, 0, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid var(--primary);">
-              <div style="color: var(--gray); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">📅 Date de Fin</div>
-              <p id="giveawayEndDate" style="font-size: 16px; font-weight: 600; color: var(--light); margin: 0;">-</p>
+            <div class="card-body-modern">
+              <div class="giveaway-info-compact">
+                <div class="info-item">
+                  <div class="info-item-icon">⏰</div>
+                  <div class="info-item-content">
+                    <span class="info-item-label">Temps Restant</span>
+                    <p id="giveawayTimeLeft" class="info-item-value">-</p>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <div class="info-item-icon">👥</div>
+                  <div class="info-item-content">
+                    <span class="info-item-label">Participants</span>
+                    <p id="giveawayParticipantCount" class="info-item-value">0</p>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <div class="info-item-icon">📸</div>
+                  <div class="info-item-content">
+                    <span class="info-item-label">Photos</span>
+                    <p id="giveawayPhotoCount" class="info-item-value">0</p>
+                  </div>
+                </div>
+                <div class="info-item">
+                  <div class="info-item-icon">📅</div>
+                  <div class="info-item-content">
+                    <span class="info-item-label">Date de Fin</span>
+                    <p id="giveawayEndDate" class="info-item-value">-</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <!-- Photos -->
-            <div style="background: rgba(30, 144, 255, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid var(--secondary);">
-              <div style="color: var(--gray); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">📸 Photos</div>
-              <p id="giveawayPhotoCount" style="font-size: 24px; font-weight: 700; color: var(--secondary); margin: 0;">0</p>
+          </div>
+
+          <!-- Photos Card -->
+          <div id="photosSection" class="card card-modern hidden">
+            <div class="card-header-modern">
+              <div class="card-icon-badge">📷</div>
+              <div class="card-title-section">
+                <h3 class="card-title">Photos du Giveaway</h3>
+              </div>
             </div>
-            <!-- Participants -->
-            <div style="background: rgba(255, 107, 107, 0.1); padding: 20px; border-radius: 8px; border-left: 4px solid var(--danger);">
-              <div style="color: var(--gray); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">👥 Participants</div>
-              <p id="giveawayParticipantCount" style="font-size: 24px; font-weight: 700; color: var(--danger); margin: 0;">0</p>
+            <div class="card-body-modern">
+              <div id="publicGiveawayPhotosContainer" class="photos-container">
+                <div id="publicGiveawayPhotosList" class="photos-list"></div>
+              </div>
+              <p id="noPublicPhotosMessage" class="empty-message" style="display: none;">Aucune photo disponible</p>
+            </div>
+          </div>
+
+          <!-- Participation Card -->
+          <div class="card card-modern card-accent">
+            <div class="card-header-modern">
+              <div class="card-icon-badge">✨</div>
+              <div class="card-title-section">
+                <h3 class="card-title">Participer</h3>
+                <p class="card-subtitle">Rejoignez la compétition maintenant</p>
+              </div>
+            </div>
+            <div class="card-body-modern">
+              <div id="selectGiveawayFirstMessage" class="alert alert-warning" style="display: none;">
+                <span class="alert-icon">⚠️</span>
+                <span>Sélectionnez d'abord un giveaway</span>
+              </div>
+              <form id="participantForm" class="form-modern">
+                <div class="form-group-modern">
+                  <label for="nameInput" class="form-label">Votre Nom</label>
+                  <input type="text" id="nameInput" class="input-modern" placeholder="Jean Dupont" maxlength="20" required>
+                  <span class="form-help">2-20 caractères</span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block btn-lg">Participer Maintenant</button>
+                <div id="messageBox" class="message-box"></div>
+              </form>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- ============================================
-           SECTION 3: PHOTOS
-           ============================================ -->
-      <div id="photosSection" class="card card-full hidden">
-        <div class="card-header">
-          <h3>📷 Photos du Giveaway</h3>
-        </div>
-        <div class="card-body">
-          <div id="publicGiveawayPhotosContainer" class="photos-container">
-            <div id="publicGiveawayPhotosList" class="photos-list"></div>
-          </div>
-          <p id="noPublicPhotosMessage" class="empty-message" style="display: none;">Aucune photo disponible</p>
-        </div>
-      </div>
-
-      <!-- ============================================
-           SECTION 4: PARTICIPATION
-           ============================================ -->
-      <div class="card card-full">
-        <div class="card-header">
-          <h3>✨ Participer au Giveaway</h3>
-        </div>
-        <div class="card-body">
-          <div id="selectGiveawayFirstMessage" class="message-box warning" style="margin-bottom: 20px; display: none;">
-            <strong>⚠️ Veuillez d'abord sélectionner un giveaway</strong> en cliquant sur "Choisir un Giveaway" en haut de la page.
-          </div>
-          <form id="participantForm" class="form">
-            <div class="form-group">
-              <label for="nameInput">Votre Nom</label>
-              <input type="text" id="nameInput" class="input" placeholder="2-20 caractères" maxlength="20" required>
-              <span class="input-hint">Lettres, chiffres et espaces</span>
-            </div>
-            <button type="submit" class="btn btn-primary btn-block">✨ Participer</button>
-            <div id="messageBox" class="message-box"></div>
-          </form>
-        </div>
-      </div>
-
-      <!-- ============================================
-           SECTION 5 & 6: TWO COLUMN LAYOUT
-           ============================================ -->
-      <div class="content-grid">
-        <!-- LEFT COLUMN: Participants & Roulette -->
-        <div class="grid-col-left">
-          <!-- PARTICIPANTS CARD -->
-          <div class="card">
-            <div class="card-header">
-              <h3>👤 Participants</h3>
+        <!-- Right Column -->
+        <div class="right-column">
+          <!-- Participants Card -->
+          <div class="card card-modern">
+            <div class="card-header-modern">
+              <div class="card-icon-badge">👤</div>
+              <div class="card-title-section">
+                <h3 class="card-title">Participants</h3>
+              </div>
               <span class="badge" id="participantsCountBadge">0</span>
             </div>
-            <div class="card-body card-scroll">
+            <div class="card-body-modern card-scroll">
               <div id="participantsList" class="participants-list">
                 <p class="empty-message">Aucun participant</p>
               </div>
             </div>
           </div>
 
-          <!-- ROULETTE CARD -->
-          <div class="card">
-            <div class="card-header">
-              <h3>🎡 La Roulette</h3>
+          <!-- Roulette Card -->
+          <div class="card card-modern card-roulette">
+            <div class="card-header-modern">
+              <div class="card-icon-badge">🎡</div>
+              <div class="card-title-section">
+                <h3 class="card-title">Roulette</h3>
+              </div>
             </div>
-            <div class="card-body card-center">
-              <div class="roulette-container">
+            <div class="card-body-modern card-center">
+              <div class="roulette-wrapper">
                 <canvas id="wheelCanvas" width="280" height="280" class="wheel"></canvas>
                 <div class="pointer"></div>
               </div>
-              <button id="spinButton" class="btn btn-success btn-block btn-lg">🎯 Lancer</button>
-              <div id="winnerDisplay" class="winner-box hidden">
-                <h4>🏆 GAGNANT! 🏆</h4>
-                <p id="winnerName" class="winner-text">-</p>
+              <button id="spinButton" class="btn btn-success btn-block btn-lg">Lancer la Roulette</button>
+              <div id="winnerDisplay" class="winner-card hidden">
+                <div class="winner-animation"></div>
+                <h4 class="winner-title">🏆 GAGNANT!</h4>
+                <p id="winnerName" class="winner-name">-</p>
                 <button id="resetButton" class="btn btn-secondary btn-sm">Réinitialiser</button>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- RIGHT COLUMN: Stats & Winners History -->
-        <div class="grid-col-right">
-          <!-- STATISTICS CARD -->
-          <div class="card">
-            <div class="card-header">
-              <h3>📊 Statistiques</h3>
+          <!-- Statistics Card -->
+          <div class="card card-modern card-stats">
+            <div class="card-header-modern">
+              <div class="card-icon-badge">📊</div>
+              <div class="card-title-section">
+                <h3 class="card-title">Statistiques</h3>
+              </div>
             </div>
-            <div class="card-body">
-              <div class="stats-grid">
-                <div class="stat-item">
-                  <span class="stat-icon">👥</span>
-                  <span class="stat-label">Participants</span>
-                  <span id="participantCount" class="stat-value">0</span>
+            <div class="card-body-modern">
+              <div class="stats-compact">
+                <div class="stat-compact-item">
+                  <div class="stat-icon-small">👥</div>
+                  <div>
+                    <div class="stat-label-small">Participants</div>
+                    <div id="participantCount" class="stat-value-small">0</div>
+                  </div>
                 </div>
-                <div class="stat-item">
-                  <span class="stat-icon">🏆</span>
-                  <span class="stat-label">Gagnants</span>
-                  <span id="winnerCount" class="stat-value">0</span>
+                <div class="stat-compact-item">
+                  <div class="stat-icon-small">🏆</div>
+                  <div>
+                    <div class="stat-label-small">Gagnants</div>
+                    <div id="winnerCount" class="stat-value-small">0</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- WINNERS HISTORY CARD -->
-          <div class="card">
-            <div class="card-header">
-              <h3>🏆 Historique des Gagnants</h3>
+          <!-- Winners Card -->
+          <div class="card card-modern">
+            <div class="card-header-modern">
+              <div class="card-icon-badge">🏆</div>
+              <div class="card-title-section">
+                <h3 class="card-title">Historique</h3>
+                <p class="card-subtitle">Derniers gagnants</p>
+              </div>
             </div>
-            <div class="card-body card-scroll">
+            <div class="card-body-modern card-scroll">
               <div id="winnersList" class="winners-list">
                 <p class="empty-message">Aucun gagnant pour le moment</p>
               </div>
@@ -209,20 +231,21 @@
         </div>
       </div>
 
-      <!-- ADMIN SECTION -->
-      <div class="card card-full admin-section hidden" id="adminGiveawaySection">
-        <div class="card-header admin-header">
-          <h3>⚙️ Gestion Admin</h3>
+      <!-- Admin Section -->
+      <div class="card card-modern admin-section hidden" id="adminGiveawaySection">
+        <div class="card-header-modern admin-header">
+          <div class="card-icon-badge">⚙️</div>
+          <div class="card-title-section">
+            <h3 class="card-title">Gestion Admin</h3>
+          </div>
           <span class="admin-badge">Admin Only</span>
         </div>
-        <div class="card-body">
-          <!-- Admin Buttons -->
+        <div class="card-body-modern">
           <div class="admin-actions">
             <button id="createNewGiveawayBtn" class="btn btn-primary">➕ Créer Giveaway</button>
             <button id="selectGiveawayBtn" class="btn btn-secondary">🎡 Sélectionner</button>
           </div>
 
-          <!-- Photo Management -->
           <div class="admin-subsection">
             <h4>📸 Gestion des Photos</h4>
             <input type="file" id="giveawayPhotos" accept="image/*" multiple class="file-input">
@@ -238,114 +261,221 @@
       </div>
     </main>
 
-    <!-- FOOTER -->
+    <!-- Footer -->
     <footer class="main-footer">
       <p>&copy; 2026 Dragon Ball Legend. Tous droits réservés.</p>
     </footer>
   </div>
 
-  <!-- ==================
-       MODALS
-       ================== -->
+  <!-- MODALS -->
 
-  <!-- Modal: Admin Login -->
+  <!-- Giveaway Details Modal -->
+  <div id="giveawayDetailsModal" class="modal hidden">
+    <div class="modal-bg"></div>
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="detailsGiveawayName" class="modal-title">Nom du Giveaway</h2>
+        <button id="closeGiveawayDetailsModal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body modal-scroll">
+        <div class="giveaway-details-content">
+          <p id="detailsGiveawayDescription" class="modal-description">-</p>
+          
+          <div class="details-grid">
+            <div class="detail-box">
+              <div class="detail-icon">⏰</div>
+              <div class="detail-info">
+                <span class="detail-label">Temps Restant</span>
+                <p id="detailsGiveawayTimeLeft" class="detail-value">-</p>
+              </div>
+            </div>
+            <div class="detail-box">
+              <div class="detail-icon">👥</div>
+              <div class="detail-info">
+                <span class="detail-label">Participants</span>
+                <p id="detailsGiveawayParticipants" class="detail-value">0</p>
+              </div>
+            </div>
+            <div class="detail-box">
+              <div class="detail-icon">📸</div>
+              <div class="detail-info">
+                <span class="detail-label">Photos</span>
+                <p id="detailsGiveawayPhotos" class="detail-value">0</p>
+              </div>
+            </div>
+            <div class="detail-box">
+              <div class="detail-icon">📅</div>
+              <div class="detail-info">
+                <span class="detail-label">Date de Fin</span>
+                <p id="detailsGiveawayEndDate" class="detail-value">-</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="detailsGiveawayPhotosGallery" style="display: none;">
+            <h3 class="details-section-title">📸 Galerie Photos</h3>
+            <div class="details-photos-grid">
+              <div id="detailsPhotosContainer" class="details-photos-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-block" onclick="document.getElementById('giveawayDetailsModal').classList.add('hidden')">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Login Modal -->
   <div id="adminLoginModal" class="modal hidden">
     <div class="modal-bg"></div>
     <div class="modal-box modal-sm">
-      <button id="closeAdminLoginModal" class="modal-close">&times;</button>
-      <h2 class="modal-title">🔐 Admin Login</h2>
-      <input type="password" id="adminLoginPassword" class="input" placeholder="Mot de passe" autocomplete="current-password">
-      <div id="adminLoginMessage" class="message-box"></div>
-      <div class="modal-buttons">
-        <button id="adminLoginSubmitBtn" class="btn btn-primary btn-block">Connexion</button>
+      <div class="modal-header">
+        <h2 class="modal-title">🔐 Connexion Admin</h2>
+        <button id="closeAdminLoginModal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group-modern">
+          <label for="adminLoginPassword">Mot de passe Admin</label>
+          <input type="password" id="adminLoginPassword" class="input-modern" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div id="adminLoginMessage" class="message-box"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="adminLoginSubmitBtn" class="btn btn-primary btn-block">Se Connecter</button>
         <button id="closeAdminLoginBtn" class="btn btn-secondary btn-block">Annuler</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Create Giveaway -->
+  <!-- Create Giveaway Modal -->
   <div id="createGiveawayModal" class="modal hidden">
     <div class="modal-bg"></div>
     <div class="modal-box">
-      <button id="closeCreateGiveawayModal" class="modal-close">&times;</button>
-      <h2 class="modal-title">🎁 Créer un Giveaway</h2>
-      <div class="form-group">
-        <label>Nom *</label>
-        <input type="text" id="giveawayName" class="input" placeholder="Ex: Dragon Ball Z" maxlength="50">
+      <div class="modal-header">
+        <h2 class="modal-title">🎁 Créer un Nouveau Giveaway</h2>
+        <button id="closeCreateGiveawayModal" class="modal-close">&times;</button>
       </div>
-      <div class="form-group">
-        <label>Description</label>
-        <textarea id="giveawayDesc" class="input" placeholder="Décrivez..." maxlength="500" rows="3"></textarea>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Jours</label>
-          <input type="number" id="giveawayDays" class="input" min="0" max="365" value="0">
+      <div class="modal-body modal-scroll">
+        <div class="form-group-modern">
+          <label for="giveawayName">Nom du Giveaway *</label>
+          <input type="text" id="giveawayName" class="input-modern" placeholder="Ex: Dragon Ball Z" maxlength="50" required>
+          <span class="form-help">Maximum 50 caractères</span>
         </div>
-        <div class="form-group">
-          <label>Heures</label>
-          <input type="number" id="giveawayHours" class="input" min="0" max="23" value="0">
+        
+        <div class="form-group-modern">
+          <label for="giveawayDesc">Description</label>
+          <textarea id="giveawayDesc" class="input-modern" placeholder="Décrivez votre giveaway..." maxlength="500" rows="4"></textarea>
+          <span class="form-help">Maximum 500 caractères</span>
         </div>
+
+        <div class="form-row">
+          <div class="form-group-modern">
+            <label for="giveawayDays">Durée - Jours</label>
+            <input type="number" id="giveawayDays" class="input-modern" min="0" max="365" value="0">
+          </div>
+          <div class="form-group-modern">
+            <label for="giveawayHours">Durée - Heures</label>
+            <input type="number" id="giveawayHours" class="input-modern" min="0" max="23" value="0">
+          </div>
+        </div>
+
+        <div class="form-group-modern">
+          <label for="giveawayPhotosInput">Photos (Max 5)</label>
+          <input type="file" id="giveawayPhotosInput" class="input-modern file-input" accept="image/*" multiple>
+          <span class="form-help">Formats acceptés: JPG, PNG, GIF</span>
+        </div>
+
+        <div id="createGiveawayMessage" class="message-box"></div>
       </div>
-      <div class="form-group">
-        <label>Photos (Max 5)</label>
-        <input type="file" id="giveawayPhotosInput" class="file-input" accept="image/*" multiple>
-      </div>
-      <div id="createGiveawayMessage" class="message-box"></div>
-      <div class="modal-buttons">
-        <button id="createGiveawayBtn" class="btn btn-primary btn-block">Créer</button>
+      <div class="modal-footer">
+        <button id="createGiveawayBtn" class="btn btn-primary btn-block">Créer Giveaway</button>
         <button id="cancelCreateGiveawayBtn" class="btn btn-secondary btn-block">Annuler</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Select Giveaway -->
+  <!-- Select Giveaway Modal -->
   <div id="selectGiveawayModal" class="modal hidden">
     <div class="modal-bg"></div>
     <div class="modal-box">
-      <button id="closeSelectGiveawayModal" class="modal-close">&times;</button>
-      <h2 class="modal-title">🎡 Giveaways en Cours</h2>
-      <div id="giveawaysList" class="giveaways-list">
-        <p class="empty-message">Chargement...</p>
+      <div class="modal-header">
+        <h2 class="modal-title">🎡 Giveaways Disponibles</h2>
+        <button id="closeSelectGiveawayModal" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body modal-scroll">
+        <div id="giveawaysList" class="giveaways-list">
+          <p class="empty-message">⏳ Chargement des giveaways...</p>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Admin Wheel Password -->
+  <!-- Upload Progress Modal -->
+  <div id="uploadModal" class="modal hidden">
+    <div class="modal-bg"></div>
+    <div class="modal-box modal-sm">
+      <div class="modal-header">
+        <h2 class="modal-title">📤 Téléchargement en cours</h2>
+      </div>
+      <div class="modal-body">
+        <div class="progress-bar">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+        <p id="uploadStatus" class="text-center upload-status">Préparation du téléchargement...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Verification Modal -->
   <div id="adminModal" class="modal hidden">
     <div class="modal-bg"></div>
     <div class="modal-box modal-sm">
-      <button class="modal-close" onclick="closeAdminModal()">&times;</button>
-      <h2 class="modal-title">🔐 Admin Required</h2>
-      <input type="password" id="adminPassword" class="input" placeholder="Mot de passe">
-      <div id="adminMessage" class="message-box"></div>
-      <div class="modal-buttons">
+      <div class="modal-header">
+        <h2 class="modal-title">🔐 Vérification Admin</h2>
+        <button id="closeAdminModalBtn" class="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-description">Cette action requiert une authentification admin.</p>
+        <div class="form-group-modern">
+          <label for="adminPassword">Mot de passe</label>
+          <input type="password" id="adminPassword" class="input-modern" placeholder="••••••••">
+        </div>
+        <div id="adminMessage" class="message-box"></div>
+      </div>
+      <div class="modal-footer">
         <button id="adminSubmitBtn" class="btn btn-primary btn-block">Vérifier</button>
-        <button onclick="closeAdminModal()" class="btn btn-secondary btn-block">Annuler</button>
+        <button id="adminCancelBtn" class="btn btn-secondary btn-block">Annuler</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Participation Feedback -->
+  <!-- Success Modal -->
   <div id="participationModal" class="modal hidden">
     <div class="modal-bg"></div>
-    <div class="modal-box modal-sm">
-      <div id="participationContent">
-        <h2>✨ Bravo! ✨</h2>
-        <button class="btn btn-primary close-btn">Fermer</button>
+    <div class="modal-box modal-sm modal-success">
+      <div class="modal-body">
+        <div id="participationContent">
+          <div class="success-icon">✨</div>
+          <h2 class="modal-title">Participation Confirmée!</h2>
+          <p class="modal-description" id="participationMessage">Merci d'avoir participé au giveaway. Bonne chance!</p>
+          <button id="closeParticipationModal" class="btn btn-primary close-btn btn-block">Fermer</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Fullscreen Photo Viewer -->
+  <!-- Photo Viewer -->
   <div id="fullscreenViewer" class="fullscreen-viewer hidden">
-    <div class="viewer-header">
-      <button id="closeViewer" class="viewer-close">✕</button>
-      <span id="viewerCounter">1/5</span>
+    <div class="viewer-container">
+      <div class="viewer-header">
+        <button id="closeViewer" class="viewer-close">✕</button>
+        <span id="viewerCounter" class="viewer-counter">1/5</span>
+      </div>
+      <button id="prevViewer" class="viewer-arrow prev" title="Photo précédente">❮</button>
+      <img id="viewerImage" src="" alt="Photo">
+      <button id="nextViewer" class="viewer-arrow next" title="Photo suivante">❯</button>
     </div>
-    <button id="prevViewer" class="viewer-arrow prev">❮</button>
-    <img id="viewerImage" src="" alt="">
-    <button id="nextViewer" class="viewer-arrow next">❯</button>
   </div>
 
   <!-- Loading Spinner -->

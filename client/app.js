@@ -1401,7 +1401,7 @@ document.getElementById('adminSubmitBtn').addEventListener('click', async () => 
  */
 document.getElementById('adminPassword').addEventListener('keypress', (e) => {
   if (e.key === 'Enter') {
-    document.getElementById('adminLoginBtn').click();
+    document.getElementById('adminSubmitBtn').click();
   }
 });
 
@@ -1638,7 +1638,7 @@ async function selectGiveaway(giveawayId) {
       }
       
       // Scroll vers la section infos
-      const infoCard = document.getElementById('giveawayInfoCard');
+      const infoCard = document.getElementById('giveawayInfoSection');
       if (infoCard) {
         setTimeout(() => {
           infoCard.scrollIntoView({ behavior: 'smooth' });
@@ -1880,6 +1880,41 @@ if (clearGiveawayBtn) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 }
+
+// ===========================
+// FERMETURE DES MODALES
+// ===========================
+
+// Fermer giveaway details modal
+const closeGiveawayDetailsBtn = document.getElementById('closeGiveawayDetailsModal');
+if (closeGiveawayDetailsBtn) {
+  closeGiveawayDetailsBtn.addEventListener('click', () => {
+    document.getElementById('giveawayDetailsModal').classList.add('hidden');
+  });
+}
+
+// Fermer admin modal - bouton X
+const closeAdminModalBtn = document.getElementById('closeAdminModalBtn');
+if (closeAdminModalBtn) {
+  closeAdminModalBtn.addEventListener('click', closeAdminModal);
+}
+
+// Fermer admin modal - bouton Annuler
+const adminCancelBtn = document.getElementById('adminCancelBtn');
+if (adminCancelBtn) {
+  adminCancelBtn.addEventListener('click', closeAdminModal);
+}
+
+// Fermer toutes les modales en cliquant sur le fond (modal-bg)
+document.addEventListener('click', (e) => {
+  // Vérifier que c'est bien le fond (modal-bg) et non un bouton ou input
+  if (e.target.classList && e.target.classList.contains('modal-bg')) {
+    const modal = e.target.closest('.modal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+});
 
 // Charger les giveaways et gagnants au démarrage
 loadGiveaways();
