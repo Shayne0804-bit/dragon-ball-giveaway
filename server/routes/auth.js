@@ -19,9 +19,10 @@ router.get(
   '/discord/callback',
   passport.authenticate('discord', { failureRedirect: '/?error=discord_auth_failed' }),
   (req, res) => {
-    // Authentification réussie
+    // Authentification réussie - la session est maintenant établie
     // Rediriger vers le frontend avec un message de succès
-    res.redirect('/?success=discord_auth_success');
+    // Le frontend va faire fetch('/api/auth/user') pour récupérer les données utilisateur
+    res.redirect('/?discord_auth_success');
   }
 );
 

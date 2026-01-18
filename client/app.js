@@ -1513,6 +1513,20 @@ if (document.readyState === 'loading') {
   init();
 }
 
+// Vérifier si on vient d'une redirection Discord et refetch l'utilisateur
+if (window.location.search.includes('discord_auth_success')) {
+  // Attendre un peu pour s'assurer que la session est établie
+  setTimeout(() => {
+    fetchDiscordUser().then((user) => {
+      if (user) {
+        showMessage('✅ Connecté avec Discord!', 'success');
+        // Nettoyer l'URL
+        window.history.replaceState({}, document.title, '/');
+      }
+    });
+  }, 500);
+}
+
 // Auto-actualiser toutes les 5 secondes
 setInterval(async () => {
   if (!isSpinning) {

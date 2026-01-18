@@ -28,6 +28,11 @@ const discordBot = require('./services/discordBot');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Faire confiance au proxy (important pour Railway et HTTPS)
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // ===========================
 // MIDDLEWARES GLOBAUX
 // ===========================
@@ -72,10 +77,11 @@ app.use(
       ttl: 24 * 60 * 60, // 24h
     }),
     cookie: {
-      secure: process.env.NODE_ENV === 'production', // HTTPS only en production
+      secure: process.env.NODE_ENV === 'production' ? true : false,
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24h
-      sameSite: 'lax',
+      sameSite: 'lax', // Permet les redirects de Discord
+      domain: undefined, // Laisser le navigateur décider
     },
   })
 );
