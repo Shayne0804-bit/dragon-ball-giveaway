@@ -114,9 +114,12 @@ class DiscordBotService {
 
       // Récupérer les photos du giveaway
       let photoUrl = null;
+      let photoCount = 0;
       if (giveaway.photos && giveaway.photos.length > 0) {
+        photoCount = giveaway.photos.length;
         const photo = giveaway.photos[0];
         console.log(`[DISCORD] Photo objet:`, JSON.stringify({ _id: photo._id, filename: photo.filename }));
+        console.log(`[DISCORD] Nombre total de photos: ${photoCount}`);
         if (photo._id) {
           photoUrl = `${this.apiUrl}/giveaway/photos/${photo._id}`;
           console.log(`[DISCORD] URL photo construite: ${photoUrl}`);
@@ -164,6 +167,11 @@ class DiscordBotService {
           {
             name: 'Statut',
             value: `🟢 ${giveaway.status}`,
+            inline: true,
+          },
+          {
+            name: '📸 Photos',
+            value: photoCount > 0 ? `${photoCount} photo${photoCount > 1 ? 's' : ''}` : 'Aucune photo',
             inline: true,
           }
         )

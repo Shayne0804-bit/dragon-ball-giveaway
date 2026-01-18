@@ -42,19 +42,27 @@ const uploadGiveawayPhotos = async (req, res) => {
       if (!giveaway.photos) {
         giveaway.photos = [];
       }
+      
+      // Vérifier si c'est la première photo
+      const isFirstPhoto = giveaway.photos.length === 0;
+      
       giveaway.photos.push(giveawayPhoto._id);
       await giveaway.save();
       console.log(`[PHOTO] Photo liée au giveaway. Total: ${giveaway.photos.length}`);
       
-      // Envoyer une notification Discord avec la photo
-      try {
-        const populatedGiveaway = await Giveaway.findById(giveawayId).populate('photos');
-        if (populatedGiveaway && populatedGiveaway.photos.length > 0) {
-          console.log(`[PHOTO] Envoi de la notification Discord avec photo...`);
-          await discordBot.notifyGiveawayCreated(populatedGiveaway);
+      // Envoyer une notification Discord SEULEMENT si c'est la première photo
+      if (isFirstPhoto) {
+        try {
+          const populatedGiveaway = await Giveaway.findById(giveawayId).populate('photos');
+          if (populatedGiveaway && populatedGiveaway.photos.length > 0) {
+            console.log(`[PHOTO] PREMIÈRE photo - Envoi de la notification Discord...`);
+            await discordBot.notifyGiveawayCreated(populatedGiveaway);
+          }
+        } catch (err) {
+          console.error('[PHOTO] Erreur lors de l\'envoi de la notification Discord:', err.message);
         }
-      } catch (err) {
-        console.error('[PHOTO] Erreur lors de l\'envoi de la notification Discord:', err.message);
+      } else {
+        console.log(`[PHOTO] Photo supplémentaire (${giveaway.photos.length}/${giveaway.photos.length}) - Pas de nouvelle notification`);
       }
       
       return res.status(201).json({
