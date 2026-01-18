@@ -8,11 +8,18 @@ class DiscordBotService {
     this.channelId = process.env.DISCORD_CHANNEL_ID;
     this.botToken = process.env.DISCORD_BOT_TOKEN;
     
-    // Déterminer l'URL du site
+    // Déterminer l'URL du site - priorité à CORS_ORIGIN
     let siteUrl = process.env.CORS_ORIGIN;
+    
+    // Fallback sur Railway domain si CORS_ORIGIN n'est pas défini
     if (!siteUrl || siteUrl === 'undefined') {
-      siteUrl = process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : 'http://localhost:5000';
+      if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+        siteUrl = `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`;
+      } else {
+        siteUrl = 'http://localhost:5000';
+      }
     }
+    
     this.siteUrl = siteUrl;
     console.log('[DISCORD] Site URL configurée:', this.siteUrl);
   }
