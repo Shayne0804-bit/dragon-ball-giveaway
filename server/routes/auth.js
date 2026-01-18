@@ -57,6 +57,32 @@ router.get('/user', (req, res) => {
 });
 
 /**
+ * GET /api/auth/debug
+ * Route de debug pour voir les données utilisateur (À SUPPRIMER EN PRODUCTION)
+ */
+router.get('/debug', (req, res) => {
+  if (!req.user) {
+    return res.json({
+      authenticated: false,
+      message: 'Aucun utilisateur en session',
+    });
+  }
+
+  res.json({
+    authenticated: true,
+    user: {
+      id: req.user._id,
+      discordId: req.user.discordId,
+      discordUsername: req.user.discordUsername,
+      discordAvatar: req.user.discordAvatar,
+      email: req.user.email,
+      isDiscordAuthenticated: req.user.isDiscordAuthenticated,
+    },
+    sessionId: req.sessionID,
+  });
+});
+
+/**
  * POST /api/auth/logout
  * Déconnecter l'utilisateur
  */

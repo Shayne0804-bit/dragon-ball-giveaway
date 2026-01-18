@@ -134,21 +134,31 @@ function validateName(name) {
  */
 async function fetchDiscordUser() {
   try {
+    console.log('🔍 Fetch utilisateur Discord...');
     const response = await fetch(DISCORD_USER_API, {
       method: 'GET',
       credentials: 'include', // Important pour envoyer les cookies de session
     });
 
+    console.log('📨 Réponse reçue - Status:', response.status);
+
     if (response.ok) {
       const data = await response.json();
-      if (data.success) {
+      console.log('📦 Données brutes reçues:', data);
+      
+      if (data.success && data.user) {
         currentDiscordUser = data.user;
-        console.log('✅ Utilisateur Discord reçu:', currentDiscordUser);
+        console.log('✅ Utilisateur Discord reçu:', {
+          discordId: currentDiscordUser.discordId,
+          discordUsername: currentDiscordUser.discordUsername,
+          avatarPresent: !!currentDiscordUser.discordAvatar,
+          avatarUrl: currentDiscordUser.discordAvatar ? currentDiscordUser.discordAvatar.substring(0, 50) + '...' : 'null',
+        });
         updateDiscordAuthUI();
         return data.user;
       }
     }
-    console.warn('⚠️ Pas d\'utilisateur Discord connecté');
+    console.warn('⚠️ Pas d\'utilisateur Discord connecté - Status:', response.status);
     currentDiscordUser = null;
     updateDiscordAuthUI();
     return null;
@@ -1541,16 +1551,25 @@ if (document.readyState === 'loading') {
 
 // Vérifier si on vient d'une redirection Discord et refetch l'utilisateur
 if (window.location.search.includes('discord_auth_success')) {
-  // Attendre un peu pour s'assurer que la session est établie
-  setTimeout(() => {
-    fetchDiscordUser().then((user) => {
-      if (user) {
-        showMessage('✅ Connecté avec Discord!', 'success');
-        // Nettoyer l'URL
+  console.log('🔄 Détection de redirection Discord - refetch utilisateur dans 1 seconde');
+  // Attendre que la session soit bien établie
+  setTimeout(async () => {
+    const user = await fetchDiscordUser();
+    if (user) {
+      console.log('✅ Utilisateur Discord trouvé après redirection:', user);
+      showMessage('✅ Connecté avec Discord!', 'success');
+      // Attendre 1 seconde et nettoyer l'URL
+      setTimeout(() => {
         window.history.replaceState({}, document.title, '/');
-      }
-    });
-  }, 500);
+      }, 1000);
+    } else {
+      console.warn('⚠️ Utilisateur Discord non trouvé après redirection, rechargement...');
+      // Rechargement si la session n'a pas fonctionné
+      setTimeout(() => {
+        location.reload();
+      }, 1500);
+    }
+  }, 1000);
 }
 
 // Auto-actualiser toutes les 5 secondes
