@@ -103,8 +103,8 @@ class DiscordBotService {
         return false;
       }
 
-      if (channel.type !== ChannelType.GuildText) {
-        console.error(`[DISCORD] ❌ Canal non valide - Type: ${channel.type} (attendu: ${ChannelType.GuildText})`);
+      if (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement) {
+        console.error(`[DISCORD] ❌ Canal non valide - Type: ${channel.type} (attendu: ${ChannelType.GuildText} ou ${ChannelType.GuildAnnouncement})`);
         return false;
       }
 
@@ -189,7 +189,7 @@ class DiscordBotService {
     try {
       const channel = await this.client.channels.fetch(this.channelId);
 
-      if (!channel || channel.type !== ChannelType.GuildText) {
+      if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement)) {
         console.error('[DISCORD] Canal non valide ou inaccessible');
         return false;
       }
@@ -267,7 +267,7 @@ class DiscordBotService {
     try {
       const channel = await this.client.channels.fetch(this.channelId);
 
-      if (!channel || channel.type !== ChannelType.GuildText) {
+      if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement)) {
         console.error('[DISCORD] Canal non valide ou inaccessible');
         return false;
       }
@@ -367,7 +367,7 @@ class DiscordBotService {
         return null;
       });
 
-      if (!channel || channel.type !== ChannelType.GuildText) {
+      if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement)) {
         return false;
       }
 
