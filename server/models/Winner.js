@@ -10,6 +10,10 @@ const winnerSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Le nom du gagnant est requis'],
     },
+    discordId: {
+      type: String,
+      index: true,
+    },
     giveaway: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Giveaway',

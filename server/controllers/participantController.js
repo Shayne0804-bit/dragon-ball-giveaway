@@ -237,7 +237,8 @@ const drawWinner = async (req, res) => {
 
     // Sauvegarder le gagnant
     const winnerRecord = new Winner({
-      name: winner.name,
+      name: winner.discordUsername || winner.name || 'Gagnant',
+      discordId: winner.discordId,
       giveaway: giveawayId || null,
     });
     await winnerRecord.save();
@@ -246,7 +247,8 @@ const drawWinner = async (req, res) => {
       success: true,
       message: 'Gagnant tiré au sort!',
       data: {
-        name: winner.name,
+        name: winner.discordUsername,
+        discordId: winner.discordId,
         totalParticipants: participants.length,
       },
     });
