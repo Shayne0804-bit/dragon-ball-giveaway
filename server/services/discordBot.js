@@ -1,0 +1,383 @@
+const { Client, GatewayIntentBits, EmbedBuilder, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const discordConfig = require('../config/discord');
+
+class DiscordBotService {
+  constructor() {
+    this.client = null;
+    this.isReady = false;
+    this.channelId = process.env.DISCORD_CHANNEL_ID;
+    this.botToken = process.env.DISCORD_BOT_TOKEN;
+    this.siteUrl = process.env.CORS_ORIGIN || 'http://localhost:5000';
+  }
+
+  /**
+   * Initialiser le bot Discord
+   */
+  async initialize() {
+    if (!this.botToken) {
+      console.warn('[DISCORD] Bot token non configuré. Les notifications ne seront pas envoyées.');
+      return false;
+    }
+
+    try {
+      this.client = new Client({
+        intents: [
+          GatewayIntentBits.Guilds,
+          GatewayIntentBits.GuildMessages,
+          GatewayIntentBits.DirectMessages,
+        ],
+      });
+
+      this.client.once('ready', () => {
+        this.isReady = true;
+        console.log(`[DISCORD] Bot connecté: ${this.client.user.tag}`);
+      });
+
+      this.client.on('error', (error) => {
+        console.error('[DISCORD] Erreur bot:', error);
+      });
+
+      await this.client.login(this.botToken);
+      
+      // Attendre que le bot soit prêt
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          console.warn('[DISCORD] Timeout lors de la connexion du bot');
+          resolve(false);
+        }, 10000);
+
+        const checkReady = setInterval(() => {
+          if (this.isReady) {
+            clearInterval(checkReady);
+            clearTimeout(timeout);
+            resolve(true);
+          }
+        }, 100);
+      });
+    } catch (error) {
+      console.error('[DISCORD] Erreur lors de l\'initialisation du bot:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Envoyer une notification de création de giveaway
+   */
+  async notifyGiveawayCreated(giveaway) {
+    if (!this.isReady || !this.channelId) {
+      console.warn('[DISCORD] Bot non prêt ou canal non configuré');
+      return false;
+    }
+
+    try {
+      const channel = await this.client.channels.fetch(this.channelId);
+
+      if (!channel || channel.type !== ChannelType.GuildText) {
+        console.error('[DISCORD] Canal non valide ou inaccessible');
+        return false;
+      }
+
+      const durationText = this.formatDuration(giveaway.durationDays, giveaway.durationHours);
+      const endDate = new Date(giveaway.endDate).toLocaleString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      const embed = new EmbedBuilder()
+        .setColor(discordConfig.colors.created)
+        .setTitle(`${discordConfig.messages.created.emoji} ${discordConfig.messages.created.title}`)
+        .setDescription(discordConfig.messages.created.description)
+        .addFields(
+          {
+            name: 'Nom du giveaway',
+            value: giveaway.name,
+            inline: false,
+          },
+          {
+            name: 'Description',
+            value: giveaway.description || 'Aucune description',
+            inline: false,
+          },
+          {
+            name: 'Durée',
+            value: durationText,
+            inline: true,
+          },
+          {
+            name: 'Fin prévue',
+            value: endDate,
+            inline: true,
+          },
+          {
+            name: 'Statut',
+            value: `🟢 ${giveaway.status}`,
+            inline: true,
+          }
+        )
+        .setFooter({
+          text: `Giveaway ID: ${giveaway._id}`,
+        })
+        .setTimestamp();
+
+      // Créer un bouton pour accéder au site
+      const row = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setLabel('🎯 Participer')
+            .setURL(`${this.siteUrl}/`)
+            .setStyle(ButtonStyle.Link)
+        );
+
+      await channel.send({ embeds: [embed], components: [row] });
+      console.log(`[DISCORD] Notification de création envoyée pour: ${giveaway.name}`);
+      return true;
+    } catch (error) {
+      console.error('[DISCORD] Erreur lors de l\'envoi de la notification de création:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Envoyer une notification de fermeture de giveaway
+   */
+  async notifyGiveawayClosed(giveaway) {
+    if (!this.isReady || !this.channelId) {
+      console.warn('[DISCORD] Bot non prêt ou canal non configuré');
+      return false;
+    }
+
+    try {
+      const channel = await this.client.channels.fetch(this.channelId);
+
+      if (!channel || channel.type !== ChannelType.GuildText) {
+        console.error('[DISCORD] Canal non valide ou inaccessible');
+        return false;
+      }
+
+      const closedDate = new Date().toLocaleString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      const embed = new EmbedBuilder()
+        .setColor(discordConfig.colors.closed)
+        .setTitle(`${discordConfig.messages.closed.emoji} ${discordConfig.messages.closed.title}`)
+        .setDescription(discordConfig.messages.closed.description)
+        .addFields(
+          {
+            name: 'Nom du giveaway',
+            value: giveaway.name,
+            inline: false,
+          },
+          {
+            name: 'Participants',
+            value: `${giveaway.participantCount || 0}`,
+            inline: true,
+          },
+          {
+            name: 'Fermé le',
+            value: closedDate,
+            inline: true,
+          },
+          {
+            name: 'Statut',
+            value: `⛔ ${giveaway.status}`,
+            inline: true,
+          }
+        )
+        .setFooter({
+          text: `Giveaway ID: ${giveaway._id}`,
+        })
+        .setTimestamp();
+
+      // Créer un bouton pour accéder au site
+      const row = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setLabel('🌐 Voir le site')
+            .setURL(`${this.siteUrl}/`)
+            .setStyle(ButtonStyle.Link)
+        );
+
+      await channel.send({ embeds: [embed], components: [row] });
+      console.log(`[DISCORD] Notification de fermeture envoyée pour: ${giveaway.name}`);
+      return true;
+    } catch (error) {
+      console.error('[DISCORD] Erreur lors de l\'envoi de la notification de fermeture:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Envoyer une notification de fin de giveaway avec gagnants
+   */
+  async notifyGiveawayCompleted(giveaway, winners = []) {
+    if (!this.isReady || !this.channelId) {
+      console.warn('[DISCORD] Bot non prêt ou canal non configuré');
+      return false;
+    }
+
+    try {
+      const channel = await this.client.channels.fetch(this.channelId);
+
+      if (!channel || channel.type !== ChannelType.GuildText) {
+        console.error('[DISCORD] Canal non valide ou inaccessible');
+        return false;
+      }
+
+      const completedDate = new Date().toLocaleString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      // Formater la liste des gagnants
+      let winnersText = '🎯 Aucun gagnant';
+      if (winners && winners.length > 0) {
+        winnersText = winners
+          .slice(0, 10) // Limite à 10 gagnants pour éviter les messages trop longs
+          .map((winner, idx) => {
+            const name = winner.name || winner.discordUsername || winner.username || 'Utilisateur inconnu';
+            return `${idx + 1}. **${name}**`;
+          })
+          .join('\n');
+
+        if (winners.length > 10) {
+          winnersText += `\n\n... et **${winners.length - 10}** autres gagnants!`;
+        }
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(discordConfig.colors.completed)
+        .setTitle(`${discordConfig.messages.completed.emoji} ${discordConfig.messages.completed.title}`)
+        .setDescription(discordConfig.messages.completed.description)
+        .addFields(
+          {
+            name: '🎁 Nom du giveaway',
+            value: `**${giveaway.name}**`,
+            inline: false,
+          },
+          {
+            name: '👥 Participants',
+            value: `**${giveaway.participantCount || 0}**`,
+            inline: true,
+          },
+          {
+            name: '🏆 Gagnants',
+            value: `**${giveaway.winnerCount || winners.length || 0}**`,
+            inline: true,
+          },
+          {
+            name: '📅 Terminé le',
+            value: completedDate,
+            inline: true,
+          },
+          {
+            name: '🎉 Liste des Gagnants',
+            value: winnersText,
+            inline: false,
+          }
+        )
+        .setFooter({
+          text: `Giveaway ID: ${giveaway._id}`,
+        })
+        .setTimestamp();
+
+      const row = new ActionRowBuilder()
+        .addComponents(
+          new ButtonBuilder()
+            .setLabel('🏆 Voir les gagnants')
+            .setURL(`${this.siteUrl}/`)
+            .setStyle(ButtonStyle.Link)
+        );
+
+      await channel.send({ embeds: [embed], components: [row] });
+      console.log(`[DISCORD] Notification de fin envoyée pour: ${giveaway.name} avec ${winners.length} gagnants`);
+      return true;
+    } catch (error) {
+      console.error('[DISCORD] Erreur lors de l\'envoi de la notification de fin:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Envoyer une notification de participation
+   */
+  async notifyNewParticipant(giveaway, participant) {
+    if (!this.isReady || !this.channelId) {
+      return false;
+    }
+
+    try {
+      const channel = await this.client.channels.fetch(this.channelId);
+
+      if (!channel || channel.type !== ChannelType.GuildText) {
+        return false;
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(discordConfig.colors.participant)
+        .setTitle(`${discordConfig.messages.participant.emoji} ${discordConfig.messages.participant.title}`)
+        .setDescription(discordConfig.messages.participant.description)
+        .addFields(
+          {
+            name: 'Giveaway',
+            value: giveaway.name,
+            inline: false,
+          },
+          {
+            name: 'Participant',
+            value: participant.username || 'Utilisateur inconnu',
+            inline: true,
+          },
+          {
+            name: 'Total de participants',
+            value: `${giveaway.participantCount || 0}`,
+            inline: true,
+          }
+        )
+        .setFooter({
+          text: `Giveaway ID: ${giveaway._id}`,
+        })
+        .setTimestamp();
+
+      await channel.send({ embeds: [embed] });
+      return true;
+    } catch (error) {
+      console.error('[DISCORD] Erreur lors de l\'envoi de la notification de participation:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Formater la durée du giveaway
+   */
+  formatDuration(days, hours) {
+    const parts = [];
+    if (days > 0) parts.push(`${days} jour${days > 1 ? 's' : ''}`);
+    if (hours > 0) parts.push(`${hours} heure${hours > 1 ? 's' : ''}`);
+    return parts.length > 0 ? parts.join(' et ') : '0 heure';
+  }
+
+  /**
+   * Arrêter le bot
+   */
+  async shutdown() {
+    if (this.client) {
+      await this.client.destroy();
+      this.isReady = false;
+      console.log('[DISCORD] Bot arrêté');
+    }
+  }
+}
+
+// Exporter une instance unique
+module.exports = new DiscordBotService();

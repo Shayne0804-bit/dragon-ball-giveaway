@@ -1,5 +1,8 @@
 const Giveaway = require('../models/Giveaway');
 const GiveawayPhoto = require('../models/GiveawayPhoto');
+const Winner = require('../models/Winner');
+const Participant = require('../models/Participant');
+const discordBot = require('../services/discordBot');
 
 /**
  * Créer un nouveau giveaway
@@ -40,6 +43,11 @@ const createGiveaway = async (req, res) => {
     await giveaway.save();
     console.log(`[CREATE] Giveaway créé: ${giveaway._id} - ${name}`);
 
+    // Envoyer une notification Discord
+    discordBot.notifyGiveawayCreated(giveaway).catch(err => {
+      console.error('[CREATE] Erreur lors de l\'envoi de la notification Discord:', err.message);
+    });
+
     res.status(201).json({
       success: true,
       message: 'Giveaway créé avec succès!',
@@ -65,17 +73,43 @@ const getGiveaways = async (req, res) => {
   try {
     const giveaways = await Giveaway.find({ status: 'active' })
       .populate('photos')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     console.log(`[GIVEAWAYS] ${giveaways.length} giveaways actifs trouvés`);
     giveaways.forEach(g => {
       console.log(`  - ${g.name}: ${g.photos ? g.photos.length : 0} photo(s)`);
     });
 
+    // Compter les participants pour chaque giveaway
+    const giveawaysWithCount = await Promise.all(
+      giveaways.map(async (g) => {
+        const participantCount = await Participant.countDocuments({ giveawayId: g._id });
+        return {
+          _id: g._id,
+          name: g.name,
+          description: g.description,
+          status: g.status,
+          endDate: g.endDate,
+          durationDays: g.durationDays,
+          durationHours: g.durationHours,
+          photos: g.photos || [],
+          participantCount: participantCount,
+          winnerCount: g.winnerCount || 0,
+          createdBy: g.createdBy,
+          startDate: g.startDate,
+          createdAt: g.createdAt,
+          updatedAt: g.updatedAt,
+        };
+      })
+    );
+
+    console.log(`[GIVEAWAYS] Envoi de ${giveawaysWithCount.length} giveaway(s)`);
+    
     res.json({
       success: true,
       data: {
-        giveaways,
+        giveaways: giveawaysWithCount,
       },
     });
   } catch (error) {
@@ -140,6 +174,8 @@ const updateGiveaway = async (req, res) => {
       });
     }
 
+    const previousStatus = giveaway.status;
+
     // Mettre à jour les champs
     if (name) giveaway.name = name;
     if (description !== undefined) giveaway.description = description;
@@ -156,6 +192,28 @@ const updateGiveaway = async (req, res) => {
     }
 
     await giveaway.save();
+
+    // Envoyer les notifications Discord appropriées
+    if (previousStatus !== status) {
+      if (status === 'paused') {
+        discordBot.notifyGiveawayClosed(giveaway).catch(err => {
+          console.error('[UPDATE] Erreur lors de l\'envoi de la notification de fermeture:', err.message);
+        });
+      } else if (status === 'completed') {
+        // Récupérer les gagnants pour la notification
+        const winners = await Winner.find({ giveaway: id }).lean();
+        const participantCount = await Participant.countDocuments({ giveaway: id });
+        
+        // Mettre à jour le compteur de participants si nécessaire
+        giveaway.participantCount = participantCount;
+        giveaway.winnerCount = winners.length;
+        await giveaway.save();
+        
+        discordBot.notifyGiveawayCompleted(giveaway, winners).catch(err => {
+          console.error('[UPDATE] Erreur lors de l\'envoi de la notification de fin:', err.message);
+        });
+      }
+    }
 
     res.status(200).json({
       success: true,

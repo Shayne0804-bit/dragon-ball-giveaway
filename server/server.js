@@ -4,17 +4,26 @@ const fileUpload = require('express-fileupload');
 const helmet = require('helmet');
 const cors = require('cors');
 const path = require('path');
+const session = require('express-session');
+const MongoStore = require('connect-mongo').default;
 
 // Importer les middlewares
 const { globalLimiter, getClientIp } = require('./middlewares/rateLimiter');
+
+// Importer Passport
+const passport = require('./config/passport');
 
 // Importer les routes
 const participantRoutes = require('./routes/participants');
 const giveawayRoutes = require('./routes/giveaway');
 const giveawaysRoutes = require('./routes/giveaways');
+const authRoutes = require('./routes/auth');
 
 // Importer la configuration
 const { connectDB } = require('./config/database');
+
+// Importer le service Discord
+const discordBot = require('./services/discordBot');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -47,6 +56,34 @@ app.use(fileUpload({
 app.use(express.json({ limit: '50mb' })); // Augmenter la limite pour les images base64
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// ===========================
+// SESSION ET AUTHENTIFICATION
+// ===========================
+
+// Configurer express-session avec MongoDB
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'default_secret_change_this',
+    resave: false,
+    saveUninitialized: false,
+    store: new MongoStore({
+      mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/giveaways-local',
+      collection: 'sessions',
+      ttl: 24 * 60 * 60, // 24h
+    }),
+    cookie: {
+      secure: process.env.NODE_ENV === 'production', // HTTPS only en production
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000, // 24h
+      sameSite: 'lax',
+    },
+  })
+);
+
+// Initialiser Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
 // Extraire l'IP du client
 app.use(getClientIp);
 
@@ -60,6 +97,7 @@ app.use(express.static(path.join(__dirname, '../client')));
 // ROUTES API
 // ===========================
 
+app.use('/api/auth', authRoutes);
 app.use('/api/participants', participantRoutes);
 app.use('/api/giveaway', giveawayRoutes);
 app.use('/api/giveaways', giveawaysRoutes);
@@ -105,6 +143,14 @@ const startServer = async () => {
     // Connecter à MongoDB
     await connectDB();
 
+    // Initialiser le bot Discord
+    const discordReady = await discordBot.initialize();
+    if (discordReady) {
+      console.log('✅ Bot Discord connecté et prêt à envoyer des notifications');
+    } else {
+      console.warn('⚠️  Bot Discord non initialisé - vérifiez la configuration');
+    }
+
     // Démarrer le serveur
     app.listen(PORT, () => {
       console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
@@ -120,11 +166,13 @@ const startServer = async () => {
 // Gérer les signaux d'arrêt
 process.on('SIGINT', () => {
   console.log('\n🛑 Arrêt du serveur...');
+  discordBot.shutdown();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\n🛑 Arrêt du serveur...');
+  discordBot.shutdown();
   process.exit(0);
 });
 

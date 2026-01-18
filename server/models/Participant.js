@@ -3,20 +3,21 @@ const mongoose = require('mongoose');
 /**
  * Schéma Participant
  * Stocke les participants au giveaway avec leur IP pour l'anti-spam
+ * Support de l'authentification Discord
  */
 const participantSchema = new mongoose.Schema(
   {
+    // ========== Champs existants ==========
     name: {
       type: String,
-      required: [true, 'Le nom est requis'],
       trim: true,
       minlength: [2, 'Le nom doit contenir au minimum 2 caractères'],
       maxlength: [20, 'Le nom doit contenir au maximum 20 caractères'],
       match: [/^[a-zA-Z0-9\s]+$/, 'Le nom ne peut contenir que des lettres, chiffres et espaces'],
+      // Optionnel si authentification Discord activée
     },
     ip: {
       type: String,
-      required: [true, 'IP requise'],
       index: true,
     },
     giveaway: {
@@ -24,6 +25,32 @@ const participantSchema = new mongoose.Schema(
       ref: 'Giveaway',
       index: true,
     },
+    
+    // ========== Champs Discord ==========
+    discordId: {
+      type: String,
+      unique: true,
+      sparse: true, // Permet les documents sans discordId
+      index: true,
+    },
+    discordUsername: {
+      type: String,
+      trim: true,
+    },
+    discordAvatar: {
+      type: String, // URL de l'avatar Discord
+    },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    isDiscordAuthenticated: {
+      type: Boolean,
+      default: false,
+    },
+    
+    // ========== Timestamps ==========
     createdAt: {
       type: Date,
       default: Date.now,
@@ -56,8 +83,10 @@ participantSchema.index(
  * Middleware de validation avant sauvegarde
  */
 participantSchema.pre('save', function (next) {
-  // Trim automatique du nom
-  this.name = this.name.trim();
+  // Trim automatique du nom (si le nom existe)
+  if (this.name) {
+    this.name = this.name.trim();
+  }
   next();
 });
 

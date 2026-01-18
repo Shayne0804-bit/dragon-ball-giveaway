@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Giveaway Platform</title>
   <link rel="icon" type="image/jpeg" href="assets/dragon-ball-icon.jpg">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style-new.css">
   <link rel="stylesheet" href="photos-simplified.css">
 </head>
 <body>
@@ -43,7 +43,7 @@
           </div>
           <div class="card-body">
             <button id="publicSelectGiveawayBtn" class="btn btn-primary btn-full">Voir les Giveaways</button>
-            <div id="publicGiveawaysListContainer" class="giveaways-list"></div>
+            <div id="giveawaysList" class="giveaways-list"></div>
           </div>
         </div>
 
@@ -64,13 +64,6 @@
                 <div>
                   <p class="info-label">Temps Restant</p>
                   <p id="giveawayTimeLeft" class="info-value">-</p>
-                </div>
-              </div>
-              <div class="info-item">
-                <span class="info-icon">📅</span>
-                <div>
-                  <p class="info-label">Fin</p>
-                  <p id="giveawayEndDate" class="info-value">-</p>
                 </div>
               </div>
               <div class="info-item">
@@ -124,32 +117,23 @@
                 </div>
               </div>
 
-              <!-- Boutons côte à côte -->
-              <div style="display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: flex-start;">
-                <!-- Participer -->
-                <div>
-                  <form id="participantForm" class="form" style="margin: 0;">
-                    <div id="countdownTimer" class="message-box" style="display:none;"></div>
-                    <button type="submit" class="btn btn-primary btn-full btn-lg">
-                      ✨ Participer Maintenant
-                    </button>
-                    <div id="messageBox" class="message-box"></div>
-                  </form>
-                </div>
-
-                <!-- Discord Icon Button -->
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                  <button id="discordLoginBtn" class="btn btn-discord-icon" title="Se connecter avec Discord">
-                    <svg width="24" height="24" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M60.1045 4.8978C55.3195 2.8214 50.3139 1.2422 45.1245 0.389141C44.6645 1.2914 44.1345 2.4102 43.7745 3.4395C38.3455 2.5581 32.9852 2.5581 27.6852 3.4395C27.3245 2.4102 26.7645 1.2914 26.1852 0.389141C21.0057 1.2422 15.9995 2.8214 11.3145 4.8978C1.93047 21.4694 -0.119578 37.7378 0.0185777 53.8326C5.79617 57.3181 11.6639 59.6849 17.7139 61.0667C18.8555 59.5292 19.9667 57.9241 20.9457 56.1549C19.2064 55.7047 17.5457 55.0782 15.9869 54.297C16.3669 54.0159 16.7345 53.7284 17.0922 53.4474C29.2357 59.9187 42.8545 59.9187 54.9577 53.4474C55.3242 53.7284 55.6769 54.0159 56.0502 54.297C54.4845 55.0782 52.8062 55.7047 51.0505 56.1549C52.0406 57.9241 53.1345 59.5292 54.3011 61.0667C60.3511 59.6849 66.2339 57.3181 71.9995 53.8326C72.2669 35.8453 67.3192 19.7082 60.1045 4.8978ZM23.7259 44.2979C20.2226 44.2979 17.3384 41.1046 17.3384 37.2584C17.3384 33.4121 20.1504 30.2188 23.7259 30.2188C27.3013 30.2188 30.1852 33.4121 30.1852 37.2584C30.1852 41.1046 27.3013 44.2979 23.7259 44.2979ZM47.3045 44.2979C43.8013 44.2979 40.9171 41.1046 40.9171 37.2584C40.9171 33.4121 43.7286 30.2188 47.3045 30.2188C50.8799 30.2188 53.7638 33.4121 53.7638 37.2584C53.7638 41.1046 50.8799 44.2979 47.3045 44.2979Z" fill="currentColor"/>
-                    </svg>
-                  </button>
-                  <button id="discordLogoutBtn" class="btn btn-danger-icon hidden" title="Se déconnecter de Discord">
-                    🚪
-                  </button>
-                </div>
-              </div>
+              <button id="discordLoginBtn" class="btn btn-discord">
+                <span class="discord-icon">🔗</span>
+                Se connecter avec Discord
+              </button>
+              <button id="discordLogoutBtn" class="btn btn-danger hidden">
+                <span>🚪</span>
+                Se déconnecter
+              </button>
             </div>
+
+            <!-- Participation Form -->
+            <form id="participantForm" class="form">
+              <button type="submit" class="btn btn-primary btn-full btn-lg">
+                ✨ Participer Maintenant
+              </button>
+              <div id="messageBox" class="message-box"></div>
+            </form>
           </div>
         </div>
       </section>
@@ -157,7 +141,7 @@
       <!-- Right Section -->
       <section class="section-right">
         <!-- Participants List -->
-        <div class="card" id="participantsSection">
+        <div class="card">
           <div class="card-header">
             <span class="card-icon">👥</span>
             <h2>Participants</h2>
@@ -171,7 +155,7 @@
         </div>
 
         <!-- Roulette -->
-        <div class="card card-roulette" id="rouletteSection">
+        <div class="card card-roulette">
           <div class="card-header">
             <span class="card-icon">🎡</span>
             <h2>Roulette</h2>
@@ -193,7 +177,7 @@
         </div>
 
         <!-- Statistics -->
-        <div class="card" id="statsSection">
+        <div class="card">
           <div class="card-header">
             <span class="card-icon">📊</span>
             <h2>Statistiques</h2>
@@ -261,96 +245,11 @@
       <h2>Connexion Admin</h2>
       <form id="adminLoginForm">
         <input type="password" id="adminLoginPassword" class="input" placeholder="Mot de passe" required>
-        <button id="adminLoginSubmitBtn" type="button" class="btn btn-primary btn-full">Se Connecter</button>
+        <button type="submit" class="btn btn-primary btn-full">Se Connecter</button>
       </form>
       <div id="adminLoginMessage" class="message-box"></div>
     </div>
   </div>
-
-  <!-- Select Giveaway Modal -->
-  <div id="selectGiveawayModal" class="modal hidden">
-    <div class="modal-content">
-      <button id="closeSelectGiveawayModal" class="modal-close">✕</button>
-      <h2>Sélectionner un Giveaway</h2>
-      <div id="selectGiveawayListContainer" class="giveaways-list" style="margin-top: 15px;"></div>
-      <p id="noGiveawaysMessage" class="empty-state" style="margin-top: 15px; display: none;">Aucun giveaway disponible</p>
-    </div>
-  </div>
-
-  <!-- Create Giveaway Modal -->
-  <div id="createGiveawayModal" class="modal hidden">
-    <div class="modal-content">
-      <button id="closeCreateGiveawayModal" class="modal-close">✕</button>
-      <h2>Créer un Giveaway</h2>
-      <form id="createGiveawayForm" class="form" style="margin-top: 15px;">
-        <input type="text" id="giveawayName" class="input" placeholder="Nom du giveaway" required>
-        <textarea id="giveawayDesc" class="input" placeholder="Description" rows="3"></textarea>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <input type="number" id="giveawayDays" class="input" placeholder="Jours" value="0" min="0">
-          <input type="number" id="giveawayHours" class="input" placeholder="Heures" value="0" min="0" max="23">
-        </div>
-        <div style="margin-top: 15px;">
-          <label style="color: var(--light); font-size: 0.9rem; margin-bottom: 8px; display: block;">Sélectionner les photos (optionnel)</label>
-          <input type="file" id="giveawayPhotosInput" class="input" multiple accept="image/*" style="padding: 10px; cursor: pointer;">
-          <small style="color: var(--gray); display: block; margin-top: 5px;">Vous pouvez sélectionner plusieurs images</small>
-        </div>
-        <button type="button" id="createGiveawaySubmitBtn" class="btn btn-primary btn-full" style="margin-top: 15px;">Créer</button>
-      </form>
-      <div id="createGiveawayMessage" class="message-box" style="margin-top: 15px;"></div>
-    </div>
-  </div>
-
-  <!-- Admin Panel Modal -->
-  <div id="adminModal" class="modal hidden">
-    <div class="modal-content modal-sm">
-      <button id="closeAdminModalBtn" class="modal-close">✕</button>
-      <h2>Panel Admin</h2>
-      <div style="margin-top: 15px;">
-        <p id="adminMessage" class="message-box"></p>
-        <input type="password" id="adminPassword" class="input" placeholder="Mot de passe" style="margin-top: 15px;">
-        <button id="adminSubmitBtn" type="button" class="btn btn-primary btn-full" style="margin-top: 15px;">Valider</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Fullscreen Photo Viewer -->
-  <div id="fullscreenViewer" class="modal hidden">
-    <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
-      <button id="closeViewer" class="modal-close">✕</button>
-      <img id="viewerImage" src="" alt="Photo" style="width: 100%; max-height: 80vh; object-fit: contain;">
-      <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: space-between; align-items: center;">
-        <button id="prevViewer" class="btn btn-secondary">← Précédent</button>
-        <span id="viewerCounter" style="color: var(--gray);">1 / 1</span>
-        <button id="nextViewer" class="btn btn-secondary">Suivant →</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Photo Upload Modal -->
-  <div id="uploadModal" class="modal hidden">
-    <div class="modal-content modal-sm">
-      <h3>Upload en cours...</h3>
-      <div id="progressFill" style="height: 20px; background: linear-gradient(90deg, #5865F2 0%, #FF9F00 100%); border-radius: 10px; margin-top: 10px;"></div>
-      <p id="uploadStatus" style="text-align: center; margin-top: 10px; color: var(--gray);">0%</p>
-    </div>
-  </div>
-
-  <!-- Giveaway Details Modal -->
-  <div id="giveawayDetailsModal" class="modal hidden">
-    <div class="modal-content">
-      <button id="closeGiveawayDetailsModal" class="modal-close">✕</button>
-      <h2>Détails du Giveaway</h2>
-      <div id="giveawayDetailsContent" style="margin-top: 15px;"></div>
-    </div>
-  </div>
-
-  <!-- Hidden Elements -->
-  <input type="file" id="giveawayPhotos" style="display: none;" multiple accept="image/*">
-  <input type="file" id="giveawayPhotosInput" style="display: none;" multiple accept="image/*">
-  <button id="uploadPhotosBtn" style="display: none;"></button>
-  <button id="clearPhotosBtn" style="display: none;"></button>
-  <div id="giveawayPhotosContainer" style="display: none;"></div>
-  <div id="publicGiveawayPhotosContainer" style="display: none;"></div>
 
   <!-- Loading Spinner -->
   <div id="loadingSpinner" class="spinner hidden"></div>

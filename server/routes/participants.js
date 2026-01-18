@@ -8,8 +8,7 @@ const {
   resetParticipants,
   getWinners,
 } = require('../controllers/participantController');
-const { validateParticipantName, validateIp } = require('../middlewares/validation');
-const { checkAntiSpam } = require('../middlewares/antiSpam');
+const { verifyDiscordAuth } = require('../middlewares/discordAuth');
 const { participantLimiter } = require('../middlewares/rateLimiter');
 const { verifyAdminToken } = require('../middlewares/adminAuth');
 
@@ -27,14 +26,13 @@ router.get('/', getParticipants);
 
 /**
  * POST /api/participants
- * Ajouter un participant
- * Protégé par rate limiting et validation
+ * Ajouter un participant (authentification Discord requise)
+ * Protégé par : Discord Auth + Rate Limiting
  */
 router.post(
   '/',
   participantLimiter,
-  validateIp,
-  validateParticipantName,
+  verifyDiscordAuth,
   addParticipant
 );
 

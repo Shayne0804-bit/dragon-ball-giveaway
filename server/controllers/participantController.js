@@ -1,5 +1,7 @@
 const Participant = require('../models/Participant');
 const Winner = require('../models/Winner');
+const discordBot = require('../services/discordBot');
+const Giveaway = require('../models/Giveaway');
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
@@ -43,34 +45,40 @@ const loginAdmin = async (req, res) => {
 };
 
 /**
- * Ajouter un participant
+ * Ajouter un participant avec authentification Discord
  * POST /api/participants
- * Body: { name, giveawayId }
+ * Authentification : Discord requise
+ * Body: { giveawayId } (le nom vient de Discord)
  */
 const addParticipant = async (req, res) => {
   try {
-    const { name, giveawayId } = req.body;
-    const ip = req.clientIp;
+    const { giveawayId } = req.body;
+    const discordId = req.user.discordId; // Récupéré depuis Passport
 
-    // Vérifier si l'IP a déjà participé dans les 24 dernières heures
-    // - Si giveawayId fourni: vérifier par IP + giveaway EXACT (isolement par giveaway)
-    // - Si pas de giveawayId: vérifier par IP uniquement (backward compatibility, legacy)
-    let antiSpamQuery = {
-      ip: ip,
+    // Vérifier que l'utilisateur Discord est bien authentifié
+    if (!discordId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentification Discord requise',
+      });
+    }
+
+    // Vérifier si cet utilisateur Discord a déjà participé à ce giveaway dans les 24 dernières heures
+    const antiSpamQuery = {
+      discordId: discordId,
       createdAt: {
         $gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 heures
       },
     };
 
-    // Si un giveawayId est fourni, rechercher UNIQUEMENT la participation au MÊME giveaway
+    // Si un giveawayId est fourni, vérifier uniquement pour ce giveaway
     if (giveawayId) {
       antiSpamQuery.giveaway = giveawayId;
     } else {
-      // Si pas de giveawayId (legacy), vérifier UNIQUEMENT les participations SANS giveaway
       antiSpamQuery.giveaway = null;
     }
 
-    const lastParticipation = await Participant.findOne(antiSpamQuery, { name: 1, createdAt: 1, giveaway: 1 });
+    const lastParticipation = await Participant.findOne(antiSpamQuery);
 
     if (lastParticipation) {
       // Calculer le temps avant la prochaine participation
@@ -79,7 +87,6 @@ const addParticipant = async (req, res) => {
       );
       const timeUntilNext = Math.ceil((nextAllowedTime - Date.now()) / 60000); // en minutes
 
-      // Message adapté selon si c'est lié à un giveaway ou non
       const context = giveawayId ? ' à ce giveaway' : '';
       const errorMessage = `⏱️ Vous avez déjà participé${context}! Vous pourrez reparticiper dans ${timeUntilNext} minutes.`;
 
@@ -90,17 +97,41 @@ const addParticipant = async (req, res) => {
       });
     }
 
-    // Créer le participant
+    // Créer le participant avec les infos Discord
     const participant = new Participant({
-      name,
-      ip,
+      discordId: discordId,
+      discordUsername: req.user.discordUsername,
+      discordAvatar: req.user.discordAvatar,
+      email: req.user.email,
+      isDiscordAuthenticated: true,
       giveaway: giveawayId || null,
+      // Le champ 'ip' est optionnel maintenant (on utilise Discord ID à la place)
+      ip: req.clientIp || 'discord_auth',
     });
 
     // Sauvegarder dans la base
     await participant.save();
 
-    // Message dynamique selon le giveaway
+    // Récupérer le giveaway et envoyer une notification Discord
+    if (giveawayId) {
+      try {
+        const giveaway = await Giveaway.findById(giveawayId);
+        if (giveaway) {
+          // Mettre à jour le compteur de participants
+          giveaway.participantCount = (giveaway.participantCount || 0) + 1;
+          await giveaway.save();
+          
+          // Envoyer une notification (optionnel - décommenter pour activer)
+          // discordBot.notifyNewParticipant(giveaway, participant).catch(err => {
+          //   console.error('[PARTICIPANT] Erreur notification Discord:', err.message);
+          // });
+        }
+      } catch (err) {
+        console.error('[PARTICIPANT] Erreur lors de la mise à jour du giveaway:', err.message);
+      }
+    }
+
+    // Message de confirmation
     const giveawayContext = giveawayId ? ' au giveaway sélectionné' : '';
     
     res.status(201).json({
@@ -108,7 +139,7 @@ const addParticipant = async (req, res) => {
       message: `⚡ Participation enregistrée avec succès${giveawayContext}! Revenez dans 24h pour reparticiper! ⚡`,
       data: {
         id: participant._id,
-        name: participant.name,
+        discordUsername: participant.discordUsername,
         giveaway: giveawayId || null,
         nextAllowedAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
       },
@@ -122,6 +153,14 @@ const addParticipant = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: messages.join(', '),
+      });
+    }
+
+    // Erreur d'unicité Discord ID
+    if (error.code === 11000 && error.keyPattern?.discordId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vous avez déjà un compte avec cet ID Discord',
       });
     }
 
