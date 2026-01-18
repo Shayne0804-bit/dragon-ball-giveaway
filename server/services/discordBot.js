@@ -29,11 +29,18 @@ class DiscordBotService {
    */
   async initialize() {
     if (!this.botToken) {
-      console.warn('[DISCORD] Bot token non configuré. Les notifications ne seront pas envoyées.');
+      console.warn('⚠️  [DISCORD] Token bot non configuré (DISCORD_BOT_TOKEN). Les notifications ne seront pas envoyées.');
+      return false;
+    }
+
+    if (!this.channelId) {
+      console.warn('⚠️  [DISCORD] Channel ID non configuré (DISCORD_CHANNEL_ID). Les notifications ne seront pas envoyées.');
       return false;
     }
 
     try {
+      console.log('[DISCORD] Initialisation du bot...');
+      
       this.client = new Client({
         intents: [
           GatewayIntentBits.Guilds,
@@ -42,13 +49,13 @@ class DiscordBotService {
         ],
       });
 
-      this.client.once('clientReady', () => {
+      this.client.once('ready', () => {
         this.isReady = true;
-        console.log(`[DISCORD] Bot connecté: ${this.client.user.tag}`);
+        console.log(`[DISCORD] ✅ Bot connecté: ${this.client.user.tag}`);
       });
 
       this.client.on('error', (error) => {
-        console.error('[DISCORD] Erreur bot:', error);
+        console.error('[DISCORD] Erreur bot:', error.message);
       });
 
       await this.client.login(this.botToken);
@@ -56,7 +63,7 @@ class DiscordBotService {
       // Attendre que le bot soit prêt
       return new Promise((resolve) => {
         const timeout = setTimeout(() => {
-          console.warn('[DISCORD] Timeout lors de la connexion du bot');
+          console.warn('[DISCORD] ⚠️  Timeout lors de la connexion du bot (10s) - Le bot peut être inactif');
           resolve(false);
         }, 10000);
 
@@ -69,7 +76,7 @@ class DiscordBotService {
         }, 100);
       });
     } catch (error) {
-      console.error('[DISCORD] Erreur lors de l\'initialisation du bot:', error.message);
+      console.error('[DISCORD] ❌ Erreur lors de l\'initialisation du bot:', error.message);
       return false;
     }
   }
