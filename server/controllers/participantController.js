@@ -248,9 +248,14 @@ const drawWinner = async (req, res) => {
       // Récupérer le giveaway avec les photos et envoyer la notification Discord
       const giveaway = await Giveaway.findById(giveawayId).populate('photos');
       if (giveaway) {
+        // Compter les participants via Participation (façon correcte)
         const participantCount = await Participation.countDocuments({ giveaway: giveawayId });
+        
+        // Mettre à jour les infos du giveaway pour l'embed
         giveaway.participantCount = participantCount;
         giveaway.winnerCount = winners.length;
+        
+        console.log(`[DRAWWINNER] Notification: ${participantCount} participants, ${winners.length} gagnants`);
         
         // Envoyer la notification Discord
         discordBot.notifyGiveawayCompleted(giveaway, winners).catch(err => {
