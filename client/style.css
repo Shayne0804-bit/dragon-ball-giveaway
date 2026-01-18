@@ -555,6 +555,8 @@ body {
   border: 2px solid #5865F2;
   object-fit: cover;
   box-shadow: 0 4px 12px rgba(88, 101, 242, 0.3);
+  background-color: rgba(88, 101, 242, 0.2);
+  display: block !important;
 }
 
 .discord-info {

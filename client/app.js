@@ -166,38 +166,43 @@ function updateDiscordAuthUI() {
   const discordBtn = document.getElementById('discordLoginBtn');
   const logoutBtn = document.getElementById('discordLogoutBtn');
   const userInfo = document.getElementById('discordUserInfo');
+  const avatarImg = document.getElementById('discordAvatarImg');
+  const usernameEl = userInfo ? userInfo.querySelector('.discord-username') : null;
 
   if (currentDiscordUser) {
     // Utilisateur connecté avec Discord
     if (discordBtn) {
-      discordBtn.style.display = 'none'; // Cacher le bouton login
+      discordBtn.style.display = 'none';
     }
     if (logoutBtn) {
-      logoutBtn.style.display = 'inline-block'; // Afficher le bouton logout
+      logoutBtn.style.display = 'inline-block';
     }
     if (userInfo) {
-      userInfo.style.display = 'flex';
-      const avatarHtml = currentDiscordUser.discordAvatar 
-        ? `<img src="${currentDiscordUser.discordAvatar}" alt="Avatar" class="discord-avatar" onerror="this.style.display='none'">`
-        : '';
-      userInfo.innerHTML = `
-        ${avatarHtml}
-        <div class="discord-user-info">
-          <p class="discord-username">${currentDiscordUser.discordUsername}</p>
-          <p class="discord-status">✅ Connecté</p>
-        </div>
-      `;
+      userInfo.classList.remove('hidden');
+    }
+    
+    // Mettre à jour l'avatar
+    if (avatarImg && currentDiscordUser.discordAvatar) {
+      avatarImg.src = currentDiscordUser.discordAvatar;
+      avatarImg.style.display = 'block';
+      console.log('✅ Avatar Discord mis à jour:', currentDiscordUser.discordAvatar);
+    }
+    
+    // Mettre à jour le nom d'utilisateur
+    if (usernameEl) {
+      usernameEl.textContent = currentDiscordUser.discordUsername || 'Utilisateur';
+      console.log('✅ Username mis à jour:', currentDiscordUser.discordUsername);
     }
   } else {
     // Utilisateur NON connecté
     if (discordBtn) {
-      discordBtn.style.display = 'inline-block'; // Afficher le bouton login
+      discordBtn.style.display = 'inline-block';
     }
     if (logoutBtn) {
-      logoutBtn.style.display = 'none'; // Cacher le bouton logout
+      logoutBtn.style.display = 'none';
     }
     if (userInfo) {
-      userInfo.style.display = 'none';
+      userInfo.classList.add('hidden');
     }
   }
 }

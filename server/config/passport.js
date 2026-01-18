@@ -65,7 +65,7 @@ passport.use(
             discordUsername: profile.username,
             discordAvatar: profile.avatar
               ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.webp?size=256`
-              : `https://cdn.discordapp.com/embed/avatars/${profile.discriminator % 5}.png`,
+              : `https://cdn.discordapp.com/embed/avatars/${(profile.id >> 22) % 6}.png`,
             email: profile.email,
             isDiscordAuthenticated: true,
           });
@@ -76,7 +76,7 @@ passport.use(
           participant.discordUsername = profile.username;
           participant.discordAvatar = profile.avatar
             ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.webp?size=256`
-            : `https://cdn.discordapp.com/embed/avatars/${profile.discriminator % 5}.png`;
+            : `https://cdn.discordapp.com/embed/avatars/${(profile.id >> 22) % 6}.png`;
           participant.email = profile.email;
           participant.isDiscordAuthenticated = true;
 
