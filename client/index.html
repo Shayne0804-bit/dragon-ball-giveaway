@@ -269,13 +269,23 @@
 
   <!-- Discord Auth Error Modal -->
   <div id="discordAuthErrorModal" class="modal hidden">
-    <div class="modal-content modal-sm">
+    <div class="modal-content modal-sm discord-error-modal">
       <button id="closeDiscordAuthErrorModal" class="modal-close">✕</button>
-      <h2>Accès Refusé</h2>
-      <p id="discordAuthErrorMessage" style="margin: 15px 0; color: #666;"></p>
-      <div id="discordAuthErrorDetails" style="margin: 10px 0; padding: 10px; background-color: #f5f5f5; border-radius: 5px; font-size: 0.9em; color: #999; display: none;"></div>
-      <div style="display: flex; gap: 10px; margin-top: 20px;">
-        <button id="discordAuthJoinBtn" class="btn btn-primary btn-full" style="margin-bottom: 0;"></button>
+      
+      <div class="discord-error-icon">🔐</div>
+      
+      <h2 class="discord-error-title">Accès Refusé</h2>
+      
+      <p id="discordAuthErrorMessage" class="discord-error-message"></p>
+      
+      <div id="discordAuthErrorDetails" class="discord-error-details" style="display: none;"></div>
+      
+      <div class="discord-error-actions">
+        <button id="discordAuthJoinBtn" class="btn btn-discord-primary btn-full"></button>
+      </div>
+      
+      <div class="discord-error-footer">
+        <p>Vous avez besoin d'accès au serveur Discord pour participer</p>
       </div>
     </div>
   </div>

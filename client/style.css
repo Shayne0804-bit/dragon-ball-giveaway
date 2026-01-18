@@ -870,12 +870,12 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(8px);
   animation: fadeIn 0.3s ease;
 }
 
@@ -892,13 +892,104 @@ body {
   width: 90%;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
   animation: slideUp 0.3s ease;
   position: relative;
 }
 
 .modal-sm {
   max-width: 400px;
+}
+
+.discord-error-modal {
+  background: linear-gradient(135deg, rgba(29, 34, 89, 0.97) 0%, rgba(15, 20, 45, 0.95) 100%);
+  border: 2px solid rgba(88, 101, 242, 0.4);
+  text-align: center;
+  max-width: 450px;
+}
+
+.discord-error-icon {
+  font-size: 3.5rem;
+  margin-bottom: 15px;
+  animation: scaleIn 0.4s ease;
+  display: block;
+}
+
+.discord-error-title {
+  font-size: 1.8rem;
+  color: #fff;
+  margin: 15px 0 20px 0;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.discord-error-message {
+  font-size: 1rem;
+  color: #b0b8d4;
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+  font-weight: 400;
+}
+
+.discord-error-details {
+  margin: 15px 0 20px 0;
+  padding: 12px 15px;
+  background: rgba(88, 101, 242, 0.1);
+  border-left: 3px solid #5865F2;
+  border-radius: 4px;
+  font-size: 0.9em;
+  color: #a0aec0;
+  text-align: left;
+}
+
+.discord-error-actions {
+  margin: 25px 0 20px 0;
+}
+
+.btn-discord-primary {
+  background: linear-gradient(135deg, #5865F2 0%, #7289DA 100%);
+  border: 2px solid #5865F2;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 12px 30px;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(88, 101, 242, 0.3);
+}
+
+.btn-discord-primary:hover {
+  background: linear-gradient(135deg, #7289DA 0%, #5865F2 100%);
+  box-shadow: 0 12px 35px rgba(88, 101, 242, 0.5);
+  transform: translateY(-2px);
+}
+
+.btn-discord-primary:active {
+  transform: translateY(0);
+}
+
+.discord-error-footer {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(88, 101, 242, 0.2);
+  font-size: 0.85rem;
+  color: #7a8aaa;
+  font-style: italic;
+}
+
+.discord-error-footer p {
+  margin: 0;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .modal-close {
