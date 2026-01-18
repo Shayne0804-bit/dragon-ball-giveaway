@@ -37,9 +37,18 @@ if (process.env.NODE_ENV === 'production') {
 // MIDDLEWARES GLOBAUX
 // ===========================
 
-// Sécurité - Helmet
+// Sécurité - Helmet avec CSP pour autoriser les images Discord
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", 'https:', 'http:', 'data:'],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      fontSrc: ["'self'", 'data:'],
+    },
+  },
 }));
 
 // CORS
