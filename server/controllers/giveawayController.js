@@ -2,6 +2,9 @@ const GiveawayPhoto = require('../models/GiveawayPhoto');
 const Giveaway = require('../models/Giveaway');
 const discordBot = require('../services/discordBot');
 
+// Map pour tracker les timers d'uploads de photos
+const photoUploadTimers = new Map();
+
 /**
  * Uploader les photos du giveaway
  * POST /api/giveaway/photos
@@ -47,16 +50,31 @@ const uploadGiveawayPhotos = async (req, res) => {
       await giveaway.save();
       console.log(`[PHOTO] Photo liée au giveaway. Total: ${giveaway.photos.length}`);
       
-      // Envoyer une notification Discord à CHAQUE upload avec TOUTES les photos
-      try {
-        const populatedGiveaway = await Giveaway.findById(giveawayId).populate('photos');
-        if (populatedGiveaway && populatedGiveaway.photos.length > 0) {
-          console.log(`[PHOTO] Envoi de la notification Discord avec ${populatedGiveaway.photos.length} photo(s)...`);
-          await discordBot.notifyGiveawayCreated(populatedGiveaway);
-        }
-      } catch (err) {
-        console.error('[PHOTO] Erreur lors de l\'envoi de la notification Discord:', err.message);
+      // Système de délai pour attendre que TOUTES les photos soient uploadées
+      // Réinitialiser le timer si une autre photo arrive
+      if (photoUploadTimers.has(giveawayId)) {
+        clearTimeout(photoUploadTimers.get(giveawayId));
+        console.log(`[PHOTO] Timer réinitialisé pour giveaway ${giveawayId}`);
       }
+      
+      // Créer un nouveau timer - envoyer la notification après 3 secondes
+      const timer = setTimeout(async () => {
+        try {
+          const populatedGiveaway = await Giveaway.findById(giveawayId).populate('photos');
+          if (populatedGiveaway && populatedGiveaway.photos.length > 0) {
+            console.log(`[PHOTO] Envoi FINAL de la notification Discord avec ${populatedGiveaway.photos.length} photo(s)...`);
+            await discordBot.notifyGiveawayCreated(populatedGiveaway);
+            photoUploadTimers.delete(giveawayId);
+            console.log(`[PHOTO] Notification envoyée et timer supprimé pour ${giveawayId}`);
+          }
+        } catch (err) {
+          console.error('[PHOTO] Erreur lors de l\'envoi de la notification Discord:', err.message);
+          photoUploadTimers.delete(giveawayId);
+        }
+      }, 3000); // Attendre 3 secondes avant d'envoyer
+      
+      photoUploadTimers.set(giveawayId, timer);
+      console.log(`[PHOTO] Timer démarré pour giveaway ${giveawayId} (3s d'attente)`);
       
       return res.status(201).json({
         success: true,
