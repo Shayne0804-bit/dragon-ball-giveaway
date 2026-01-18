@@ -24,8 +24,9 @@ const adminRoutes = require('./routes/admin');
 // Importer la configuration
 const { connectDB } = require('./config/database');
 
-// Importer le service Discord
+// Importer les services
 const discordBot = require('./services/discordBot');
+const autoGiveawayService = require('./services/autoGiveawayService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -164,6 +165,9 @@ const startServer = async () => {
       console.warn('⚠️  Bot Discord non initialisé - vérifiez la configuration');
     }
 
+    // Démarrer le service d'auto-tirage des giveaways expirés
+    autoGiveawayService.start();
+
     // Démarrer le serveur
     app.listen(PORT, () => {
       console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
@@ -179,12 +183,14 @@ const startServer = async () => {
 // Gérer les signaux d'arrêt
 process.on('SIGINT', () => {
   console.log('\n🛑 Arrêt du serveur...');
+  autoGiveawayService.stop();
   discordBot.shutdown();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\n🛑 Arrêt du serveur...');
+  autoGiveawayService.stop();
   discordBot.shutdown();
   process.exit(0);
 });
