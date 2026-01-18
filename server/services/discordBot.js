@@ -138,7 +138,11 @@ class DiscordBotService {
             .setStyle(ButtonStyle.Link)
         );
 
-      await channel.send({ embeds: [embed], components: [row] });
+      await channel.send({ 
+        content: '@everyone 🎁 Un nouveau giveaway a été créé !',
+        embeds: [embed], 
+        components: [row] 
+      });
       console.log(`[DISCORD] Notification de création envoyée pour: ${giveaway.name}`);
       return true;
     } catch (error) {
@@ -212,7 +216,11 @@ class DiscordBotService {
             .setStyle(ButtonStyle.Link)
         );
 
-      await channel.send({ embeds: [embed], components: [row] });
+      await channel.send({ 
+        content: '@everyone 🎯 Le giveaway est maintenant fermé !',
+        embeds: [embed], 
+        components: [row] 
+      });
       console.log(`[DISCORD] Notification de fermeture envoyée pour: ${giveaway.name}`);
       return true;
     } catch (error) {
@@ -306,7 +314,11 @@ class DiscordBotService {
             .setStyle(ButtonStyle.Link)
         );
 
-      await channel.send({ embeds: [embed], components: [row] });
+      await channel.send({ 
+        content: '@everyone 🏆 Les gagnants du giveaway ont été annoncés !',
+        embeds: [embed], 
+        components: [row] 
+      });
       console.log(`[DISCORD] Notification de fin envoyée pour: ${giveaway.name} avec ${winners.length} gagnants`);
       return true;
     } catch (error) {
@@ -356,7 +368,10 @@ class DiscordBotService {
         })
         .setTimestamp();
 
-      await channel.send({ embeds: [embed] });
+      await channel.send({ 
+        content: '@everyone 👤 Un nouvel utilisateur a participé au giveaway !',
+        embeds: [embed] 
+      });
       return true;
     } catch (error) {
       console.error('[DISCORD] Erreur lors de l\'envoi de la notification de participation:', error.message);
