@@ -2,6 +2,7 @@ const Giveaway = require('../models/Giveaway');
 const GiveawayPhoto = require('../models/GiveawayPhoto');
 const Winner = require('../models/Winner');
 const Participation = require('../models/Participant');
+const Participant = require('../models/ParticipantRoulette');
 const discordBot = require('../services/discordBot');
 
 /**
@@ -244,7 +245,7 @@ const deleteGiveaway = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const giveaway = await Giveaway.findByIdAndDelete(id);
+    const giveaway = await Giveaway.findById(id);
     if (!giveaway) {
       return res.status(404).json({
         success: false,
@@ -252,9 +253,29 @@ const deleteGiveaway = async (req, res) => {
       });
     }
 
+    // Supprimer toutes les photos du giveaway
+    await GiveawayPhoto.deleteMany({ _id: { $in: giveaway.photos } });
+    console.log(`[DELETE] Photos supprimées pour le giveaway ${id}`);
+
+    // Supprimer toutes les participations du giveaway
+    await Participation.deleteMany({ giveaway: id });
+    console.log(`[DELETE] Participations supprimées pour le giveaway ${id}`);
+
+    // Supprimer tous les participants du giveaway (pour la roulette)
+    await Participant.deleteMany({ giveaway: id });
+    console.log(`[DELETE] Participants (roulette) supprimés pour le giveaway ${id}`);
+
+    // Supprimer tous les gagnants du giveaway
+    await Winner.deleteMany({ giveaway: id });
+    console.log(`[DELETE] Gagnants supprimés pour le giveaway ${id}`);
+
+    // Supprimer le giveaway lui-même
+    await Giveaway.findByIdAndDelete(id);
+    console.log(`[DELETE] Giveaway ${id} supprimé avec succès`);
+
     res.status(200).json({
       success: true,
-      message: 'Giveaway supprimé avec succès!',
+      message: 'Giveaway et toutes ses données supprimés avec succès!',
     });
   } catch (error) {
     console.error('Erreur lors de la suppression du giveaway:', error);
