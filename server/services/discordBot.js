@@ -7,7 +7,7 @@ class DiscordBotService {
     this.isReady = false;
     this.channelId = process.env.DISCORD_CHANNEL_ID;
     this.botToken = process.env.DISCORD_BOT_TOKEN;
-    this.siteUrl = process.env.CORS_ORIGIN || 'http://localhost:5000';
+    this.siteUrl = process.env.CORS_ORIGIN || process.env.RAILWAY_DOMAIN_URL || 'http://localhost:5000';
   }
 
   /**
