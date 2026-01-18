@@ -1,7 +1,7 @@
 const Giveaway = require('../models/Giveaway');
 const GiveawayPhoto = require('../models/GiveawayPhoto');
 const Winner = require('../models/Winner');
-const Participant = require('../models/Participant');
+const Participation = require('../models/Participant');
 const discordBot = require('../services/discordBot');
 
 /**
@@ -82,7 +82,7 @@ const getGiveaways = async (req, res) => {
     // Compter les participants pour chaque giveaway
     const giveawaysWithCount = await Promise.all(
       giveaways.map(async (g) => {
-        const participantCount = await Participant.countDocuments({ giveaway: g._id });
+        const participantCount = await Participation.countDocuments({ giveaway: g._id });
         return {
           _id: g._id,
           name: g.name,
@@ -202,7 +202,7 @@ const updateGiveaway = async (req, res) => {
       } else if (status === 'completed') {
         // Récupérer les gagnants pour la notification
         const winners = await Winner.find({ giveaway: id }).lean();
-        const participantCount = await Participant.countDocuments({ giveaway: id });
+        const participantCount = await Participation.countDocuments({ giveaway: id });
         
         // Mettre à jour le compteur de participants si nécessaire
         giveaway.participantCount = participantCount;

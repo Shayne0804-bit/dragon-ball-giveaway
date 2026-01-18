@@ -1,4 +1,4 @@
-const Participant = require('../models/Participant');
+const Participant = require('../models/ParticipantRoulette');
 const Winner = require('../models/Winner');
 const discordBot = require('../services/discordBot');
 const Giveaway = require('../models/Giveaway');
