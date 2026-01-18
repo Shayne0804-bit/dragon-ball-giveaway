@@ -112,29 +112,12 @@ class DiscordBotService {
 
       console.log(`[DISCORD] ✅ Canal accessible: ${channel.name}`);
 
-      // Récupérer les photos du giveaway
-      let photoUrl = null;
+      // Récupérer le nombre de photos
       let photoCount = 0;
-      let photosLinks = '';
       
       if (giveaway.photos && giveaway.photos.length > 0) {
         photoCount = giveaway.photos.length;
         console.log(`[DISCORD] Nombre total de photos: ${photoCount}`);
-        
-        // Première photo pour l'affichage principal
-        const firstPhoto = giveaway.photos[0];
-        if (firstPhoto._id) {
-          photoUrl = `${this.apiUrl}/giveaway/photos/${firstPhoto._id}`;
-          console.log(`[DISCORD] URL première photo: ${photoUrl}`);
-        }
-        
-        // Créer des liens pour TOUTES les photos
-        if (photoCount > 1) {
-          photosLinks = giveaway.photos
-            .map((photo, idx) => `**Photo ${idx + 1}:** ${this.apiUrl}/giveaway/photos/${photo._id}`)
-            .join('\n');
-          console.log(`[DISCORD] ${photoCount} photos disponibles`);
-        }
       } else {
         console.log(`[DISCORD] Aucune photo disponible pour ce giveaway`);
       }
@@ -148,7 +131,8 @@ class DiscordBotService {
         minute: '2-digit',
       });
 
-      const embed = new EmbedBuilder()
+      // Créer l'embed principal avec les infos
+      const mainEmbed = new EmbedBuilder()
         .setColor(discordConfig.colors.created)
         .setTitle(`${discordConfig.messages.created.emoji} ${discordConfig.messages.created.title}`)
         .setDescription(discordConfig.messages.created.description)
@@ -183,29 +167,33 @@ class DiscordBotService {
             value: photoCount > 0 ? `${photoCount} photo${photoCount > 1 ? 's' : ''}` : 'Aucune photo',
             inline: true,
           }
-        );
-        
-        // Ajouter les liens des photos supplémentaires s'il y en a plusieurs
-        if (photosLinks) {
-          embed.addFields({
-            name: '🖼️ Galerie de photos',
-            value: photosLinks,
-            inline: false,
-          });
-        }
-        
-        embed
-          .setFooter({
-            text: `Giveaway ID: ${giveaway._id}`,
-          })
-          .setTimestamp();
+        )
+        .setFooter({
+          text: `Giveaway ID: ${giveaway._id}`,
+        })
+        .setTimestamp();
 
-      // Ajouter la photo si disponible
-      if (photoUrl) {
-        console.log(`[DISCORD] Ajout de l'image à l'embed: ${photoUrl}`);
-        embed.setImage(photoUrl);
-      } else {
-        console.log(`[DISCORD] Pas d'image à ajouter à cet embed`);
+      // Créer des embeds pour CHAQUE photo
+      const allEmbeds = [mainEmbed];
+      
+      if (giveaway.photos && giveaway.photos.length > 0) {
+        console.log(`[DISCORD] Création de ${photoCount} embed(s) photo...`);
+        
+        giveaway.photos.forEach((photo, idx) => {
+          if (photo._id) {
+            const photoUrl = `${this.apiUrl}/giveaway/photos/${photo._id}`;
+            const photoEmbed = new EmbedBuilder()
+              .setColor(discordConfig.colors.created)
+              .setTitle(`📸 Photo ${idx + 1} / ${photoCount}`)
+              .setImage(photoUrl)
+              .setFooter({
+                text: `Giveaway: ${giveaway.name}`,
+              });
+            
+            allEmbeds.push(photoEmbed);
+            console.log(`[DISCORD] Embed photo ${idx + 1} créé: ${photoUrl}`);
+          }
+        });
       }
 
       // Créer un bouton pour accéder au site
@@ -217,12 +205,13 @@ class DiscordBotService {
             .setStyle(ButtonStyle.Link)
         );
 
+      // Envoyer TOUS les embeds en un seul message
       await channel.send({ 
         content: '@everyone 🎁 Un nouveau giveaway a été créé !',
-        embeds: [embed], 
+        embeds: allEmbeds, 
         components: [row] 
       });
-      console.log(`[DISCORD] Notification de création envoyée pour: ${giveaway.name}`);
+      console.log(`[DISCORD] Notification avec ${allEmbeds.length} embed(s) envoyée pour: ${giveaway.name}`);
       return true;
     } catch (error) {
       console.error('[DISCORD] Erreur lors de l\'envoi de la notification de création:', error.message);
