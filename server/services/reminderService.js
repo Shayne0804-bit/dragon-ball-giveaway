@@ -43,9 +43,15 @@ class ReminderService {
    */
   async sendReminder() {
     try {
-      // Récupérer le bot Discord
+      // Récupérer le bot Discord - accéder directement au client
       const discordClient = this.discordBot?.client;
-      if (!discordClient || !discordClient.isReady()) {
+      
+      if (!discordClient) {
+        console.warn('[Reminder Service] ⚠️ Client Discord non initialisé');
+        return;
+      }
+
+      if (!discordClient.isReady()) {
         console.warn('[Reminder Service] ⚠️ Client Discord non prêt');
         return;
       }
@@ -57,7 +63,15 @@ class ReminderService {
         return;
       }
 
-      const channel = discordClient.channels.cache.get(channelId);
+      // Utiliser fetch au lieu de cache pour être sûr d'avoir le channel
+      let channel;
+      try {
+        channel = await discordClient.channels.fetch(channelId);
+      } catch (error) {
+        console.error('[Reminder Service] ❌ Erreur fetch channel:', error.message);
+        return;
+      }
+
       if (!channel) {
         console.error('[Reminder Service] ❌ Channel non trouvé:', channelId);
         return;
@@ -75,7 +89,9 @@ class ReminderService {
       }
 
       const giveaway = activeGiveaways[0];
-      const siteUrl = config.siteUrl || 'https://your-site.com';
+      
+      // Récupérer l'URL du site depuis le bot Discord
+      const siteUrl = this.discordBot?.siteUrl || process.env.CORS_ORIGIN || 'https://your-site.com';
 
       // Créer l'embed de rappel
       const embed = new EmbedBuilder()
