@@ -110,6 +110,15 @@ class DiscordBotService {
 
       console.log(`[DISCORD] ✅ Canal accessible: ${channel.name}`);
 
+      // Récupérer les photos du giveaway
+      let photoUrl = null;
+      if (giveaway.photos && giveaway.photos.length > 0) {
+        const photo = giveaway.photos[0];
+        if (photo.imageData) {
+          photoUrl = `data:${photo.mimetype || 'image/jpeg'};base64,${photo.imageData}`;
+        }
+      }
+
       const durationText = this.formatDuration(giveaway.durationDays, giveaway.durationHours);
       const endDate = new Date(giveaway.endDate).toLocaleString('fr-FR', {
         year: 'numeric',
@@ -155,6 +164,11 @@ class DiscordBotService {
         })
         .setTimestamp();
 
+      // Ajouter la photo si disponible
+      if (photoUrl) {
+        embed.setImage(photoUrl);
+      }
+
       // Créer un bouton pour accéder au site
       const row = new ActionRowBuilder()
         .addComponents(
@@ -192,6 +206,15 @@ class DiscordBotService {
       if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement)) {
         console.error('[DISCORD] Canal non valide ou inaccessible');
         return false;
+      }
+
+      // Récupérer les photos du giveaway
+      let photoUrl = null;
+      if (giveaway.photos && giveaway.photos.length > 0) {
+        const photo = giveaway.photos[0];
+        if (photo.imageData) {
+          photoUrl = `data:${photo.mimetype || 'image/jpeg'};base64,${photo.imageData}`;
+        }
       }
 
       const closedDate = new Date().toLocaleString('fr-FR', {
@@ -233,6 +256,11 @@ class DiscordBotService {
         })
         .setTimestamp();
 
+      // Ajouter la photo si disponible
+      if (photoUrl) {
+        embed.setImage(photoUrl);
+      }
+
       // Créer un bouton pour accéder au site
       const row = new ActionRowBuilder()
         .addComponents(
@@ -270,6 +298,15 @@ class DiscordBotService {
       if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement)) {
         console.error('[DISCORD] Canal non valide ou inaccessible');
         return false;
+      }
+
+      // Récupérer les photos du giveaway
+      let photoUrl = null;
+      if (giveaway.photos && giveaway.photos.length > 0) {
+        const photo = giveaway.photos[0];
+        if (photo.imageData) {
+          photoUrl = `data:${photo.mimetype || 'image/jpeg'};base64,${photo.imageData}`;
+        }
       }
 
       const completedDate = new Date().toLocaleString('fr-FR', {
@@ -332,6 +369,11 @@ class DiscordBotService {
         })
         .setTimestamp();
 
+      // Ajouter la photo si disponible
+      if (photoUrl) {
+        embed.setImage(photoUrl);
+      }
+
       const row = new ActionRowBuilder()
         .addComponents(
           new ButtonBuilder()
@@ -371,6 +413,15 @@ class DiscordBotService {
         return false;
       }
 
+      // Récupérer les photos du giveaway
+      let photoUrl = null;
+      if (giveaway.photos && giveaway.photos.length > 0) {
+        const photo = giveaway.photos[0];
+        if (photo.imageData) {
+          photoUrl = `data:${photo.mimetype || 'image/jpeg'};base64,${photo.imageData}`;
+        }
+      }
+
       const embed = new EmbedBuilder()
         .setColor(discordConfig.colors.participant)
         .setTitle(`${discordConfig.messages.participant.emoji} ${discordConfig.messages.participant.title}`)
@@ -396,6 +447,11 @@ class DiscordBotService {
           text: `Giveaway ID: ${giveaway._id}`,
         })
         .setTimestamp();
+
+      // Ajouter la photo si disponible
+      if (photoUrl) {
+        embed.setImage(photoUrl);
+      }
 
       await channel.send({ 
         content: '@everyone 👤 Un nouvel utilisateur a participé au giveaway !',

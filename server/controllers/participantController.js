@@ -132,7 +132,7 @@ const addParticipant = async (req, res) => {
     // Récupérer le giveaway et envoyer une notification Discord
     if (giveawayId) {
       try {
-        const giveaway = await Giveaway.findById(giveawayId);
+        const giveaway = await Giveaway.findById(giveawayId).populate('photos');
         if (giveaway) {
           // Mettre à jour le compteur de participants
           giveaway.participantCount = (giveaway.participantCount || 0) + 1;

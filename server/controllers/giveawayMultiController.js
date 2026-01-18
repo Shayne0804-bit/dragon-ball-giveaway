@@ -43,8 +43,11 @@ const createGiveaway = async (req, res) => {
     await giveaway.save();
     console.log(`[CREATE] Giveaway créé: ${giveaway._id} - ${name}`);
 
+    // Populer les photos avant d'envoyer la notification Discord
+    const populatedGiveaway = await Giveaway.findById(giveaway._id).populate('photos');
+
     // Envoyer une notification Discord
-    discordBot.notifyGiveawayCreated(giveaway).catch(err => {
+    discordBot.notifyGiveawayCreated(populatedGiveaway).catch(err => {
       console.error('[CREATE] Erreur lors de l\'envoi de la notification Discord:', err.message);
     });
 
@@ -196,7 +199,9 @@ const updateGiveaway = async (req, res) => {
     // Envoyer les notifications Discord appropriées
     if (previousStatus !== status) {
       if (status === 'paused') {
-        discordBot.notifyGiveawayClosed(giveaway).catch(err => {
+        // Populer les photos avant d'envoyer la notification
+        const populatedGiveaway = await Giveaway.findById(id).populate('photos');
+        discordBot.notifyGiveawayClosed(populatedGiveaway).catch(err => {
           console.error('[UPDATE] Erreur lors de l\'envoi de la notification de fermeture:', err.message);
         });
       } else if (status === 'completed') {
@@ -209,7 +214,12 @@ const updateGiveaway = async (req, res) => {
         giveaway.winnerCount = winners.length;
         await giveaway.save();
         
-        discordBot.notifyGiveawayCompleted(giveaway, winners).catch(err => {
+        // Populer les photos avant d'envoyer la notification
+        const populatedGiveaway = await Giveaway.findById(id).populate('photos');
+        populatedGiveaway.participantCount = participantCount;
+        populatedGiveaway.winnerCount = winners.length;
+        
+        discordBot.notifyGiveawayCompleted(populatedGiveaway, winners).catch(err => {
           console.error('[UPDATE] Erreur lors de l\'envoi de la notification de fin:', err.message);
         });
       }
