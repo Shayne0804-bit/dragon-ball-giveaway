@@ -9,7 +9,6 @@ const {
   getWinners,
 } = require('../controllers/participantController');
 const { verifyDiscordAuth } = require('../middlewares/discordAuth');
-const { participantLimiter } = require('../middlewares/rateLimiter');
 const { verifyAdminToken } = require('../middlewares/adminAuth');
 
 /**
@@ -31,7 +30,6 @@ router.get('/', getParticipants);
  */
 router.post(
   '/',
-  participantLimiter,
   verifyDiscordAuth,
   addParticipant
 );

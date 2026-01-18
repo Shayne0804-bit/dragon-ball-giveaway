@@ -8,7 +8,7 @@ const session = require('express-session');
 const MongoStore = require('connect-mongo').default;
 
 // Importer les middlewares
-const { globalLimiter, getClientIp } = require('./middlewares/rateLimiter');
+// Rate limiter supprimé
 
 // Importer Passport
 const passport = require('./config/passport');
@@ -99,12 +99,6 @@ app.use(
 // Initialiser Passport
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Extraire l'IP du client
-app.use(getClientIp);
-
-// Rate limiting global
-app.use(globalLimiter);
 
 // Servir les fichiers statiques du client
 app.use(express.static(path.join(__dirname, '../client')));
