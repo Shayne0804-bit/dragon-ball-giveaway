@@ -191,11 +191,11 @@ function setLanguage(lang) {
   localStorage.setItem('language', lang);
   document.documentElement.lang = lang;
   
+  console.log(`[i18n] Changement de langue vers: ${lang}`);
+  translatePage();
+  
   // Émettre un événement pour que les autres scripts sachent que la langue a changé
   window.dispatchEvent(new CustomEvent('languageChanged', { detail: { language: lang } }));
-  
-  // Recharger la page pour appliquer les traductions
-  location.reload();
 }
 
 /**
@@ -204,23 +204,51 @@ function setLanguage(lang) {
 function translatePage() {
   const lang = window.currentLanguage || 'fr';
   
+  // Traduire les éléments avec data-i18n
   document.querySelectorAll('[data-i18n]').forEach(element => {
     const key = element.getAttribute('data-i18n');
-    element.textContent = t(key, lang);
+    const translation = t(key, lang);
+    if (element.tagName === 'INPUT' || element.tagName === 'BUTTON' || element.tagName === 'TEXTAREA') {
+      element.value = translation;
+    } else {
+      element.textContent = translation;
+    }
   });
 
+  // Traduire les placeholders
   document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
     const key = element.getAttribute('data-i18n-placeholder');
     element.placeholder = t(key, lang);
   });
 
+  // Traduire les titles
   document.querySelectorAll('[data-i18n-title]').forEach(element => {
     const key = element.getAttribute('data-i18n-title');
     element.title = t(key, lang);
   });
 
+  // Traduire les values
   document.querySelectorAll('[data-i18n-value]').forEach(element => {
     const key = element.getAttribute('data-i18n-value');
     element.value = t(key, lang);
+  });
+
+  // Traductions dynamiques supplémentaires - clés communes du site
+  const dynamicTranslations = {
+    'selectGiveawayFirstMessage': 'selectGiveaway',
+    'participantsSection': 'participants',
+    'winnersHistory': 'winnersHistory',
+    'participateButton': 'participateButton',
+    'spinWheel': 'spinWheel',
+  };
+
+  Object.entries(dynamicTranslations).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el && el.textContent) {
+      const translation = t(key, lang);
+      if (translation && translation !== key) {
+        el.textContent = translation;
+      }
+    }
   });
 }
