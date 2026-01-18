@@ -43,13 +43,8 @@ const createGiveaway = async (req, res) => {
     await giveaway.save();
     console.log(`[CREATE] Giveaway créé: ${giveaway._id} - ${name}`);
 
-    // Populer les photos avant d'envoyer la notification Discord
-    const populatedGiveaway = await Giveaway.findById(giveaway._id).populate('photos');
-
-    // Envoyer une notification Discord
-    discordBot.notifyGiveawayCreated(populatedGiveaway).catch(err => {
-      console.error('[CREATE] Erreur lors de l\'envoi de la notification Discord:', err.message);
-    });
+    // N'envoyer la notification que quand les photos sont uploadées
+    // Le contrôleur giveawayController.js s'en chargera lors du premier upload
 
     res.status(201).json({
       success: true,

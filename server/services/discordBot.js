@@ -172,46 +172,49 @@ class DiscordBotService {
           text: `Giveaway ID: ${giveaway._id}`,
         })
         .setTimestamp();
-
-      // Créer des embeds pour CHAQUE photo
-      const allEmbeds = [mainEmbed];
-      
-      if (giveaway.photos && giveaway.photos.length > 0) {
-        console.log(`[DISCORD] Création de ${photoCount} embed(s) photo...`);
         
-        giveaway.photos.forEach((photo, idx) => {
-          if (photo._id) {
-            const photoUrl = `${this.apiUrl}/giveaway/photos/${photo._id}`;
-            const photoEmbed = new EmbedBuilder()
-              .setColor(discordConfig.colors.created)
-              .setTitle(`📸 Photo ${idx + 1} / ${photoCount}`)
-              .setImage(photoUrl)
-              .setFooter({
-                text: `Giveaway: ${giveaway.name}`,
-              });
-            
-            allEmbeds.push(photoEmbed);
-            console.log(`[DISCORD] Embed photo ${idx + 1} créé: ${photoUrl}`);
+        // Créer un bouton pour accéder au site
+        const row = new ActionRowBuilder()
+          .addComponents(
+            new ButtonBuilder()
+              .setLabel('🎯 Participer')
+              .setURL(this.siteUrl.startsWith('http') ? `${this.siteUrl}/` : `http://localhost:5000/`)
+              .setStyle(ButtonStyle.Link)
+          );
+        
+        // Construire les URLs des photos pour les envoyer comme attachments
+        const files = [];
+        if (giveaway.photos && giveaway.photos.length > 0) {
+          console.log(`[DISCORD] Préparation de ${photoCount} photo(s) pour envoi...`);
+          
+          for (let i = 0; i < giveaway.photos.length; i++) {
+            const photo = giveaway.photos[i];
+            if (photo._id) {
+              const photoUrl = `${this.apiUrl}/giveaway/photos/${photo._id}`;
+              files.push(photoUrl);
+              console.log(`[DISCORD] Photo ${i + 1} URL: ${photoUrl}`);
+            }
           }
-        });
-      }
+        }
 
-      // Créer un bouton pour accéder au site
-      const row = new ActionRowBuilder()
-        .addComponents(
-          new ButtonBuilder()
-            .setLabel('🎯 Participer')
-            .setURL(this.siteUrl.startsWith('http') ? `${this.siteUrl}/` : `http://localhost:5000/`)
-            .setStyle(ButtonStyle.Link)
-        );
-
-      // Envoyer TOUS les embeds en un seul message
-      await channel.send({ 
+      // Envoyer le message avec embed et les URLs des photos
+      const messagePayload = {
         content: '@everyone 🎁 Un nouveau giveaway a été créé !',
-        embeds: allEmbeds, 
-        components: [row] 
-      });
-      console.log(`[DISCORD] Notification avec ${allEmbeds.length} embed(s) envoyée pour: ${giveaway.name}`);
+        embeds: [mainEmbed],
+        components: [row]
+      };
+      
+      // Ajouter les URLs des photos au contenu du message
+      if (files.length > 0) {
+        messagePayload.content += '\n\n📸 **Galerie de photos:**\n';
+        files.forEach((url) => {
+          messagePayload.content += `${url}\n`;
+        });
+        console.log(`[DISCORD] ${files.length} photo(s) ajoutée(s) au message`);
+      }
+      
+      await channel.send(messagePayload);
+      console.log(`[DISCORD] Notification envoyée pour: ${giveaway.name}`);
       return true;
     } catch (error) {
       console.error('[DISCORD] Erreur lors de l\'envoi de la notification de création:', error.message);
