@@ -1,4 +1,6 @@
 const GiveawayPhoto = require('../models/GiveawayPhoto');
+const Giveaway = require('../models/Giveaway');
+const discordBot = require('../services/discordBot');
 
 /**
  * Uploader les photos du giveaway
@@ -10,7 +12,6 @@ const uploadGiveawayPhotos = async (req, res) => {
     // Gestion du JSON base64
     if (req.body && req.body.image && req.body.giveawayId) {
       const { image, giveawayId } = req.body;
-      const Giveaway = require('../models/Giveaway');
       
       console.log(`[PHOTO] Upload base64 pour giveaway ${giveawayId}`);
       
@@ -44,6 +45,17 @@ const uploadGiveawayPhotos = async (req, res) => {
       giveaway.photos.push(giveawayPhoto._id);
       await giveaway.save();
       console.log(`[PHOTO] Photo liée au giveaway. Total: ${giveaway.photos.length}`);
+      
+      // Envoyer une notification Discord avec la photo
+      try {
+        const populatedGiveaway = await Giveaway.findById(giveawayId).populate('photos');
+        if (populatedGiveaway && populatedGiveaway.photos.length > 0) {
+          console.log(`[PHOTO] Envoi de la notification Discord avec photo...`);
+          await discordBot.notifyGiveawayCreated(populatedGiveaway);
+        }
+      } catch (err) {
+        console.error('[PHOTO] Erreur lors de l\'envoi de la notification Discord:', err.message);
+      }
       
       return res.status(201).json({
         success: true,
