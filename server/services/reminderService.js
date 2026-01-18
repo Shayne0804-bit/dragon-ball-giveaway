@@ -16,8 +16,11 @@ class ReminderService {
   start() {
     console.log('[Reminder Service] Démarrage du service de rappel...');
     
-    // Envoyer un premier rappel immédiatement
-    this.sendReminder().catch(e => console.error('[Reminder Service] Erreur lors du premier rappel:', e));
+    // Ne pas envoyer un rappel immédiatement - attendre au moins 5 secondes
+    // pour que le client Discord soit prêt
+    setTimeout(() => {
+      this.sendReminder().catch(e => console.error('[Reminder Service] Erreur lors du premier rappel:', e));
+    }, 5000);
     
     // Puis toutes les 12 heures
     this.reminderInterval = setInterval(() => {
@@ -43,14 +46,26 @@ class ReminderService {
    */
   async sendReminder() {
     try {
+      console.log('[Reminder Service] 📢 Tentative d\'envoi d\'un rappel...');
+      
+      // Vérifier que discordBot existe
+      if (!this.discordBot) {
+        console.warn('[Reminder Service] ⚠️ DiscordBot non disponible');
+        return;
+      }
+
       // Récupérer le bot Discord - accéder directement au client
-      const discordClient = this.discordBot?.client;
+      const discordClient = this.discordBot.client;
+      
+      console.log('[Reminder Service] Client Discord:', discordClient ? 'Disponible' : 'Null/Undefined');
       
       if (!discordClient) {
         console.warn('[Reminder Service] ⚠️ Client Discord non initialisé');
         return;
       }
 
+      console.log('[Reminder Service] État du client:', discordClient.isReady() ? 'Prêt' : 'Pas prêt');
+      
       if (!discordClient.isReady()) {
         console.warn('[Reminder Service] ⚠️ Client Discord non prêt');
         return;
@@ -58,6 +73,8 @@ class ReminderService {
 
       // Récupérer le channel à partir de la config
       const channelId = config.discord.channels.notifications;
+      console.log('[Reminder Service] Channel ID:', channelId);
+      
       if (!channelId) {
         console.warn('[Reminder Service] ⚠️ Channel ID non configuré');
         return;
@@ -66,7 +83,9 @@ class ReminderService {
       // Utiliser fetch au lieu de cache pour être sûr d'avoir le channel
       let channel;
       try {
+        console.log('[Reminder Service] Récupération du channel...');
         channel = await discordClient.channels.fetch(channelId);
+        console.log('[Reminder Service] ✓ Channel récupéré:', channel?.name);
       } catch (error) {
         console.error('[Reminder Service] ❌ Erreur fetch channel:', error.message);
         return;
