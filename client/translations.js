@@ -284,8 +284,19 @@ function translatePage() {
   document.querySelectorAll('[data-i18n]').forEach(element => {
     const key = element.getAttribute('data-i18n');
     const translation = t(key, lang);
-    if (element.tagName === 'INPUT' || element.tagName === 'BUTTON' || element.tagName === 'TEXTAREA') {
-      element.value = translation;
+    
+    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+      element.placeholder = translation;
+    } else if (element.tagName === 'BUTTON') {
+      // Pour les boutons, préserver les icônes/emojis avant le texte
+      const textContent = element.textContent.trim();
+      // Chercher si le bouton commence par une icône/emoji
+      const emojiMatch = textContent.match(/^[\s\p{Emoji_Presentation}]+/u);
+      if (emojiMatch) {
+        element.textContent = emojiMatch[0] + translation;
+      } else {
+        element.textContent = translation;
+      }
     } else {
       element.textContent = translation;
     }
@@ -303,28 +314,19 @@ function translatePage() {
     element.title = t(key, lang);
   });
 
-  // Traduire les values
+  // Traduire les values (pour buttons avec textContent)
   document.querySelectorAll('[data-i18n-value]').forEach(element => {
     const key = element.getAttribute('data-i18n-value');
-    element.value = t(key, lang);
-  });
-
-  // Traductions dynamiques supplémentaires - clés communes du site
-  const dynamicTranslations = {
-    'selectGiveawayFirstMessage': 'selectGiveaway',
-    'participantsSection': 'participants',
-    'winnersHistory': 'winnersHistory',
-    'participateButton': 'participateButton',
-    'spinWheel': 'spinWheel',
-  };
-
-  Object.entries(dynamicTranslations).forEach(([id, key]) => {
-    const el = document.getElementById(id);
-    if (el && el.textContent) {
-      const translation = t(key, lang);
-      if (translation && translation !== key) {
-        el.textContent = translation;
-      }
+    const translation = t(key, lang);
+    // Préserver les icônes comme pour les buttons
+    const textContent = element.textContent.trim();
+    const emojiMatch = textContent.match(/^[\s\p{Emoji_Presentation}]+/u);
+    if (emojiMatch) {
+      element.textContent = emojiMatch[0] + translation;
+    } else {
+      element.textContent = translation;
     }
   });
+
+  console.log(`[i18n] Page traduite en ${lang}`);
 }
