@@ -1,4 +1,5 @@
 const Participant = require('../models/ParticipantRoulette');
+const Participation = require('../models/Participant');
 const Winner = require('../models/Winner');
 const discordBot = require('../services/discordBot');
 const Giveaway = require('../models/Giveaway');
@@ -214,17 +215,17 @@ const getParticipants = async (req, res) => {
 
 /**
  * Lancer la roulette et tirer un gagnant
- * POST /api/roulette?giveawayId=xxx
+ * POST /api/participants/roulette?giveawayId=xxx
  */
 const drawWinner = async (req, res) => {
   try {
     const { giveawayId } = req.query;
     
-    // Récupérer les participants du giveaway sélectionné
+    // Récupérer les participants du giveaway sélectionné (depuis Participation)
     const query = giveawayId ? { giveaway: giveawayId } : {};
-    const participants = await Participant.find(query);
+    const participations = await Participation.find(query).populate('user');
 
-    if (participants.length === 0) {
+    if (participations.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Aucun participant pour tirer un gagnant',
@@ -232,12 +233,13 @@ const drawWinner = async (req, res) => {
     }
 
     // Sélectionner un gagnant aléatoire
-    const randomIndex = Math.floor(Math.random() * participants.length);
-    const winner = participants[randomIndex];
+    const randomIndex = Math.floor(Math.random() * participations.length);
+    const winnerParticipation = participations[randomIndex];
+    const winner = winnerParticipation.user;
 
     // Sauvegarder le gagnant
     const winnerRecord = new Winner({
-      name: winner.discordUsername || winner.name || 'Gagnant',
+      name: winner.discordUsername || 'Gagnant',
       discordId: winner.discordId,
       giveaway: giveawayId || null,
     });
@@ -249,7 +251,7 @@ const drawWinner = async (req, res) => {
       data: {
         name: winner.discordUsername,
         discordId: winner.discordId,
-        totalParticipants: participants.length,
+        totalParticipants: participations.length,
       },
     });
   } catch (error) {
