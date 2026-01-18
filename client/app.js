@@ -2410,6 +2410,19 @@ console.log('🚀 Script app.js chargé');
 function initializeApp() {
   console.log('📱 Initialisation de l\'application...');
   
+  // Initialiser le système de langue
+  initLanguage();
+  translatePage();
+  
+  // Event listener pour le changement de langue
+  const languageSelector = document.getElementById('languageSelector');
+  if (languageSelector) {
+    languageSelector.value = window.currentLanguage || 'fr';
+    languageSelector.addEventListener('change', (e) => {
+      setLanguage(e.target.value);
+    });
+  }
+  
   // Exécuter tous les pending listeners
   pendingListeners.forEach(listener => listener());
   pendingListeners.length = 0;

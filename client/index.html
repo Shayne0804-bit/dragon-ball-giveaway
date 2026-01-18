@@ -7,6 +7,7 @@
   <link rel="icon" type="image/jpeg" href="assets/dragon-ball-icon.jpg">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="photos-simplified.css">
+  <script src="translations.js"></script>
 </head>
 <body>
   <!-- Background -->
@@ -27,7 +28,13 @@
             <p>Participez et gagnez des prix</p>
           </div>
         </div>
-        <button id="adminLoginBtn" class="btn-admin">🔐 Admin</button>
+        <div class="header-actions">
+          <select id="languageSelector" class="language-selector">
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </select>
+          <button id="adminLoginBtn" class="btn-admin">🔐 Admin</button>
+        </div>
       </div>
     </header>
 

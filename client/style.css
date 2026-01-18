@@ -127,6 +127,33 @@ body {
   margin: 0;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.language-selector {
+  background: rgba(88, 101, 242, 0.15);
+  border: 1px solid var(--border);
+  color: var(--light);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: var(--transition);
+}
+
+.language-selector:hover {
+  background: rgba(88, 101, 242, 0.25);
+  border-color: var(--primary);
+}
+
+.language-selector option {
+  background: var(--dark);
+  color: var(--light);
+}
+
 /* ======================================= 
    MAIN CONTAINER
    ======================================= */
