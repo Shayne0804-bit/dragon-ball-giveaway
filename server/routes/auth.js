@@ -27,6 +27,49 @@ router.get(
 );
 
 /**
+ * GET /api/auth/error
+ * Endpoint pour récupérer les détails de l'erreur d'authentification
+ */
+router.get('/error', (req, res) => {
+  const errorCode = req.query.error || 'unknown';
+  
+  let message = 'Erreur d\'authentification Discord';
+  let details = '';
+  let actionUrl = null;
+  let actionText = null;
+  
+  switch(errorCode) {
+    case 'discord_auth_failed':
+      message = '❌ Accès refusé';
+      details = 'Vous devez être membre du serveur Discord pour participer au giveaway.';
+      actionUrl = 'https://discord.gg/gc8E7cy9';
+      actionText = 'Rejoindre le serveur Discord';
+      break;
+    case 'not_in_guild':
+      message = '❌ Vous n\'êtes pas dans le serveur Discord';
+      details = 'Cliquez sur le lien ci-dessous pour rejoindre le serveur.';
+      actionUrl = 'https://discord.gg/gc8E7cy9';
+      actionText = 'Rejoindre le serveur Discord';
+      break;
+    case 'user_denied':
+      message = '⚠️ Autorisation refusée';
+      details = 'Vous avez refusé d\'autoriser l\'accès. Veuillez réessayer et accepter les permissions.';
+      break;
+    default:
+      details = 'Une erreur s\'est produite lors de la connexion. Veuillez réessayer.';
+  }
+  
+  res.json({
+    success: false,
+    error: errorCode,
+    message,
+    details,
+    actionUrl,
+    actionText,
+  });
+});
+
+/**
  * GET /api/auth/user
  * Récupérer les informations de l'utilisateur connecté
  */

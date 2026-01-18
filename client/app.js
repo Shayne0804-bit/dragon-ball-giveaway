@@ -1563,27 +1563,80 @@ if (document.readyState === 'loading') {
   init();
 }
 
-// Vérifier si on vient d'une redirection Discord et refetch l'utilisateur
+// Vérifier si on vient d'une redirection Discord (succès ou erreur)
 if (window.location.search.includes('discord_auth_success')) {
-  console.log('🔄 Détection de redirection Discord - refetch utilisateur dans 1 seconde');
-  // Attendre que la session soit bien établie
+  console.log('✅ Détection de redirection Discord réussie - refetch utilisateur');
   setTimeout(async () => {
     const user = await fetchDiscordUser();
     if (user) {
-      console.log('✅ Utilisateur Discord trouvé après redirection:', user);
+      console.log('✅ Utilisateur Discord trouvé:', user);
       showMessage('✅ Connecté avec Discord!', 'success');
-      // Attendre 1 seconde et nettoyer l'URL
       setTimeout(() => {
         window.history.replaceState({}, document.title, '/');
       }, 1000);
     } else {
-      console.warn('⚠️ Utilisateur Discord non trouvé après redirection, rechargement...');
-      // Rechargement si la session n'a pas fonctionné
+      console.warn('⚠️ Utilisateur non trouvé, rechargement...');
       setTimeout(() => {
         location.reload();
       }, 1500);
     }
   }, 1000);
+} else if (window.location.search.includes('error=')) {
+  // Erreur d'authentification Discord
+  console.log('❌ Erreur d\'authentification détectée');
+  setTimeout(async () => {
+    try {
+      const errorParam = new URLSearchParams(window.location.search).get('error');
+      const response = await fetch(`/api/auth/error?error=${errorParam}`);
+      const data = await response.json();
+      
+      console.error('Erreur Discord:', data);
+      
+      // Afficher le message d'erreur
+      let errorMessage = `${data.message}: ${data.details}`;
+      if (data.actionUrl) {
+        errorMessage += `\n\n🔗 ${data.actionText}`;
+      }
+      showMessage(errorMessage, 'error');
+      
+      // Si un lien d'action existe, créer un bouton
+      if (data.actionUrl) {
+        const messageBox = document.getElementById('messageBox');
+        if (messageBox) {
+          setTimeout(() => {
+            // Ajouter un bouton au message
+            const btn = document.createElement('a');
+            btn.href = data.actionUrl;
+            btn.target = '_blank';
+            btn.rel = 'noopener noreferrer';
+            btn.style.cssText = `
+              display: inline-block;
+              margin-top: 10px;
+              padding: 10px 20px;
+              background: #5865F2;
+              color: white;
+              text-decoration: none;
+              border-radius: 6px;
+              font-weight: bold;
+              transition: background 0.3s;
+            `;
+            btn.textContent = data.actionText;
+            btn.onmouseover = function() { this.style.background = '#4752c4'; };
+            btn.onmouseout = function() { this.style.background = '#5865F2'; };
+            messageBox.appendChild(btn);
+          }, 100);
+        }
+      }
+      
+      // Nettoyer l'URL
+      setTimeout(() => {
+        window.history.replaceState({}, document.title, '/');
+      }, 500);
+    } catch (err) {
+      console.error('Erreur lors de la récupération du message d\'erreur:', err);
+      showMessage('❌ Erreur d\'authentification Discord. Veuillez réessayer.', 'error');
+    }
+  }, 500);
 }
 
 // Auto-actualiser toutes les 5 secondes

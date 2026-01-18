@@ -35,8 +35,10 @@ passport.use(
 
           if (!isInGuild) {
             // L'utilisateur n'est pas dans le serveur Discord
+            console.log(`[DISCORD AUTH] ❌ Utilisateur ${profile.username} (${profile.id}) n'est pas dans le serveur Discord`);
             return done(null, false, {
-              message: `Vous devez être dans le serveur Discord pour participer au giveaway`,
+              message: `Vous devez rejoindre le serveur Discord pour participer au giveaway`,
+              details: `Lien d'invitation: https://discord.gg/gc8E7cy9`,
             });
           }
         } catch (discordApiError) {
