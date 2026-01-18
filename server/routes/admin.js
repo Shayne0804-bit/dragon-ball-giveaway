@@ -1,10 +1,3 @@
-/**
- * Route de nettoyage des participations en doublon
- * POST /api/admin/cleanup-duplicates
- * Authentification: Admin token requis
- * Nettoie les doublons Discord+Giveaway en gardant la participation la plus ancienne
- */
-
 const express = require('express');
 const router = express.Router();
 const Participant = require('../models/Participant');
@@ -86,6 +79,40 @@ router.post('/cleanup-duplicates', verifyAdminToken, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Erreur lors du nettoyage',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/admin/send-reminder
+ * Envoyer un rappel manuel aux utilisateurs
+ * Authentification: Admin token requis
+ */
+router.post('/send-reminder', verifyAdminToken, async (req, res) => {
+  try {
+    // Récupérer le service de rappel depuis le contexte global
+    if (!global.reminderService) {
+      return res.status(500).json({
+        success: false,
+        message: 'Service de rappel non disponible'
+      });
+    }
+
+    console.log('[ADMIN] Envoi d\'un rappel manuel...');
+    await global.reminderService.sendManualReminder();
+
+    return res.json({
+      success: true,
+      message: '✅ Rappel envoyé avec succès!',
+      nextReminderTime: global.reminderService.getNextReminderTime()
+    });
+
+  } catch (error) {
+    console.error('[ADMIN] Erreur send-reminder:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur lors de l\'envoi du rappel',
       error: error.message
     });
   }

@@ -27,9 +27,13 @@ const { connectDB } = require('./config/database');
 // Importer les services
 const discordBot = require('./services/discordBot');
 const autoGiveawayService = require('./services/autoGiveawayService');
+const ReminderService = require('./services/reminderService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Instance du service de rappel
+let reminderService = null;
 
 // Faire confiance au proxy (important pour Railway et HTTPS)
 if (process.env.NODE_ENV === 'production') {
@@ -168,6 +172,11 @@ const startServer = async () => {
     // Démarrer le service d'auto-tirage des giveaways expirés
     autoGiveawayService.start();
 
+    // Démarrer le service de rappel (toutes les 12 heures)
+    reminderService = new ReminderService(discordBot);
+    reminderService.start();
+    global.reminderService = reminderService;
+
     // Démarrer le serveur
     app.listen(PORT, () => {
       console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
@@ -184,6 +193,7 @@ const startServer = async () => {
 process.on('SIGINT', () => {
   console.log('\n🛑 Arrêt du serveur...');
   autoGiveawayService.stop();
+  if (reminderService) reminderService.stop();
   discordBot.shutdown();
   process.exit(0);
 });
@@ -191,6 +201,7 @@ process.on('SIGINT', () => {
 process.on('SIGTERM', () => {
   console.log('\n🛑 Arrêt du serveur...');
   autoGiveawayService.stop();
+  if (reminderService) reminderService.stop();
   discordBot.shutdown();
   process.exit(0);
 });
