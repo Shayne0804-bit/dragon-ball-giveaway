@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, AttachmentBuilder } = require('discord.js');
 const discordConfig = require('../config/discord');
 
 class DiscordBotService {
@@ -280,7 +280,6 @@ class DiscordBotService {
         .setTimestamp();
 
       // Créer les attachments des photos
-      const { AttachmentBuilder } = require('discord.js');
       const attachments = [];
       
       if (giveaway.photos && giveaway.photos.length > 0) {
@@ -406,7 +405,6 @@ class DiscordBotService {
         .setTimestamp();
 
       // Créer les attachments des photos
-      const { AttachmentBuilder } = require('discord.js');
       const attachments = [];
       
       if (giveaway.photos && giveaway.photos.length > 0) {
@@ -449,84 +447,6 @@ class DiscordBotService {
       return true;
     } catch (error) {
       console.error('[DISCORD] Erreur lors de l\'envoi de la notification de fin:', error.message);
-      return false;
-    }
-  }
-
-  /**
-   * Envoyer une notification de participation
-   */
-  async notifyNewParticipant(giveaway, participant) {
-    if (!this.isReady || !this.channelId) {
-      return false;
-    }
-
-    try {
-      const channel = await this.client.channels.fetch(this.channelId).catch(err => {
-        console.error(`[DISCORD] ❌ Erreur fetch canal (notifyNewParticipant): ${err.message}`);
-        return null;
-      });
-
-      if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement)) {
-        return false;
-      }
-
-      const embed = new EmbedBuilder()
-        .setColor(discordConfig.colors.participant)
-        .setTitle(`${discordConfig.messages.participant.emoji} ${discordConfig.messages.participant.title}`)
-        .setDescription(discordConfig.messages.participant.description)
-        .addFields(
-          {
-            name: 'Giveaway',
-            value: giveaway.name,
-            inline: false,
-          },
-          {
-            name: 'Participant',
-            value: participant.username || 'Utilisateur inconnu',
-            inline: true,
-          },
-          {
-            name: 'Total de participants',
-            value: `${giveaway.participantCount || 0}`,
-            inline: true,
-          }
-        )
-        .setFooter({
-          text: `Giveaway ID: ${giveaway._id}`,
-        })
-        .setTimestamp();
-
-      // Créer les attachments des photos
-      const { AttachmentBuilder } = require('discord.js');
-      const attachments = [];
-      
-      if (giveaway.photos && giveaway.photos.length > 0) {
-        giveaway.photos.forEach((photo, idx) => {
-          if (photo.imageData) {
-            try {
-              // Convertir le base64 en Buffer
-              const buffer = Buffer.from(photo.imageData, 'base64');
-              const filename = `photo_${idx + 1}.jpg`;
-              
-              // Créer un attachement
-              const attachment = new AttachmentBuilder(buffer, { name: filename });
-              attachments.push(attachment);
-            } catch (err) {
-              console.error(`[DISCORD] Erreur lors de la création de l'attachement photo ${idx + 1}:`, err.message);
-            }
-          }
-        });
-      }
-
-      await channel.send({ 
-        content: '@everyone 👤 Un nouvel utilisateur a participé au giveaway !',
-        embeds: [embed],
-        files: attachments
-      });
-      return true;
-    } catch (error) {
-      console.error('[DISCORD] Erreur lors de l\'envoi de la notification de participation:', error.message);
       return false;
     }
   }

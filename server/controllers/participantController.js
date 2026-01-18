@@ -138,11 +138,6 @@ const addParticipant = async (req, res) => {
           // Mettre à jour le compteur de participants
           giveaway.participantCount = (giveaway.participantCount || 0) + 1;
           await giveaway.save();
-          
-          // Envoyer une notification
-          discordBot.notifyNewParticipant(giveaway, participant).catch(err => {
-            console.error('[PARTICIPANT] Erreur notification Discord:', err.message);
-          });
         }
       } catch (err) {
         console.error('[PARTICIPANT] Erreur lors de la mise à jour du giveaway:', err.message);
