@@ -240,15 +240,6 @@ class DiscordBotService {
         return false;
       }
 
-      // Récupérer les photos du giveaway
-      let photoUrl = null;
-      if (giveaway.photos && giveaway.photos.length > 0) {
-        const photo = giveaway.photos[0];
-        if (photo.imageData) {
-          photoUrl = `data:${photo.mimetype || 'image/jpeg'};base64,${photo.imageData}`;
-        }
-      }
-
       const closedDate = new Date().toLocaleString('fr-FR', {
         year: 'numeric',
         month: 'long',
@@ -288,9 +279,30 @@ class DiscordBotService {
         })
         .setTimestamp();
 
-      // Ajouter la photo si disponible
-      if (photoUrl) {
-        embed.setImage(photoUrl);
+      // Créer les attachments des photos
+      const { AttachmentBuilder } = require('discord.js');
+      const attachments = [];
+      
+      if (giveaway.photos && giveaway.photos.length > 0) {
+        console.log(`[DISCORD] Préparation de ${giveaway.photos.length} photo(s) en attachments pour la notification de fermeture...`);
+        
+        giveaway.photos.forEach((photo, idx) => {
+          if (photo.imageData) {
+            try {
+              // Convertir le base64 en Buffer
+              const buffer = Buffer.from(photo.imageData, 'base64');
+              const filename = `photo_${idx + 1}.jpg`;
+              
+              // Créer un attachement
+              const attachment = new AttachmentBuilder(buffer, { name: filename });
+              attachments.push(attachment);
+              
+              console.log(`[DISCORD] Attachement photo ${idx + 1} créé pour notification de fermeture: ${filename}`);
+            } catch (err) {
+              console.error(`[DISCORD] Erreur lors de la création de l'attachement photo ${idx + 1}:`, err.message);
+            }
+          }
+        });
       }
 
       // Créer un bouton pour accéder au site
@@ -304,10 +316,11 @@ class DiscordBotService {
 
       await channel.send({ 
         content: '@everyone 🎯 Le giveaway est maintenant fermé !',
-        embeds: [embed], 
+        embeds: [embed],
+        files: attachments,
         components: [row] 
       });
-      console.log(`[DISCORD] Notification de fermeture envoyée pour: ${giveaway.name}`);
+      console.log(`[DISCORD] Notification de fermeture envoyée pour: ${giveaway.name} avec ${attachments.length} photo(s)`);
       return true;
     } catch (error) {
       console.error('[DISCORD] Erreur lors de l\'envoi de la notification de fermeture:', error.message);
@@ -330,15 +343,6 @@ class DiscordBotService {
       if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement)) {
         console.error('[DISCORD] Canal non valide ou inaccessible');
         return false;
-      }
-
-      // Récupérer les photos du giveaway
-      let photoUrl = null;
-      if (giveaway.photos && giveaway.photos.length > 0) {
-        const photo = giveaway.photos[0];
-        if (photo._id) {
-          photoUrl = `${this.apiUrl}/giveaway/photos/${photo._id}`;
-        }
       }
 
       const completedDate = new Date().toLocaleString('fr-FR', {
@@ -401,9 +405,30 @@ class DiscordBotService {
         })
         .setTimestamp();
 
-      // Ajouter la photo si disponible
-      if (photoUrl) {
-        embed.setImage(photoUrl);
+      // Créer les attachments des photos
+      const { AttachmentBuilder } = require('discord.js');
+      const attachments = [];
+      
+      if (giveaway.photos && giveaway.photos.length > 0) {
+        console.log(`[DISCORD] Préparation de ${giveaway.photos.length} photo(s) en attachments pour la notification de fin...`);
+        
+        giveaway.photos.forEach((photo, idx) => {
+          if (photo.imageData) {
+            try {
+              // Convertir le base64 en Buffer
+              const buffer = Buffer.from(photo.imageData, 'base64');
+              const filename = `photo_${idx + 1}.jpg`;
+              
+              // Créer un attachement
+              const attachment = new AttachmentBuilder(buffer, { name: filename });
+              attachments.push(attachment);
+              
+              console.log(`[DISCORD] Attachement photo ${idx + 1} créé pour notification de fin: ${filename}`);
+            } catch (err) {
+              console.error(`[DISCORD] Erreur lors de la création de l'attachement photo ${idx + 1}:`, err.message);
+            }
+          }
+        });
       }
 
       const row = new ActionRowBuilder()
@@ -416,10 +441,11 @@ class DiscordBotService {
 
       await channel.send({ 
         content: '@everyone 🏆 Les gagnants du giveaway ont été annoncés !',
-        embeds: [embed], 
+        embeds: [embed],
+        files: attachments,
         components: [row] 
       });
-      console.log(`[DISCORD] Notification de fin envoyée pour: ${giveaway.name} avec ${winners.length} gagnants`);
+      console.log(`[DISCORD] Notification de fin envoyée pour: ${giveaway.name} avec ${winners.length} gagnants et ${attachments.length} photo(s)`);
       return true;
     } catch (error) {
       console.error('[DISCORD] Erreur lors de l\'envoi de la notification de fin:', error.message);
@@ -443,15 +469,6 @@ class DiscordBotService {
 
       if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement)) {
         return false;
-      }
-
-      // Récupérer les photos du giveaway
-      let photoUrl = null;
-      if (giveaway.photos && giveaway.photos.length > 0) {
-        const photo = giveaway.photos[0];
-        if (photo._id) {
-          photoUrl = `${this.apiUrl}/giveaway/photos/${photo._id}`;
-        }
       }
 
       const embed = new EmbedBuilder()
@@ -480,14 +497,32 @@ class DiscordBotService {
         })
         .setTimestamp();
 
-      // Ajouter la photo si disponible
-      if (photoUrl) {
-        embed.setImage(photoUrl);
+      // Créer les attachments des photos
+      const { AttachmentBuilder } = require('discord.js');
+      const attachments = [];
+      
+      if (giveaway.photos && giveaway.photos.length > 0) {
+        giveaway.photos.forEach((photo, idx) => {
+          if (photo.imageData) {
+            try {
+              // Convertir le base64 en Buffer
+              const buffer = Buffer.from(photo.imageData, 'base64');
+              const filename = `photo_${idx + 1}.jpg`;
+              
+              // Créer un attachement
+              const attachment = new AttachmentBuilder(buffer, { name: filename });
+              attachments.push(attachment);
+            } catch (err) {
+              console.error(`[DISCORD] Erreur lors de la création de l'attachement photo ${idx + 1}:`, err.message);
+            }
+          }
+        });
       }
 
       await channel.send({ 
         content: '@everyone 👤 Un nouvel utilisateur a participé au giveaway !',
-        embeds: [embed] 
+        embeds: [embed],
+        files: attachments
       });
       return true;
     } catch (error) {
