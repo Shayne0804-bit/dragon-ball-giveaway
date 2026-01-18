@@ -70,6 +70,95 @@ function showMessage(message, type = 'info') {
 }
 
 /**
+ * Afficher un message d'erreur avec un bouton d'action
+ */
+function showAuthErrorModal(message, details, buttonText, buttonUrl) {
+  console.log('🔴 Affichage modale erreur Discord:', { message, details, buttonText, buttonUrl });
+  
+  const modal = document.getElementById('discordAuthErrorModal');
+  const messageEl = document.getElementById('discordAuthErrorMessage');
+  const detailsEl = document.getElementById('discordAuthErrorDetails');
+  const btn = document.getElementById('discordAuthJoinBtn');
+  
+  // Remplir le contenu
+  messageEl.textContent = message;
+  
+  if (details) {
+    detailsEl.textContent = `Détails: ${details}`;
+    detailsEl.style.display = 'block';
+  } else {
+    detailsEl.style.display = 'none';
+  }
+  
+  // Configurer le bouton
+  btn.textContent = buttonText;
+  btn.onclick = () => {
+    window.open(buttonUrl, '_blank');
+  };
+  
+  // Afficher la modale
+  modal.classList.remove('hidden');
+}
+
+function showErrorWithButton(message, buttonText, buttonUrl) {
+  const messageBox = document.getElementById('messageBox');
+  
+  // Vider complètement
+  messageBox.innerHTML = '';
+  messageBox.className = 'message-box error';
+  messageBox.style.display = 'block';
+  
+  console.log('🔴 Affichage du message d\'erreur avec bouton:', { message, buttonText, buttonUrl });
+  
+  // Créer le conteneur du texte
+  const textDiv = document.createElement('div');
+  textDiv.style.marginBottom = '15px';
+  textDiv.textContent = message;
+  messageBox.appendChild(textDiv);
+  
+  // Créer le bouton
+  const btn = document.createElement('a');
+  btn.href = buttonUrl;
+  btn.target = '_blank';
+  btn.rel = 'noopener noreferrer';
+  
+  // Style inline pour s'assurer que c'est visible et cliquable
+  btn.style.cssText = `
+    display: inline-block !important;
+    padding: 12px 24px !important;
+    background: linear-gradient(135deg, #5865F2 0%, #4752C4 100%) !important;
+    color: white !important;
+    text-decoration: none !important;
+    border-radius: 6px !important;
+    font-weight: bold !important;
+    border: 2px solid #5865F2 !important;
+    cursor: pointer !important;
+    transition: all 0.3s !important;
+    box-shadow: 0 4px 15px rgba(88, 101, 242, 0.3) !important;
+    z-index: 101 !important;
+    position: relative !important;
+  `;
+  
+  btn.textContent = buttonText;
+  
+  // Handlers pour le hover
+  btn.addEventListener('mouseover', function() {
+    this.style.background = 'linear-gradient(135deg, #4752C4 0%, #3a3fa5 100%) !important';
+    this.style.transform = 'translateY(-2px) !important';
+    this.style.boxShadow = '0 8px 25px rgba(88, 101, 242, 0.5) !important';
+  });
+  
+  btn.addEventListener('mouseout', function() {
+    this.style.background = 'linear-gradient(135deg, #5865F2 0%, #4752C4 100%) !important';
+    this.style.transform = 'translateY(0) !important';
+    this.style.boxShadow = '0 4px 15px rgba(88, 101, 242, 0.3) !important';
+  });
+  
+  messageBox.appendChild(btn);
+  console.log('✅ Bouton d\'erreur créé et ajouté au DOM');
+}
+
+/**
  * Afficher un message dans la modal admin
  */
 function showAdminMessage(message, type = 'info') {
@@ -762,6 +851,12 @@ function closeAdminLoginModal() {
 }
 
 document.getElementById('closeAdminLoginModal')?.addEventListener('click', closeAdminLoginModal);
+
+function closeDiscordAuthErrorModal() {
+  document.getElementById('discordAuthErrorModal').classList.add('hidden');
+}
+
+document.getElementById('closeDiscordAuthErrorModal')?.addEventListener('click', closeDiscordAuthErrorModal);
 
 /**
  * Boutons admin pour créer et sélectionner giveaways
@@ -1592,40 +1687,16 @@ if (window.location.search.includes('discord_auth_success')) {
       
       console.error('Erreur Discord:', data);
       
-      // Afficher le message d'erreur
-      let errorMessage = `${data.message}: ${data.details}`;
-      if (data.actionUrl) {
-        errorMessage += `\n\n🔗 ${data.actionText}`;
-      }
-      showMessage(errorMessage, 'error');
-      
-      // Si un lien d'action existe, créer un bouton
-      if (data.actionUrl) {
-        const messageBox = document.getElementById('messageBox');
-        if (messageBox) {
-          setTimeout(() => {
-            // Ajouter un bouton au message
-            const btn = document.createElement('a');
-            btn.href = data.actionUrl;
-            btn.target = '_blank';
-            btn.rel = 'noopener noreferrer';
-            btn.style.cssText = `
-              display: inline-block;
-              margin-top: 10px;
-              padding: 10px 20px;
-              background: #5865F2;
-              color: white;
-              text-decoration: none;
-              border-radius: 6px;
-              font-weight: bold;
-              transition: background 0.3s;
-            `;
-            btn.textContent = data.actionText;
-            btn.onmouseover = function() { this.style.background = '#4752c4'; };
-            btn.onmouseout = function() { this.style.background = '#5865F2'; };
-            messageBox.appendChild(btn);
-          }, 100);
-        }
+      // Afficher le message d'erreur dans une modale avec bouton si disponible
+      if (data.actionUrl && data.actionText) {
+        showAuthErrorModal(
+          data.message,
+          data.details,
+          data.actionText,
+          data.actionUrl
+        );
+      } else {
+        showMessage(`${data.message}: ${data.details}`, 'error');
       }
       
       // Nettoyer l'URL

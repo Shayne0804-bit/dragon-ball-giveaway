@@ -267,6 +267,19 @@
     </div>
   </div>
 
+  <!-- Discord Auth Error Modal -->
+  <div id="discordAuthErrorModal" class="modal hidden">
+    <div class="modal-content modal-sm">
+      <button id="closeDiscordAuthErrorModal" class="modal-close">✕</button>
+      <h2>Accès Refusé</h2>
+      <p id="discordAuthErrorMessage" style="margin: 15px 0; color: #666;"></p>
+      <div id="discordAuthErrorDetails" style="margin: 10px 0; padding: 10px; background-color: #f5f5f5; border-radius: 5px; font-size: 0.9em; color: #999; display: none;"></div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button id="discordAuthJoinBtn" class="btn btn-primary btn-full" style="margin-bottom: 0;"></button>
+      </div>
+    </div>
+  </div>
+
   <!-- Select Giveaway Modal -->
   <div id="selectGiveawayModal" class="modal hidden">
     <div class="modal-content">
