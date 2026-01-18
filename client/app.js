@@ -2188,6 +2188,13 @@ document.getElementById('createGiveawaySubmitBtn')?.addEventListener('click', as
   const files = document.getElementById('giveawayPhotosInput').files;
   const messageBox = document.getElementById('createGiveawayMessage');
 
+  // Vérifier que l'utilisateur est connecté en admin
+  if (!adminToken) {
+    messageBox.textContent = '❌ Vous devez être connecté en tant qu\'admin';
+    messageBox.className = 'message-box error';
+    return;
+  }
+
   if (!name) {
     messageBox.textContent = '❌ Le nom du giveaway est requis';
     messageBox.className = 'message-box error';
@@ -2202,6 +2209,8 @@ document.getElementById('createGiveawaySubmitBtn')?.addEventListener('click', as
 
   try {
     setLoading(true);
+    
+    console.log('🚀 Création giveaway:', { name, description, days, hours, adminToken: adminToken ? 'Present' : 'MANQUANT' });
     
     const response = await fetch(GIVEAWAYS_API, {
       method: 'POST',
@@ -2219,6 +2228,8 @@ document.getElementById('createGiveawaySubmitBtn')?.addEventListener('click', as
 
     const data = await response.json();
     setLoading(false);
+
+    console.log('📊 Réponse serveur:', { status: response.status, success: data.success, message: data.message });
 
     if (!response.ok || !data.success) {
       messageBox.textContent = data.message || '❌ Erreur lors de la création';
