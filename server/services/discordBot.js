@@ -462,6 +462,62 @@ class DiscordBotService {
   }
 
   /**
+   * Envoyer une notification de jalon (ex: 7 participants)
+   */
+  async notifyParticipantMilestone(giveaway, participantCount) {
+    if (!this.isReady || !this.channelId) {
+      console.warn('[DISCORD] Bot non prêt ou canal non configuré');
+      return false;
+    }
+
+    try {
+      const channel = await this.client.channels.fetch(this.channelId);
+
+      if (!channel || (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildAnnouncement)) {
+        console.error('[DISCORD] Canal non valide ou inaccessible');
+        return false;
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor('#FFD700') // Couleur or pour les jalons
+        .setTitle(`🎯 Jalon atteint! ${participantCount} participants!`)
+        .setDescription(`Le giveaway **${giveaway.name}** vient d'atteindre **${participantCount}** participants!`)
+        .addFields(
+          {
+            name: '📊 Détails du giveaway',
+            value: `**${giveaway.name}**`,
+            inline: false,
+          },
+          {
+            name: '👥 Participants actuels',
+            value: `**${participantCount}**`,
+            inline: true,
+          },
+          {
+            name: '⏰ Status',
+            value: `🟢 ${giveaway.status}`,
+            inline: true,
+          }
+        )
+        .setFooter({
+          text: `Giveaway ID: ${giveaway._id}`,
+        })
+        .setTimestamp();
+
+      await channel.send({
+        content: '@here 🎉 Un giveaway a atteint un jalon important!',
+        embeds: [embed],
+      });
+
+      console.log(`[DISCORD] Notification de jalon envoyée pour: ${giveaway.name} (${participantCount} participants)`);
+      return true;
+    } catch (error) {
+      console.error('[DISCORD] Erreur lors de l\'envoi de la notification de jalon:', error.message);
+      return false;
+    }
+  }
+
+  /**
    * Arrêter le bot
    */
   async shutdown() {

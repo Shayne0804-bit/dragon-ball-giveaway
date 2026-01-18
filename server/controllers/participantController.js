@@ -138,6 +138,14 @@ const addParticipant = async (req, res) => {
           // Mettre à jour le compteur de participants
           giveaway.participantCount = (giveaway.participantCount || 0) + 1;
           await giveaway.save();
+
+          // Vérifier si on atteint le jalon de 7 participants
+          if (giveaway.participantCount === 7) {
+            console.log(`[PARTICIPANT] 🎯 Jalon atteint: 7 participants pour ${giveaway.name}`);
+            discordBot.notifyParticipantMilestone(giveaway, 7).catch(err => {
+              console.error('[PARTICIPANT] Erreur notification jalon:', err.message);
+            });
+          }
         }
       } catch (err) {
         console.error('[PARTICIPANT] Erreur lors de la mise à jour du giveaway:', err.message);
