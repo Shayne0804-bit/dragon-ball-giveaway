@@ -338,12 +338,14 @@ const getWinners = async (req, res) => {
   try {
     const { giveawayId } = req.query;
     const query = giveawayId ? { giveaway: giveawayId } : {};
-    const winners = await Winner.find(query).sort({ date: -1 }).limit(10);
+    const winners = await Winner.find(query).sort({ date: -1 }).limit(50);
 
     res.json({
       success: true,
       count: winners.length,
-      data: winners,
+      data: {
+        winners: winners,
+      },
     });
   } catch (error) {
     console.error('Erreur lors de la récupération des gagnants:', error);

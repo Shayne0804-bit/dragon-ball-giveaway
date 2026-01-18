@@ -7,6 +7,7 @@ const {
   updateGiveaway,
   deleteGiveaway,
 } = require('../controllers/giveawayMultiController');
+const { getWinners } = require('../controllers/participantController');
 const { verifyAdminToken } = require('../middlewares/adminAuth');
 
 /**
@@ -30,12 +31,7 @@ router.get('/roulette', (req, res) => {
  * GET /api/giveaways/winners
  * Récupérer l'historique des gagnants
  */
-router.get('/winners', (req, res) => {
-  return res.status(501).json({
-    success: false,
-    message: 'Winners endpoint not yet implemented',
-  });
-});
+router.get('/winners', getWinners);
 
 /**
  * GET /api/giveaways/:id
