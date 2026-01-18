@@ -34,6 +34,34 @@ router.get('/roulette', (req, res) => {
 router.get('/winners', getWinners);
 
 /**
+ * DELETE /api/giveaways/reset
+ * Réinitialiser un giveaway (supprimer complètement avec toutes ses données)
+ * Query param: giveawayId
+ */
+router.delete('/reset', verifyAdminToken, async (req, res) => {
+  try {
+    const { giveawayId } = req.query;
+    
+    if (!giveawayId) {
+      return res.status(400).json({
+        success: false,
+        message: 'giveawayId est requis',
+      });
+    }
+
+    // Appeler la fonction deleteGiveaway en simulant req.params.id
+    req.params.id = giveawayId;
+    return deleteGiveaway(req, res);
+  } catch (error) {
+    console.error('Erreur lors de la réinitialisation du giveaway:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la réinitialisation du giveaway',
+    });
+  }
+});
+
+/**
  * GET /api/giveaways/:id
  * Récupérer un giveaway spécifique (accessible à tous)
  */
