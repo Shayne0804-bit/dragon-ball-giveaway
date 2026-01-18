@@ -21,6 +21,7 @@ class DiscordBotService {
     }
     
     this.siteUrl = siteUrl;
+    this.apiUrl = `${siteUrl}/api`;
     console.log('[DISCORD] Site URL configurée:', this.siteUrl);
   }
 
@@ -114,8 +115,9 @@ class DiscordBotService {
       let photoUrl = null;
       if (giveaway.photos && giveaway.photos.length > 0) {
         const photo = giveaway.photos[0];
-        if (photo.imageData) {
-          photoUrl = `data:${photo.mimetype || 'image/jpeg'};base64,${photo.imageData}`;
+        if (photo._id) {
+          photoUrl = `${this.apiUrl}/giveaway/photos/${photo._id}`;
+          console.log(`[DISCORD] Photo trouvée: ${photoUrl}`);
         }
       }
 
@@ -304,8 +306,8 @@ class DiscordBotService {
       let photoUrl = null;
       if (giveaway.photos && giveaway.photos.length > 0) {
         const photo = giveaway.photos[0];
-        if (photo.imageData) {
-          photoUrl = `data:${photo.mimetype || 'image/jpeg'};base64,${photo.imageData}`;
+        if (photo._id) {
+          photoUrl = `${this.apiUrl}/giveaway/photos/${photo._id}`;
         }
       }
 
@@ -417,8 +419,8 @@ class DiscordBotService {
       let photoUrl = null;
       if (giveaway.photos && giveaway.photos.length > 0) {
         const photo = giveaway.photos[0];
-        if (photo.imageData) {
-          photoUrl = `data:${photo.mimetype || 'image/jpeg'};base64,${photo.imageData}`;
+        if (photo._id) {
+          photoUrl = `${this.apiUrl}/giveaway/photos/${photo._id}`;
         }
       }
 
