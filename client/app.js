@@ -143,15 +143,17 @@ async function fetchDiscordUser() {
       const data = await response.json();
       if (data.success) {
         currentDiscordUser = data.user;
+        console.log('✅ Utilisateur Discord reçu:', currentDiscordUser);
         updateDiscordAuthUI();
         return data.user;
       }
     }
+    console.warn('⚠️ Pas d\'utilisateur Discord connecté');
     currentDiscordUser = null;
     updateDiscordAuthUI();
     return null;
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'utilisateur Discord:', error);
+    console.error('❌ Erreur lors de la récupération de l\'utilisateur Discord:', error);
     currentDiscordUser = null;
     updateDiscordAuthUI();
     return null;
@@ -169,8 +171,12 @@ function updateDiscordAuthUI() {
   const avatarImg = document.getElementById('discordAvatarImg');
   const usernameEl = userInfo ? userInfo.querySelector('.discord-username') : null;
 
+  console.log('🔄 Mise à jour Discord UI - Utilisateur:', currentDiscordUser);
+
   if (currentDiscordUser) {
     // Utilisateur connecté avec Discord
+    console.log('✅ Affichage du profil Discord');
+    
     if (discordBtn) {
       discordBtn.style.display = 'none';
     }
@@ -182,19 +188,34 @@ function updateDiscordAuthUI() {
     }
     
     // Mettre à jour l'avatar
-    if (avatarImg && currentDiscordUser.discordAvatar) {
-      avatarImg.src = currentDiscordUser.discordAvatar;
-      avatarImg.style.display = 'block';
-      console.log('✅ Avatar Discord mis à jour:', currentDiscordUser.discordAvatar);
+    if (avatarImg) {
+      if (currentDiscordUser.discordAvatar) {
+        avatarImg.src = currentDiscordUser.discordAvatar;
+        avatarImg.onerror = () => {
+          console.error('❌ Erreur chargement avatar:', currentDiscordUser.discordAvatar);
+        };
+        avatarImg.onload = () => {
+          console.log('✅ Avatar chargé avec succès');
+        };
+        console.log('📸 Avatar Discord URL:', currentDiscordUser.discordAvatar);
+      } else {
+        console.warn('⚠️ Pas d\'avatar Discord disponible');
+      }
+    } else {
+      console.error('❌ Élément avatarImg non trouvé');
     }
     
     // Mettre à jour le nom d'utilisateur
     if (usernameEl) {
       usernameEl.textContent = currentDiscordUser.discordUsername || 'Utilisateur';
-      console.log('✅ Username mis à jour:', currentDiscordUser.discordUsername);
+      console.log('👤 Username mis à jour:', currentDiscordUser.discordUsername);
+    } else {
+      console.error('❌ Élément usernameEl non trouvé');
     }
   } else {
     // Utilisateur NON connecté
+    console.log('❌ Utilisateur non connecté - masquage du profil');
+    
     if (discordBtn) {
       discordBtn.style.display = 'inline-block';
     }

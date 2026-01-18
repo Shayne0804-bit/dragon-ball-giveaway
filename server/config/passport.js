@@ -60,12 +60,16 @@ passport.use(
 
         if (!participant) {
           // Créer un nouveau participant
+          const avatarUrl = profile.avatar
+            ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.webp?size=256`
+            : `https://cdn.discordapp.com/embed/avatars/${(profile.id >> 22) % 6}.png`;
+          
+          console.log(`[DISCORD AUTH] Avatar URL pour ${profile.username}:`, avatarUrl);
+          
           participant = new Participant({
             discordId: profile.id,
             discordUsername: profile.username,
-            discordAvatar: profile.avatar
-              ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.webp?size=256`
-              : `https://cdn.discordapp.com/embed/avatars/${(profile.id >> 22) % 6}.png`,
+            discordAvatar: avatarUrl,
             email: profile.email,
             isDiscordAuthenticated: true,
           });
@@ -74,9 +78,13 @@ passport.use(
         } else {
           // Mettre à jour les infos Discord
           participant.discordUsername = profile.username;
-          participant.discordAvatar = profile.avatar
+          const avatarUrl = profile.avatar
             ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.webp?size=256`
             : `https://cdn.discordapp.com/embed/avatars/${(profile.id >> 22) % 6}.png`;
+          
+          console.log(`[DISCORD AUTH] Mise à jour avatar pour ${profile.username}:`, avatarUrl);
+          
+          participant.discordAvatar = avatarUrl;
           participant.email = profile.email;
           participant.isDiscordAuthenticated = true;
 

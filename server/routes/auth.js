@@ -32,11 +32,18 @@ router.get(
  */
 router.get('/user', (req, res) => {
   if (!req.user) {
+    console.log('[AUTH USER] Aucun utilisateur en session');
     return res.status(401).json({
       success: false,
       message: 'Utilisateur non authentifié',
     });
   }
+
+  console.log('[AUTH USER] Utilisateur trouvé:', {
+    discordId: req.user.discordId,
+    discordUsername: req.user.discordUsername,
+    discordAvatar: req.user.discordAvatar ? '✓ présent' : '✗ manquant',
+  });
 
   res.json({
     success: true,
