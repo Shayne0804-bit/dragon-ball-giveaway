@@ -25,7 +25,7 @@
           <img src="assets/dragon-ball-icon.jpg" alt="Logo" class="logo-image">
           <div class="logo-text">
             <h1>Dragon Ball Legends</h1>
-            <p>Participez et gagnez des prix</p>
+            <p data-i18n-placeholder="participateButton" style="display: none;"></p>
           </div>
         </div>
         <div class="header-actions">
@@ -59,7 +59,7 @@
           <div class="card-header">
             <span class="card-icon">🎯</span>
             <div>
-              <h2 id="selectedGiveawayName">Giveaway Actif</h2>
+              <h2 id="selectedGiveawayName" data-i18n="giveawayInfo">Giveaway Actif</h2>
               <p id="giveawayDescription" class="card-subtitle">-</p>
             </div>
             <button id="clearGiveawayBtn" class="btn-close">✕</button>
@@ -69,28 +69,28 @@
               <div class="info-item">
                 <span class="info-icon">⏰</span>
                 <div>
-                  <p class="info-label">Temps Restant</p>
+                  <p class="info-label" data-i18n="timeRemaining">Temps Restant</p>
                   <p id="giveawayTimeLeft" class="info-value">-</p>
                 </div>
               </div>
               <div class="info-item">
                 <span class="info-icon">📅</span>
                 <div>
-                  <p class="info-label">Fin</p>
+                  <p class="info-label" data-i18n="endDate">Fin</p>
                   <p id="giveawayEndDate" class="info-value">-</p>
                 </div>
               </div>
               <div class="info-item">
                 <span class="info-icon">👥</span>
                 <div>
-                  <p class="info-label">Participants</p>
+                  <p class="info-label" data-i18n="participantsCount">Participants</p>
                   <p id="giveawayParticipantCount" class="info-value">0</p>
                 </div>
               </div>
               <div class="info-item">
                 <span class="info-icon">📸</span>
                 <div>
-                  <p class="info-label">Photos</p>
+                  <p class="info-label" data-i18n="photoCount">Photos</p>
                   <p id="giveawayPhotoCount" class="info-value">0</p>
                 </div>
               </div>
@@ -102,11 +102,11 @@
         <div id="photosSection" class="card hidden">
           <div class="card-header">
             <span class="card-icon">📷</span>
-            <h2>Photos du Giveaway</h2>
+            <h2 data-i18n="giveawayPhotos">Photos du Giveaway</h2>
           </div>
           <div class="card-body">
             <div id="publicGiveawayPhotosList" class="photos-grid"></div>
-            <p id="noPublicPhotosMessage" class="empty-state" style="display: none;">Aucune photo disponible</p>
+            <p id="noPublicPhotosMessage" class="empty-state" style="display: none;" data-i18n="noPhotosAvailable">Aucune photo disponible</p>
           </div>
         </div>
 
@@ -114,10 +114,10 @@
         <div class="card card-accent">
           <div class="card-header">
             <span class="card-icon">✨</span>
-            <h2>Participer au Giveaway</h2>
+            <h2 data-i18n="participateButton">Participer au Giveaway</h2>
           </div>
           <div class="card-body">
-            <div id="selectGiveawayFirstMessage" class="alert alert-warning hidden">
+            <div id="selectGiveawayFirstMessage" class="alert alert-warning hidden" data-i18n="selectGiveawayFirst">
               ⚠️ Sélectionnez d'abord un giveaway
             </div>
 
@@ -127,7 +127,7 @@
                 <img id="discordAvatarImg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%235865F2'/%3E%3Ctext x='50' y='50' dominant-baseline='middle' text-anchor='middle' font-size='60' fill='white'%3E👤%3C/text%3E%3C/svg%3E" alt="Avatar" class="discord-avatar" crossorigin="anonymous" loading="lazy">
                 <div class="discord-info">
                   <p class="discord-username"></p>
-                  <p class="discord-status">✅ Connecté</p>
+                  <p class="discord-status" data-i18n="connected">✅ Connecté</p>
                 </div>
               </div>
 
@@ -137,7 +137,7 @@
                 <div>
                   <form id="participantForm" class="form" style="margin: 0;">
                     <div id="countdownTimer" class="message-box" style="display:none;"></div>
-                    <button type="submit" class="btn btn-primary btn-full btn-lg">
+                    <button type="submit" class="btn btn-primary btn-full btn-lg" data-i18n="participateButton">
                       ✨ Participer Maintenant
                     </button>
                     <div id="messageBox" class="message-box"></div>
@@ -167,12 +167,12 @@
         <div class="card" id="participantsSection">
           <div class="card-header">
             <span class="card-icon">👥</span>
-            <h2>Participants</h2>
+            <h2 data-i18n="participantsCount">Participants</h2>
             <span class="badge" id="participantsCountBadge">0</span>
           </div>
           <div class="card-body scrollable">
             <div id="participantsList" class="participants-list">
-              <p class="empty-state">Aucun participant</p>
+              <p class="empty-state" data-i18n="noParticipants">Aucun participant</p>
             </div>
           </div>
         </div>
@@ -181,20 +181,20 @@
         <div class="card card-roulette" id="rouletteSection">
           <div class="card-header">
             <span class="card-icon">🎡</span>
-            <h2>Roulette</h2>
+            <h2 data-i18n="spinWheel">Roulette</h2>
           </div>
           <div class="card-body card-center">
             <div class="roulette-container">
               <canvas id="wheelCanvas" width="280" height="280" class="wheel"></canvas>
               <div class="pointer"></div>
             </div>
-            <button id="spinButton" class="btn btn-success btn-full btn-lg">Lancer la Roulette</button>
+            <button id="spinButton" class="btn btn-success btn-full btn-lg" data-i18n="spinWheel">Lancer la Roulette</button>
             
             <div id="winnerDisplay" class="winner-box hidden">
               <div class="winner-confetti"></div>
-              <h3>🏆 GAGNANT! 🏆</h3>
+              <h3 data-i18n="winner">🏆 GAGNANT! 🏆</h3>
               <p id="winnerName" class="winner-name">-</p>
-              <button id="resetButton" class="btn btn-secondary">Nouvelle Roulette</button>
+              <button id="resetButton" class="btn btn-secondary" data-i18n="newWheel">Nouvelle Roulette</button>
             </div>
           </div>
         </div>
@@ -203,16 +203,16 @@
         <div class="card" id="statsSection">
           <div class="card-header">
             <span class="card-icon">📊</span>
-            <h2>Statistiques</h2>
+            <h2 data-i18n="statistics">Statistiques</h2>
           </div>
           <div class="card-body">
             <div class="stats-grid">
               <div class="stat-box">
-                <p class="stat-label">Participants</p>
+                <p class="stat-label" data-i18n="participantsCount">Participants</p>
                 <p id="participantCount" class="stat-value">0</p>
               </div>
               <div class="stat-box">
-                <p class="stat-label">Gagnants</p>
+                <p class="stat-label" data-i18n="winners">Gagnants</p>
                 <p id="winnerCount" class="stat-value">0</p>
               </div>
             </div>
@@ -223,11 +223,11 @@
         <div class="card">
           <div class="card-header">
             <span class="card-icon">🏆</span>
-            <h2>Historique des Gagnants</h2>
+            <h2 data-i18n="winnersHistory">Historique des Gagnants</h2>
           </div>
           <div class="card-body scrollable">
             <div id="winnersList" class="winners-list">
-              <p class="empty-state">Aucun gagnant pour le moment</p>
+              <p class="empty-state" data-i18n="noWinnersYet">Aucun gagnant pour le moment</p>
             </div>
           </div>
         </div>
@@ -239,13 +239,13 @@
       <div class="card">
         <div class="card-header admin-header">
           <span class="card-icon">⚙️</span>
-          <h2>Gestion Admin</h2>
-          <span class="admin-badge">Admin</span>
+          <h2 data-i18n="manageAdmin">Gestion Admin</h2>
+          <span class="admin-badge" data-i18n="admin">Admin</span>
         </div>
         <div class="card-body">
           <div class="admin-buttons">
-            <button id="createNewGiveawayBtn" class="btn btn-primary">➕ Créer Giveaway</button>
-            <button id="selectGiveawayBtn" class="btn btn-secondary">🎡 Sélectionner</button>
+            <button id="createNewGiveawayBtn" class="btn btn-primary" data-i18n="createGiveaway">➕ Créer Giveaway</button>
+            <button id="selectGiveawayBtn" class="btn btn-secondary" data-i18n="selectGiveawayAdm">🎡 Sélectionner</button>
           </div>
         </div>
       </div>
@@ -265,10 +265,10 @@
   <div id="adminLoginModal" class="modal hidden">
     <div class="modal-content modal-sm">
       <button id="closeAdminLoginModal" class="modal-close">✕</button>
-      <h2>Connexion Admin</h2>
+      <h2 data-i18n="adminLogin">Connexion Admin</h2>
       <form id="adminLoginForm">
-        <input type="password" id="adminLoginPassword" class="input" placeholder="Mot de passe" required>
-        <button id="adminLoginSubmitBtn" type="button" class="btn btn-primary btn-full">Se Connecter</button>
+        <input type="password" id="adminLoginPassword" class="input" data-i18n-placeholder="password" placeholder="Mot de passe" required>
+        <button id="adminLoginSubmitBtn" type="button" class="btn btn-primary btn-full" data-i18n="connect">Se Connecter</button>
       </form>
       <div id="adminLoginMessage" class="message-box"></div>
     </div>
@@ -281,7 +281,7 @@
       
       <div class="discord-error-icon">🔐</div>
       
-      <h2 class="discord-error-title">Accès Refusé</h2>
+      <h2 class="discord-error-title" data-i18n="accessDenied">Accès Refusé</h2>
       
       <p id="discordAuthErrorMessage" class="discord-error-message"></p>
       
@@ -292,7 +292,7 @@
       </div>
       
       <div class="discord-error-footer">
-        <p>Vous avez besoin d'accès au serveur Discord pour participer</p>
+        <p data-i18n="youNeedServer">Vous avez besoin d'accès au serveur Discord pour participer</p>
       </div>
     </div>
   </div>
@@ -301,9 +301,9 @@
   <div id="selectGiveawayModal" class="modal hidden">
     <div class="modal-content">
       <button id="closeSelectGiveawayModal" class="modal-close">✕</button>
-      <h2>Sélectionner un Giveaway</h2>
+      <h2 data-i18n="selectGiveawayModal">Sélectionner un Giveaway</h2>
       <div id="selectGiveawayListContainer" class="giveaways-list" style="margin-top: 15px;"></div>
-      <p id="noGiveawaysMessage" class="empty-state" style="margin-top: 15px; display: none;">Aucun giveaway disponible</p>
+      <p id="noGiveawaysMessage" class="empty-state" style="margin-top: 15px; display: none;" data-i18n="noGiveawaysAvailable">Aucun giveaway disponible</p>
     </div>
   </div>
 
@@ -311,20 +311,20 @@
   <div id="createGiveawayModal" class="modal hidden">
     <div class="modal-content">
       <button id="closeCreateGiveawayModal" class="modal-close">✕</button>
-      <h2>Créer un Giveaway</h2>
+      <h2 data-i18n="createNewModal">Créer un Giveaway</h2>
       <form id="createGiveawayForm" class="form" style="margin-top: 15px;">
-        <input type="text" id="giveawayName" class="input" placeholder="Nom du giveaway" required>
-        <textarea id="giveawayDesc" class="input" placeholder="Description" rows="3"></textarea>
+        <input type="text" id="giveawayName" class="input" data-i18n-placeholder="giveawayName" placeholder="Nom du giveaway" required>
+        <textarea id="giveawayDesc" class="input" data-i18n-placeholder="giveawayDescription" placeholder="Description" rows="3"></textarea>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <input type="number" id="giveawayDays" class="input" placeholder="Jours" value="0" min="0">
-          <input type="number" id="giveawayHours" class="input" placeholder="Heures" value="0" min="0" max="23">
+          <input type="number" id="giveawayDays" class="input" data-i18n-placeholder="days" placeholder="Jours" value="0" min="0">
+          <input type="number" id="giveawayHours" class="input" data-i18n-placeholder="hours" placeholder="Heures" value="0" min="0" max="23">
         </div>
         <div style="margin-top: 15px;">
-          <label style="color: var(--light); font-size: 0.9rem; margin-bottom: 8px; display: block;">Sélectionner les photos (optionnel)</label>
+          <label style="color: var(--light); font-size: 0.9rem; margin-bottom: 8px; display: block;" data-i18n="selectPhotos">Sélectionner les photos (optionnel)</label>
           <input type="file" id="giveawayPhotosInput" class="input" multiple accept="image/*" style="padding: 10px; cursor: pointer;">
-          <small style="color: var(--gray); display: block; margin-top: 5px;">Vous pouvez sélectionner plusieurs images</small>
+          <small style="color: var(--gray); display: block; margin-top: 5px;" data-i18n="dragPhotosHere">Vous pouvez sélectionner plusieurs images</small>
         </div>
-        <button type="button" id="createGiveawaySubmitBtn" class="btn btn-primary btn-full" style="margin-top: 15px;">Créer</button>
+        <button type="button" id="createGiveawaySubmitBtn" class="btn btn-primary btn-full" style="margin-top: 15px;" data-i18n="create">Créer</button>
       </form>
       <div id="createGiveawayMessage" class="message-box" style="margin-top: 15px;"></div>
     </div>
@@ -334,11 +334,11 @@
   <div id="adminModal" class="modal hidden">
     <div class="modal-content modal-sm">
       <button id="closeAdminModalBtn" class="modal-close">✕</button>
-      <h2>Panel Admin</h2>
+      <h2 data-i18n="adminPanel">Panel Admin</h2>
       <div style="margin-top: 15px;">
         <p id="adminMessage" class="message-box"></p>
-        <input type="password" id="adminPassword" class="input" placeholder="Mot de passe" style="margin-top: 15px;">
-        <button id="adminSubmitBtn" type="button" class="btn btn-primary btn-full" style="margin-top: 15px;">Valider</button>
+        <input type="password" id="adminPassword" class="input" data-i18n-placeholder="password" placeholder="Mot de passe" style="margin-top: 15px;">
+        <button id="adminSubmitBtn" type="button" class="btn btn-primary btn-full" style="margin-top: 15px;" data-i18n="login">Valider</button>
       </div>
     </div>
   </div>
@@ -349,9 +349,9 @@
       <button id="closeViewer" class="modal-close">✕</button>
       <img id="viewerImage" src="" alt="Photo" style="width: 100%; max-height: 80vh; object-fit: contain;">
       <div style="display: flex; gap: 10px; margin-top: 15px; justify-content: space-between; align-items: center;">
-        <button id="prevViewer" class="btn btn-secondary">← Précédent</button>
+        <button id="prevViewer" class="btn btn-secondary" data-i18n-value="previous">← Précédent</button>
         <span id="viewerCounter" style="color: var(--gray);">1 / 1</span>
-        <button id="nextViewer" class="btn btn-secondary">Suivant →</button>
+        <button id="nextViewer" class="btn btn-secondary" data-i18n-value="next">Suivant →</button>
       </div>
     </div>
   </div>
@@ -359,7 +359,7 @@
   <!-- Photo Upload Modal -->
   <div id="uploadModal" class="modal hidden">
     <div class="modal-content modal-sm">
-      <h3>Upload en cours...</h3>
+      <h3 data-i18n="uploadInProgress">Upload en cours...</h3>
       <div id="progressFill" style="height: 20px; background: linear-gradient(90deg, #5865F2 0%, #FF9F00 100%); border-radius: 10px; margin-top: 10px;"></div>
       <p id="uploadStatus" style="text-align: center; margin-top: 10px; color: var(--gray);">0%</p>
     </div>
@@ -369,7 +369,7 @@
   <div id="giveawayDetailsModal" class="modal hidden">
     <div class="modal-content">
       <button id="closeGiveawayDetailsModal" class="modal-close">✕</button>
-      <h2>Détails du Giveaway</h2>
+      <h2 data-i18n="giveawayDetails">Détails du Giveaway</h2>
       <div id="giveawayDetailsContent" style="margin-top: 15px;"></div>
     </div>
   </div>
