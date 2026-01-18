@@ -115,16 +115,25 @@ class DiscordBotService {
       // Récupérer les photos du giveaway
       let photoUrl = null;
       let photoCount = 0;
+      let photosLinks = '';
+      
       if (giveaway.photos && giveaway.photos.length > 0) {
         photoCount = giveaway.photos.length;
-        const photo = giveaway.photos[0];
-        console.log(`[DISCORD] Photo objet:`, JSON.stringify({ _id: photo._id, filename: photo.filename }));
         console.log(`[DISCORD] Nombre total de photos: ${photoCount}`);
-        if (photo._id) {
-          photoUrl = `${this.apiUrl}/giveaway/photos/${photo._id}`;
-          console.log(`[DISCORD] URL photo construite: ${photoUrl}`);
-        } else {
-          console.log(`[DISCORD] Photo n'a pas de _id`);
+        
+        // Première photo pour l'affichage principal
+        const firstPhoto = giveaway.photos[0];
+        if (firstPhoto._id) {
+          photoUrl = `${this.apiUrl}/giveaway/photos/${firstPhoto._id}`;
+          console.log(`[DISCORD] URL première photo: ${photoUrl}`);
+        }
+        
+        // Créer des liens pour TOUTES les photos
+        if (photoCount > 1) {
+          photosLinks = giveaway.photos
+            .map((photo, idx) => `**Photo ${idx + 1}:** ${this.apiUrl}/giveaway/photos/${photo._id}`)
+            .join('\n');
+          console.log(`[DISCORD] ${photoCount} photos disponibles`);
         }
       } else {
         console.log(`[DISCORD] Aucune photo disponible pour ce giveaway`);
@@ -174,11 +183,22 @@ class DiscordBotService {
             value: photoCount > 0 ? `${photoCount} photo${photoCount > 1 ? 's' : ''}` : 'Aucune photo',
             inline: true,
           }
-        )
-        .setFooter({
-          text: `Giveaway ID: ${giveaway._id}`,
-        })
-        .setTimestamp();
+        );
+        
+        // Ajouter les liens des photos supplémentaires s'il y en a plusieurs
+        if (photosLinks) {
+          embed.addFields({
+            name: '🖼️ Galerie de photos',
+            value: photosLinks,
+            inline: false,
+          });
+        }
+        
+        embed
+          .setFooter({
+            text: `Giveaway ID: ${giveaway._id}`,
+          })
+          .setTimestamp();
 
       // Ajouter la photo si disponible
       if (photoUrl) {
