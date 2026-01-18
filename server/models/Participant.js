@@ -29,7 +29,6 @@ const participantSchema = new mongoose.Schema(
     // ========== Champs Discord ==========
     discordId: {
       type: String,
-      unique: true,
       sparse: true, // Permet les documents sans discordId
       index: true,
     },
@@ -68,6 +67,16 @@ const participantSchema = new mongoose.Schema(
  */
 // Index composite pour rechercher rapidement les participations par IP
 participantSchema.index({ ip: 1, createdAt: -1 });
+
+// Index unique composé: un utilisateur Discord ne peut participer qu'une fois par giveaway
+participantSchema.index(
+  { discordId: 1, giveaway: 1 },
+  { 
+    sparse: true,
+    unique: true,
+    name: 'discord_giveaway_unique'
+  }
+);
 
 // TTL Index: supprime les documents 86400 secondes (24h) après leur création
 // Le timestamp de création est géré par 'timestamps: true'
