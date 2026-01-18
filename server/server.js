@@ -14,10 +14,11 @@ const { globalLimiter, getClientIp } = require('./middlewares/rateLimiter');
 const passport = require('./config/passport');
 
 // Importer les routes
-const participantRoutes = require('./routes/participants');
+const participationRoutes = require('./routes/participation');
 const giveawayRoutes = require('./routes/giveaway');
 const giveawaysRoutes = require('./routes/giveaways');
 const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 
 // Importer la configuration
 const { connectDB } = require('./config/database');
@@ -113,9 +114,10 @@ app.use(express.static(path.join(__dirname, '../client')));
 // ===========================
 
 app.use('/api/auth', authRoutes);
-app.use('/api/participants', participantRoutes);
+app.use('/api/participations', participationRoutes);
 app.use('/api/giveaway', giveawayRoutes);
 app.use('/api/giveaways', giveawaysRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Route de test
 app.get('/api/health', (req, res) => {

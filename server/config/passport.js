@@ -1,7 +1,8 @@
 const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
-const Participant = require('../models/Participant');
+const User = require('../models/User');
 const axios = require('axios');
+const { createOrUpdateUser } = require('../controllers/userController');
 
 /**
  * Configuration de la stratégie Discord
@@ -58,42 +59,9 @@ passport.use(
         // ============================================
         // 2. Chercher ou créer l'utilisateur en base
         // ============================================
-        let participant = await Participant.findOne({ discordId: profile.id });
+        const user = await createOrUpdateUser(profile);
 
-        if (!participant) {
-          // Créer un nouveau participant
-          const avatarUrl = profile.avatar
-            ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.webp?size=256`
-            : `https://cdn.discordapp.com/embed/avatars/${(profile.id >> 22) % 6}.png`;
-          
-          console.log(`[DISCORD AUTH] Avatar URL pour ${profile.username}:`, avatarUrl);
-          
-          participant = new Participant({
-            discordId: profile.id,
-            discordUsername: profile.username,
-            discordAvatar: avatarUrl,
-            email: profile.email,
-            isDiscordAuthenticated: true,
-          });
-
-          await participant.save();
-        } else {
-          // Mettre à jour les infos Discord
-          participant.discordUsername = profile.username;
-          const avatarUrl = profile.avatar
-            ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.webp?size=256`
-            : `https://cdn.discordapp.com/embed/avatars/${(profile.id >> 22) % 6}.png`;
-          
-          console.log(`[DISCORD AUTH] Mise à jour avatar pour ${profile.username}:`, avatarUrl);
-          
-          participant.discordAvatar = avatarUrl;
-          participant.email = profile.email;
-          participant.isDiscordAuthenticated = true;
-
-          await participant.save();
-        }
-
-        return done(null, participant);
+        return done(null, user);
       } catch (error) {
         console.error('Erreur lors de l\'authentification Discord:', error);
         return done(error);
@@ -106,7 +74,7 @@ passport.use(
  * Sérialiser l'utilisateur pour la session
  */
 passport.serializeUser((user, done) => {
-  done(null, user.id); // Utiliser l'ID MongoDB
+  done(null, user.id); // Utiliser l'ID MongoDB du User
 });
 
 /**
@@ -114,7 +82,7 @@ passport.serializeUser((user, done) => {
  */
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await Participant.findById(id);
+    const user = await User.findById(id);
     done(null, user);
   } catch (error) {
     done(error);

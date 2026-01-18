@@ -1,11 +1,11 @@
 // ===========================
 // CONFIGURATION
 // ===========================
-const API_URL = '/api/participants';
-const ROULETTE_API = '/api/participants/roulette';
-const ADMIN_LOGIN_API = '/api/participants/admin/login';
-const WINNERS_API = '/api/participants/winners';
-const RESET_API = '/api/participants/reset';
+const API_URL = '/api/participations';
+const ROULETTE_API = '/api/giveaways/roulette';
+const ADMIN_LOGIN_API = '/api/auth/admin-login';
+const WINNERS_API = '/api/giveaways/winners';
+const RESET_API = '/api/giveaways/reset';
 const GIVEAWAYS_API = '/api/giveaways';
 const DISCORD_AUTH_API = '/api/auth/discord';
 const DISCORD_USER_API = '/api/auth/user';
@@ -1065,26 +1065,35 @@ document.getElementById('participantForm').addEventListener('submit', async (e) 
     }
 
     if (!response.ok) {
-      const nextTime = response.status === 429 && data.nextAllowedAt ? new Date(data.nextAllowedAt) : null;
-      showParticipationModal(false, data.message || 'Erreur lors de l\'enregistrement', nextTime);
+      // Gestion des erreurs
+      if (response.status === 429) {
+        // Participation déjà effectuée - afficher le temps restant
+        const timeRemaining = data.timeRemaining;
+        const hours = Math.floor(timeRemaining / 60);
+        const minutes = timeRemaining % 60;
+        let timeString = hours > 0 ? `${hours}h ${minutes}min` : `${minutes} minutes`;
+        
+        showParticipationModal(false, data.message, null, timeString);
+      } else {
+        showParticipationModal(false, data.message || 'Erreur lors de l\'enregistrement', null);
+      }
       setLoading(false);
       return;
     }
 
     showParticipationModal(
       true,
-      '⚡ Participation enregistrée avec succès! Revenez dans 24h pour reparticiper! ⚡',
-      data.data && data.data.nextAllowedAt ? new Date(data.data.nextAllowedAt) : null
+      '⚡ Participation enregistrée avec succès! ⚡',
+      null
     );
     
-    // Désactiver le formulaire pendant 24h
+    // Désactiver le formulaire après participation
     document.getElementById('participantForm').style.opacity = '0.6';
     document.querySelector('.btn-primary').disabled = true;
 
     createEnergyParticles(15);
 
     // Actualiser les données
-    await fetchParticipants();
     await updateStats();
   } catch (error) {
     console.error('Erreur lors de la participation:', error);
@@ -1103,16 +1112,27 @@ document.getElementById('participantForm').addEventListener('submit', async (e) 
  */
 async function fetchParticipants() {
   try {
-    let url = API_URL;
-    if (currentGiveaway && currentGiveaway._id) {
-      url += `?giveawayId=${currentGiveaway._id}`;
+    if (!currentGiveaway || !currentGiveaway._id) {
+      console.warn('⚠️ Aucun giveaway sélectionné');
+      participants = [];
+      displayParticipants();
+      return;
     }
+
+    // Utiliser la nouvelle route: /api/participations/giveaway/:giveawayId
+    const url = `${API_URL}/giveaway/${currentGiveaway._id}`;
     
     const response = await fetch(url);
     const data = await response.json();
 
     if (data.success) {
-      participants = data.data;
+      // La nouvelle réponse retourne participants avec infos user
+      participants = data.data.map(p => ({
+        _id: p._id,
+        discordUsername: p.user.discordUsername,
+        discordAvatar: p.user.discordAvatar,
+        participatedAt: p.participatedAt,
+      }));
       displayParticipants();
     }
   } catch (error) {

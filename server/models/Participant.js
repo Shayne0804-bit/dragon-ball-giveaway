@@ -1,56 +1,28 @@
 const mongoose = require('mongoose');
 
 /**
- * Schéma Participant
- * Stocke les participants au giveaway avec leur IP pour l'anti-spam
- * Support de l'authentification Discord
+ * Schéma Participation
+ * Enregistre les participations d'un utilisateur à un giveaway
+ * Un utilisateur = une participation par giveaway
  */
-const participantSchema = new mongoose.Schema(
+const participationSchema = new mongoose.Schema(
   {
-    // ========== Champs existants ==========
-    name: {
-      type: String,
-      trim: true,
-      minlength: [2, 'Le nom doit contenir au minimum 2 caractères'],
-      maxlength: [20, 'Le nom doit contenir au maximum 20 caractères'],
-      match: [/^[a-zA-Z0-9\s]+$/, 'Le nom ne peut contenir que des lettres, chiffres et espaces'],
-      // Optionnel si authentification Discord activée
-    },
-    ip: {
-      type: String,
+    // ========== Relations ==========
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
       index: true,
     },
     giveaway: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Giveaway',
+      required: true,
       index: true,
     },
-    
-    // ========== Champs Discord ==========
-    discordId: {
-      type: String,
-      sparse: true, // Permet les documents sans discordId
-      index: true,
-    },
-    discordUsername: {
-      type: String,
-      trim: true,
-    },
-    discordAvatar: {
-      type: String, // URL de l'avatar Discord
-    },
-    email: {
-      type: String,
-      trim: true,
-      lowercase: true,
-    },
-    isDiscordAuthenticated: {
-      type: Boolean,
-      default: false,
-    },
-    
+
     // ========== Timestamps ==========
-    createdAt: {
+    participatedAt: {
       type: Date,
       default: Date.now,
     },
@@ -61,42 +33,30 @@ const participantSchema = new mongoose.Schema(
 );
 
 /**
- * Index pour la limite de 24h par IP
- * Supprime automatiquement les documents après 24h
- * Important: TTL index doit être sur un champ Date avec une durée
+ * Index unique : un utilisateur ne peut participer qu'une fois par giveaway
  */
-// Index composite pour rechercher rapidement les participations par IP
-participantSchema.index({ ip: 1, createdAt: -1 });
-
-// Index unique composé: un utilisateur Discord ne peut participer qu'une fois par giveaway
-participantSchema.index(
-  { discordId: 1, giveaway: 1 },
-  { 
-    sparse: true,
+participationSchema.index(
+  { user: 1, giveaway: 1 },
+  {
     unique: true,
-    name: 'discord_giveaway_unique'
-  }
-);
-
-// TTL Index: supprime les documents 86400 secondes (24h) après leur création
-// Le timestamp de création est géré par 'timestamps: true'
-participantSchema.index(
-  { createdAt: 1 },
-  { 
-    expireAfterSeconds: 86400, // 24h = 86400 secondes
-    name: 'participation_ttl_24h'
+    name: 'user_giveaway_unique',
   }
 );
 
 /**
- * Middleware de validation avant sauvegarde
+ * Index pour rechercher les participations d'un utilisateur
  */
-participantSchema.pre('save', function (next) {
-  // Trim automatique du nom (si le nom existe)
-  if (this.name) {
-    this.name = this.name.trim();
-  }
-  next();
-});
+participationSchema.index(
+  { user: 1, participatedAt: -1 },
+  { name: 'user_participations' }
+);
 
-module.exports = mongoose.model('Participant', participantSchema);
+/**
+ * Index pour rechercher les participants d'un giveaway
+ */
+participationSchema.index(
+  { giveaway: 1, participatedAt: -1 },
+  { name: 'giveaway_participants' }
+);
+
+module.exports = mongoose.model('Participation', participationSchema);

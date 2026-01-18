@@ -84,7 +84,7 @@ const getGiveaways = async (req, res) => {
     // Compter les participants pour chaque giveaway
     const giveawaysWithCount = await Promise.all(
       giveaways.map(async (g) => {
-        const participantCount = await Participant.countDocuments({ giveawayId: g._id });
+        const participantCount = await Participant.countDocuments({ giveaway: g._id });
         return {
           _id: g._id,
           name: g.name,
