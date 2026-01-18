@@ -16,6 +16,28 @@ const { verifyAdminToken } = require('../middlewares/adminAuth');
 router.get('/', getGiveaways);
 
 /**
+ * GET /api/giveaways/roulette
+ * Endpoint pour la roulette (stub - à implémenter)
+ */
+router.get('/roulette', (req, res) => {
+  return res.status(501).json({
+    success: false,
+    message: 'Roulette endpoint not yet implemented',
+  });
+});
+
+/**
+ * GET /api/giveaways/winners
+ * Récupérer l'historique des gagnants
+ */
+router.get('/winners', (req, res) => {
+  return res.status(501).json({
+    success: false,
+    message: 'Winners endpoint not yet implemented',
+  });
+});
+
+/**
  * GET /api/giveaways/:id
  * Récupérer un giveaway spécifique (accessible à tous)
  */
