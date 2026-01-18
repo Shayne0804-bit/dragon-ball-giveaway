@@ -4,10 +4,16 @@ const Giveaway = require('../models/Giveaway');
 
 class ReminderService {
   constructor(discordBot) {
+    console.log('[Reminder Service] Constructeur - discordBot reçu:', discordBot ? 'Oui' : 'Non');
     this.discordBot = discordBot;
     this.reminderInterval = null;
     this.REMINDER_INTERVAL = 12 * 60 * 60 * 1000; // 12 heures en millisecondes
     this.lastReminderTime = 0;
+    
+    // Vérifier immédiatement
+    if (this.discordBot) {
+      console.log('[Reminder Service] discordBot disponible, client:', this.discordBot.client ? 'Disponible' : 'Null');
+    }
   }
 
   /**
@@ -48,31 +54,54 @@ class ReminderService {
     try {
       console.log('[Reminder Service] 📢 Tentative d\'envoi d\'un rappel...');
       
-      // Vérifier que discordBot existe
-      if (!this.discordBot) {
-        console.warn('[Reminder Service] ⚠️ DiscordBot non disponible');
+      // Étape 1: Vérifier que le service a reçu le discordBot
+      if (typeof this.discordBot === 'undefined' || this.discordBot === null) {
+        console.error('[Reminder Service] ❌ this.discordBot est undefined/null');
         return;
       }
+      console.log('[Reminder Service] ✓ this.discordBot est défini');
 
-      // Récupérer le bot Discord - accéder directement au client
+      // Étape 2: Vérifier que discordBot a une propriété client
+      if (typeof this.discordBot.client === 'undefined' || this.discordBot.client === null) {
+        console.error('[Reminder Service] ❌ this.discordBot.client est undefined/null');
+        console.error('[Reminder Service] Types:', {
+          discordBot: typeof this.discordBot,
+          discordBotKeys: Object.keys(this.discordBot || {})
+        });
+        return;
+      }
+      console.log('[Reminder Service] ✓ this.discordBot.client est défini');
+
       const discordClient = this.discordBot.client;
-      
-      console.log('[Reminder Service] Client Discord:', discordClient ? 'Disponible' : 'Null/Undefined');
-      
-      if (!discordClient) {
-        console.warn('[Reminder Service] ⚠️ Client Discord non initialisé');
+
+      // Étape 3: Vérifier que le client a la méthode isReady
+      if (typeof discordClient.isReady !== 'function') {
+        console.error('[Reminder Service] ❌ discordClient.isReady n\'est pas une fonction');
         return;
       }
 
-      console.log('[Reminder Service] État du client:', discordClient.isReady() ? 'Prêt' : 'Pas prêt');
-      
       if (!discordClient.isReady()) {
         console.warn('[Reminder Service] ⚠️ Client Discord non prêt');
         return;
       }
+      console.log('[Reminder Service] ✓ Client Discord prêt');
 
-      // Récupérer le channel à partir de la config
-      const channelId = config.discord.channels.notifications;
+      // Étape 4: Vérifier que le client a la propriété channels
+      if (typeof discordClient.channels === 'undefined' || discordClient.channels === null) {
+        console.error('[Reminder Service] ❌ discordClient.channels est undefined/null');
+        return;
+      }
+      console.log('[Reminder Service] ✓ discordClient.channels est défini');
+
+      // Étape 5: Vérifier que channels a la méthode fetch
+      if (typeof discordClient.channels.fetch !== 'function') {
+        console.error('[Reminder Service] ❌ discordClient.channels.fetch n\'est pas une fonction');
+        return;
+      }
+      console.log('[Reminder Service] ✓ discordClient.channels.fetch est disponible');
+
+      // Étape 6: Récupérer le channel à partir de la config
+      const channelId = config?.discord?.channels?.notifications;
       console.log('[Reminder Service] Channel ID:', channelId);
       
       if (!channelId) {
@@ -80,10 +109,10 @@ class ReminderService {
         return;
       }
 
-      // Utiliser fetch au lieu de cache pour être sûr d'avoir le channel
+      // Étape 7: Utiliser fetch au lieu de cache
       let channel;
       try {
-        console.log('[Reminder Service] Récupération du channel...');
+        console.log('[Reminder Service] Récupération du channel:', channelId);
         channel = await discordClient.channels.fetch(channelId);
         console.log('[Reminder Service] ✓ Channel récupéré:', channel?.name);
       } catch (error) {
