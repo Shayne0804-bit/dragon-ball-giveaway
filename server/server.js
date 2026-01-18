@@ -15,6 +15,7 @@ const passport = require('./config/passport');
 
 // Importer les routes
 const participationRoutes = require('./routes/participation');
+const participantRoutes = require('./routes/participants');
 const giveawayRoutes = require('./routes/giveaway');
 const giveawaysRoutes = require('./routes/giveaways');
 const authRoutes = require('./routes/auth');
@@ -109,6 +110,7 @@ app.use(express.static(path.join(__dirname, '../client')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/participations', participationRoutes);
+app.use('/api/participants', participantRoutes);
 app.use('/api/giveaway', giveawayRoutes);
 app.use('/api/giveaways', giveawaysRoutes);
 app.use('/api/admin', adminRoutes);
