@@ -7,7 +7,14 @@ class DiscordBotService {
     this.isReady = false;
     this.channelId = process.env.DISCORD_CHANNEL_ID;
     this.botToken = process.env.DISCORD_BOT_TOKEN;
-    this.siteUrl = process.env.CORS_ORIGIN || process.env.RAILWAY_DOMAIN_URL || 'http://localhost:5000';
+    
+    // Déterminer l'URL du site
+    let siteUrl = process.env.CORS_ORIGIN;
+    if (!siteUrl || siteUrl === 'undefined') {
+      siteUrl = process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : 'http://localhost:5000';
+    }
+    this.siteUrl = siteUrl;
+    console.log('[DISCORD] Site URL configurée:', this.siteUrl);
   }
 
   /**
@@ -127,7 +134,7 @@ class DiscordBotService {
         .addComponents(
           new ButtonBuilder()
             .setLabel('🎯 Participer')
-            .setURL(`${this.siteUrl}/`)
+            .setURL(this.siteUrl.startsWith('http') ? `${this.siteUrl}/` : `http://localhost:5000/`)
             .setStyle(ButtonStyle.Link)
         );
 
