@@ -240,6 +240,25 @@ const drawWinner = async (req, res) => {
     });
     await winnerRecord.save();
 
+    // Récupérer tous les gagnants du giveaway pour la notification Discord
+    let winners = [];
+    if (giveawayId) {
+      winners = await Winner.find({ giveaway: giveawayId }).lean();
+      
+      // Récupérer le giveaway avec les photos et envoyer la notification Discord
+      const giveaway = await Giveaway.findById(giveawayId).populate('photos');
+      if (giveaway) {
+        const participantCount = await Participation.countDocuments({ giveaway: giveawayId });
+        giveaway.participantCount = participantCount;
+        giveaway.winnerCount = winners.length;
+        
+        // Envoyer la notification Discord
+        discordBot.notifyGiveawayCompleted(giveaway, winners).catch(err => {
+          console.error('[DRAWWINNER] Erreur lors de l\'envoi de la notification Discord:', err.message);
+        });
+      }
+    }
+
     res.json({
       success: true,
       message: 'Gagnant tiré au sort!',
