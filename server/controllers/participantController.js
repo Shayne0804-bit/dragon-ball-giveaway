@@ -64,38 +64,36 @@ const addParticipant = async (req, res) => {
     }
 
     // Vérifier si cet utilisateur Discord a déjà participé à ce giveaway dans les 24 dernières heures
-    const antiSpamQuery = {
-      discordId: discordId,
-      createdAt: {
-        $gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 heures
-      },
-    };
+    // Cette vérification s'applique uniquement si AUCUN giveawayId n'est fourni (participation générale)
+    if (!giveawayId) {
+      const antiSpamQuery = {
+        discordId: discordId,
+        giveaway: null, // Participations sans giveaway spécifique
+        createdAt: {
+          $gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24 heures
+        },
+      };
 
-    // Si un giveawayId est fourni, vérifier uniquement pour ce giveaway
-    if (giveawayId) {
-      antiSpamQuery.giveaway = giveawayId;
-    } else {
-      antiSpamQuery.giveaway = null;
+      const lastParticipation = await Participant.findOne(antiSpamQuery);
+
+      if (lastParticipation) {
+        // Calculer le temps avant la prochaine participation
+        const nextAllowedTime = new Date(
+          lastParticipation.createdAt.getTime() + 24 * 60 * 60 * 1000
+        );
+        const timeUntilNext = Math.ceil((nextAllowedTime - Date.now()) / 60000); // en minutes
+
+        const errorMessage = `⏱️ Vous avez déjà participé! Vous pourrez reparticiper dans ${timeUntilNext} minutes.`;
+
+        return res.status(429).json({
+          success: false,
+          message: errorMessage,
+          nextAllowedAt: nextAllowedTime,
+        });
+      }
     }
-
-    const lastParticipation = await Participant.findOne(antiSpamQuery);
-
-    if (lastParticipation) {
-      // Calculer le temps avant la prochaine participation
-      const nextAllowedTime = new Date(
-        lastParticipation.createdAt.getTime() + 24 * 60 * 60 * 1000
-      );
-      const timeUntilNext = Math.ceil((nextAllowedTime - Date.now()) / 60000); // en minutes
-
-      const context = giveawayId ? ' à ce giveaway' : '';
-      const errorMessage = `⏱️ Vous avez déjà participé${context}! Vous pourrez reparticiper dans ${timeUntilNext} minutes.`;
-
-      return res.status(429).json({
-        success: false,
-        message: errorMessage,
-        nextAllowedAt: nextAllowedTime,
-      });
-    }
+    // NOTE: Si giveawayId EST fourni, la contrainte unique MongoDB (discordId, giveaway)
+    // empêchera les doublons. L'erreur sera gérée lors du .save()
 
     // Créer le participant avec les infos Discord
     const participant = new Participant({
@@ -110,7 +108,26 @@ const addParticipant = async (req, res) => {
     });
 
     // Sauvegarder dans la base
-    await participant.save();
+    try {
+      await participant.save();
+    } catch (err) {
+      // Gérer les erreurs de contrainte unique (doublon discord + giveaway)
+      if (err.code === 11000) {
+        const duplicateField = Object.keys(err.keyPattern)[0];
+        
+        // Si c'est une violation de l'index unique (discordId, giveaway)
+        if (err.keyPattern.discordId && err.keyPattern.giveaway) {
+          return res.status(429).json({
+            success: false,
+            message: '❌ Vous avez déjà participé à ce giveaway! Vous ne pouvez participer qu\'une fois par giveaway.',
+            code: 'ALREADY_PARTICIPATED',
+          });
+        }
+        
+        throw err;
+      }
+      throw err;
+    }
 
     // Récupérer le giveaway et envoyer une notification Discord
     if (giveawayId) {
