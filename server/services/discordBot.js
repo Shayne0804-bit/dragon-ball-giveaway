@@ -86,17 +86,29 @@ class DiscordBotService {
    */
   async notifyGiveawayCreated(giveaway) {
     if (!this.isReady || !this.channelId) {
-      console.warn('[DISCORD] Bot non prêt ou canal non configuré');
+      console.warn(`[DISCORD] ⚠️  Bot non prêt (${this.isReady}) ou canal non configuré (${this.channelId})`);
       return false;
     }
 
     try {
-      const channel = await this.client.channels.fetch(this.channelId);
+      console.log(`[DISCORD] Tentative d'accès au canal: ${this.channelId}`);
+      
+      const channel = await this.client.channels.fetch(this.channelId).catch(err => {
+        console.error(`[DISCORD] ❌ Erreur fetch canal: ${err.message}`);
+        return null;
+      });
 
-      if (!channel || channel.type !== ChannelType.GuildText) {
-        console.error('[DISCORD] Canal non valide ou inaccessible');
+      if (!channel) {
+        console.error(`[DISCORD] ❌ Canal introuvable: ${this.channelId}`);
         return false;
       }
+
+      if (channel.type !== ChannelType.GuildText) {
+        console.error(`[DISCORD] ❌ Canal non valide - Type: ${channel.type} (attendu: ${ChannelType.GuildText})`);
+        return false;
+      }
+
+      console.log(`[DISCORD] ✅ Canal accessible: ${channel.name}`);
 
       const durationText = this.formatDuration(giveaway.durationDays, giveaway.durationHours);
       const endDate = new Date(giveaway.endDate).toLocaleString('fr-FR', {
@@ -350,7 +362,10 @@ class DiscordBotService {
     }
 
     try {
-      const channel = await this.client.channels.fetch(this.channelId);
+      const channel = await this.client.channels.fetch(this.channelId).catch(err => {
+        console.error(`[DISCORD] ❌ Erreur fetch canal (notifyNewParticipant): ${err.message}`);
+        return null;
+      });
 
       if (!channel || channel.type !== ChannelType.GuildText) {
         return false;
