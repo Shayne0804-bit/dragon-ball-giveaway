@@ -23,6 +23,7 @@ class DiscordBotService {
     this.siteUrl = siteUrl;
     this.apiUrl = `${siteUrl}/api`;
     console.log('[DISCORD] Site URL configurée:', this.siteUrl);
+    console.log('[DISCORD] API URL configurée:', this.apiUrl);
   }
 
   /**
@@ -115,10 +116,15 @@ class DiscordBotService {
       let photoUrl = null;
       if (giveaway.photos && giveaway.photos.length > 0) {
         const photo = giveaway.photos[0];
+        console.log(`[DISCORD] Photo objet:`, JSON.stringify({ _id: photo._id, filename: photo.filename }));
         if (photo._id) {
           photoUrl = `${this.apiUrl}/giveaway/photos/${photo._id}`;
-          console.log(`[DISCORD] Photo trouvée: ${photoUrl}`);
+          console.log(`[DISCORD] URL photo construite: ${photoUrl}`);
+        } else {
+          console.log(`[DISCORD] Photo n'a pas de _id`);
         }
+      } else {
+        console.log(`[DISCORD] Aucune photo disponible pour ce giveaway`);
       }
 
       const durationText = this.formatDuration(giveaway.durationDays, giveaway.durationHours);
@@ -168,7 +174,10 @@ class DiscordBotService {
 
       // Ajouter la photo si disponible
       if (photoUrl) {
+        console.log(`[DISCORD] Ajout de l'image à l'embed: ${photoUrl}`);
         embed.setImage(photoUrl);
+      } else {
+        console.log(`[DISCORD] Pas d'image à ajouter à cet embed`);
       }
 
       // Créer un bouton pour accéder au site
