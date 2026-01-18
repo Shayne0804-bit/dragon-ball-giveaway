@@ -1,5 +1,4 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-const config = require('../config/config');
 const Giveaway = require('../models/Giveaway');
 
 class ReminderService {
@@ -100,9 +99,9 @@ class ReminderService {
       }
       console.log('[Reminder Service] ✓ discordClient.channels.fetch est disponible');
 
-      // Étape 6: Récupérer le channel à partir de la config
-      const channelId = config?.discord?.channels?.notifications;
-      console.log('[Reminder Service] Channel ID:', channelId);
+      // Étape 6: Récupérer le channel ID - utiliser celui du discordBot
+      const channelId = this.discordBot?.channelId || process.env.DISCORD_CHANNEL_ID;
+      console.log('[Reminder Service] Channel ID utilisé:', channelId);
       
       if (!channelId) {
         console.warn('[Reminder Service] ⚠️ Channel ID non configuré');
