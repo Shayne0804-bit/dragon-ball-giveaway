@@ -126,6 +126,37 @@ router.get('/debug', (req, res) => {
 });
 
 /**
+ * POST /api/auth/admin-login
+ * Authentifier un administrateur avec un mot de passe
+ * Retourne un token admin valide
+ */
+router.post('/admin-login', (req, res) => {
+  const { password } = req.body;
+  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+  // Vérifier le mot de passe
+  if (!password || password !== ADMIN_PASSWORD) {
+    console.log('[AUTH ADMIN] ❌ Mot de passe admin incorrect');
+    return res.status(401).json({
+      success: false,
+      message: '❌ Mot de passe incorrect',
+    });
+  }
+
+  // Générer un token admin
+  const token = `adminToken_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  console.log('[AUTH ADMIN] ✅ Connexion admin réussie');
+
+  return res.json({
+    success: true,
+    message: '✅ Authentification admin réussie',
+    token: token,
+    expiresIn: 3600, // 1 heure en secondes
+  });
+});
+
+/**
  * POST /api/auth/logout
  * Déconnecter l'utilisateur
  */
