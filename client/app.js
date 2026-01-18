@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ===========================
 const API_URL = '/api/participations';
-const ROULETTE_API = '/api/giveaways/roulette';
+const ROULETTE_API = '/api/participants/roulette';
 const ADMIN_LOGIN_API = '/api/auth/admin-login';
 const WINNERS_API = '/api/giveaways/winners';
 const RESET_API = '/api/giveaways/reset';
