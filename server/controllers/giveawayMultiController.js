@@ -265,9 +265,8 @@ const deleteGiveaway = async (req, res) => {
     await Participant.deleteMany({ giveaway: id });
     console.log(`[DELETE] Participants (roulette) supprimés pour le giveaway ${id}`);
 
-    // Supprimer tous les gagnants du giveaway
-    await Winner.deleteMany({ giveaway: id });
-    console.log(`[DELETE] Gagnants supprimés pour le giveaway ${id}`);
+    // ⚠️ NE PAS supprimer les gagnants (Winners) - on garde l'historique !
+    console.log(`[DELETE] Historique des gagnants conservé pour le giveaway ${id}`);
 
     // Supprimer le giveaway lui-même
     await Giveaway.findByIdAndDelete(id);
