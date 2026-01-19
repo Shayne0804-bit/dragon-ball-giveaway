@@ -250,18 +250,6 @@
           </div>
         </div>
       </div>
-
-      <!-- Admin Photos Section -->
-      <div id="giveawayPhotosContainer" class="card hidden">
-        <div class="card-header">
-          <span class="card-icon">📷</span>
-          <h2 data-i18n="managePhotos">Gérer les Photos</h2>
-        </div>
-        <div class="card-body">
-          <div id="giveawayPhotosList" class="photos-grid"></div>
-          <p id="noPhotosMessage" class="empty-state" style="display: block;" data-i18n="noPhotosAvailable">Aucune photo disponible</p>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -392,6 +380,7 @@
   <input type="file" id="giveawayPhotosInput" style="display: none;" multiple accept="image/*">
   <button id="uploadPhotosBtn" style="display: none;"></button>
   <button id="clearPhotosBtn" style="display: none;"></button>
+  <div id="giveawayPhotosContainer" style="display: none;"></div>
   <div id="publicGiveawayPhotosContainer" style="display: none;"></div>
 
   <!-- Loading Spinner -->
