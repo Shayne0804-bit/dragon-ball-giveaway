@@ -6,8 +6,8 @@
 // Configuration
 const API_URL = '/api/shop';
 const ADMIN_API_URL = '/api/admin';
-let adminToken = null; // Pas de sauvegarde localStorage
-let isAdmin = false;
+let shopAdminToken = null; // Pas de sauvegarde localStorage - spécifique à la boutique
+let isShopAdmin = false; // Admin boutique - isolé des autres pages
 
 // Conversion de devises (taux de change)
 const CURRENCY_RATES = {
@@ -318,12 +318,12 @@ function createShopItemCard(item) {
 function checkAdminStatus() {
   const adminSection = document.getElementById('adminShopSection');
   console.log('[SHOP] === Vérification statut admin ===');
-  console.log('[SHOP] isAdmin:', isAdmin);
-  console.log('[SHOP] adminToken:', adminToken ? '✓ Présent' : '✗ Absent');
+  console.log('[SHOP] isShopAdmin:', isShopAdmin);
+  console.log('[SHOP] shopAdminToken:', shopAdminToken ? '✓ Présent' : '✗ Absent');
   console.log('[SHOP] Élément adminShopSection existe:', !!adminSection);
   console.log('[SHOP] Classe hidden:', adminSection?.classList.contains('hidden'));
   
-  if (isAdmin) {
+  if (isShopAdmin) {
     console.log('[SHOP] ✓ Admin actif - affichage de la section');
     adminSection.classList.remove('hidden');
     loadAdminShopItems();
@@ -466,7 +466,7 @@ async function performDeleteItem(itemId) {
     const response = await fetch(`${API_URL}/items/${itemId}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${adminToken}`,
+        'Authorization': `Bearer ${shopAdminToken}`,
         'Content-Type': 'application/json',
       },
     });
@@ -543,7 +543,7 @@ async function submitItem() {
     const response = await fetch(url, {
       method,
       headers: {
-        'Authorization': `Bearer ${adminToken}`,
+        'Authorization': `Bearer ${shopAdminToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
@@ -601,14 +601,14 @@ async function loginAsAdmin() {
 
     if (data.success) {
       console.log('[SHOP] Connexion admin réussie!');
-      adminToken = data.token;
+      shopAdminToken = data.token;
       // Pas de sauvegarde localStorage - session temporaire
-      isAdmin = true;
-      console.log('[SHOP] Variables définies - isAdmin:', isAdmin, 'adminToken:', adminToken ? '✓' : '✗');
+      isShopAdmin = true;
+      console.log('[SHOP] Variables définies - isShopAdmin:', isShopAdmin, 'shopAdminToken:', shopAdminToken ? '✓' : '✗');
 
       showMessageInElement('adminLoginMessage', 'Connexion réussie!', 'success');
       setTimeout(() => {
-        console.log('[SHOP] ⏱️ Après 1s - isAdmin:', isAdmin, 'adminToken:', adminToken ? '✓' : '✗');
+        console.log('[SHOP] ⏱️ Après 1s - isShopAdmin:', isShopAdmin, 'shopAdminToken:', shopAdminToken ? '✓' : '✗');
         closeModal('adminLoginModal');
         checkAdminStatus();
         loadAdminShopItems();
@@ -645,10 +645,10 @@ function setupEventListeners() {
   }
 
   document.getElementById('adminLoginBtn').addEventListener('click', () => {
-    if (isAdmin) {
-      adminToken = null;
+    if (isShopAdmin) {
+      shopAdminToken = null;
       // Pas de localStorage à nettoyer
-      isAdmin = false;
+      isShopAdmin = false;
       checkAdminStatus();
       location.reload();
     } else {
