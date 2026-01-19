@@ -6,8 +6,8 @@
 // Configuration
 const API_URL = '/api/shop';
 const ADMIN_API_URL = '/api/admin';
-let adminToken = localStorage.getItem('adminToken');
-let isAdmin = !!adminToken;
+let adminToken = null; // Pas de sauvegarde localStorage
+let isAdmin = false;
 
 // Conversion de devises (taux de change)
 const CURRENCY_RATES = {
@@ -26,7 +26,7 @@ const CURRENCY_SYMBOLS = {
 let allShopItems = [];
 let currentEditingItem = null;
 let cartItems = []; // Panier des articles sélectionnés
-let currentCurrency = localStorage.getItem('shop_currency') || 'eur'; // Devise actuelle
+let currentCurrency = 'eur'; // Devise par défaut (pas de localStorage)
 
 // Gallery
 let currentGalleryItem = null;
@@ -53,6 +53,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ===========================
+// GESTION DES LANGUES
+// ===========================
+
+let currentLanguage = 'fr'; // Langue par défaut
+
+function applyTranslation(lang = 'fr') {
+  currentLanguage = lang;
+  console.log('[SHOP] Traduction appliquée en:', lang);
+
+  // Traduire tous les éléments avec l'attribut data-translate
+  document.querySelectorAll('[data-translate]').forEach((element) => {
+    const key = element.getAttribute('data-translate');
+    const translation = t(key, lang);
+    
+    // Préserver les icônes au début du texte
+    const currentText = element.textContent.trim();
+    const emojiMatch = currentText.match(/^[\s\p{Emoji_Presentation}]+/u);
+    
+    if (emojiMatch) {
+      element.textContent = emojiMatch[0] + translation;
+    } else {
+      element.textContent = translation;
+    }
+  });
+
+  // Traduire les placeholders
+  document.querySelectorAll('[data-translate-placeholder]').forEach((element) => {
+    const key = element.getAttribute('data-translate-placeholder');
+    element.placeholder = t(key, lang);
+  });
+}
+
+// ===========================
 // GESTION DES DEVISES
 // ===========================
 
@@ -61,7 +94,7 @@ function initCurrencySelector() {
   selector.value = currentCurrency;
   selector.addEventListener('change', (e) => {
     currentCurrency = e.target.value;
-    localStorage.setItem('shop_currency', currentCurrency);
+    // Pas de sauvegarde localStorage - réinitialiser à EUR après rechargement
     renderShopItems();
     updateCart();
     console.log('[SHOP] Devise changée en:', currentCurrency);
@@ -324,18 +357,34 @@ function renderAdminTable() {
       <tr>
         <td>${escapeHtml(item.name)}</td>
         <td>${escapeHtml((item.description || '').substring(0, 50))}</td>
-        <td>${item.price.toFixed(2)}€</td>
+        <td>${formatPrice(item.price)}</td>
         <td>${item.category}</td>
         <td>${item.quantity === null ? 'Illimité' : item.quantity}</td>
         <td>
           <div class="admin-actions">
-            <button class="btn-action" onclick="editItem('${item._id}')">✏️ Éditer</button>
-            <button class="btn-action danger" onclick="deleteItem('${item._id}', '${item.name}')">🗑️ Supprimer</button>
+            <button class="btn-action btn-edit-item" data-item-id="${item._id}">✏️ Éditer</button>
+            <button class="btn-action danger btn-delete-item" data-item-id="${item._id}" data-item-name="${escapeHtml(item.name)}">🗑️ Supprimer</button>
           </div>
         </td>
       </tr>
     `)
     .join('');
+
+  // Ajouter les event listeners pour éditer/supprimer
+  setTimeout(() => {
+    document.querySelectorAll('.btn-edit-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        editItem(e.target.closest('button').dataset.itemId);
+      });
+    });
+    
+    document.querySelectorAll('.btn-delete-item').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const button = e.target.closest('button');
+        deleteItem(button.dataset.itemId, button.dataset.itemName);
+      });
+    });
+  }, 0);
 }
 
 // ===========================
@@ -534,7 +583,7 @@ async function loginAsAdmin() {
 
     if (data.success) {
       adminToken = data.token;
-      localStorage.setItem('adminToken', adminToken);
+      // Pas de sauvegarde localStorage - session temporaire
       isAdmin = true;
 
       showMessageInElement('adminLoginMessage', 'Connexion réussie!', 'success');
@@ -564,10 +613,19 @@ function setupEventListeners() {
     window.location.href = '/';
   });
 
+  // Language Selector
+  const languageSelector = document.getElementById('languageSelector');
+  if (languageSelector) {
+    languageSelector.addEventListener('change', (e) => {
+      // Appliquer la traduction dynamiquement (sans rechargement)
+      applyTranslation(e.target.value);
+    });
+  }
+
   document.getElementById('adminLoginBtn').addEventListener('click', () => {
     if (isAdmin) {
       adminToken = null;
-      localStorage.removeItem('adminToken');
+      // Pas de localStorage à nettoyer
       isAdmin = false;
       checkAdminStatus();
       location.reload();

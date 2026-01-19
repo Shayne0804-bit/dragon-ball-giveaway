@@ -38,8 +38,8 @@
             <option value="usd">$ USD</option>
             <option value="fcfa">FCFA</option>
           </select>
-          <button id="backBtn" class="btn-secondary" style="margin-right: 10px;">← Retour</button>
-          <button id="adminLoginBtn" class="btn-admin">🔐 Admin</button>
+          <button id="backBtn" class="btn-secondary" style="margin-right: 10px;" data-translate="previous">← Retour</button>
+          <button id="adminLoginBtn" class="btn-admin" data-translate="admin">🔐 Admin</button>
         </div>
       </div>
     </header>
@@ -51,7 +51,7 @@
         <div class="card">
           <div class="card-header">
             <span class="card-icon">🛍️</span>
-            <h2>Articles Disponibles</h2>
+            <h2 data-translate="availableItems">Articles Disponibles</h2>
             <span id="itemCountBadge" class="admin-badge" style="margin-left: auto; background: rgba(255, 159, 0, 0.2);">0 articles</span>
           </div>
           <div class="card-body">
@@ -67,8 +67,8 @@
         <div class="card">
           <div class="card-header">
             <span class="card-icon">🛒</span>
-            <h2>Panier <span id="cartCount" class="admin-badge" style="margin-left: 10px;">(0)</span></h2>
-            <button id="clearCartBtn" class="btn btn-secondary" style="margin-left: auto; padding: 6px 12px; font-size: 0.85rem;">🗑️ Vider</button>
+            <h2 data-translate="shoppingCart">Panier <span id="cartCount" class="admin-badge" style="margin-left: 10px;">(0)</span></h2>
+            <button id="clearCartBtn" class="btn btn-secondary" style="margin-left: auto; padding: 6px 12px; font-size: 0.85rem;" data-translate="clear">🗑️ Vider</button>
           </div>
           <div class="card-body">
             <div id="cartItems" class="cart-items-list"></div>
@@ -79,8 +79,8 @@
                 <span id="totalPrice" style="font-size: 1.8rem; color: var(--accent); font-weight: 800;">0.00€</span>
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button id="continueShopping" class="btn btn-secondary">← Continuer</button>
-                <button id="purchaseBtn" class="btn btn-primary">💳 Acheter</button>
+                <button id="continueShopping" class="btn btn-secondary" data-translate="continueShopping">← Continuer</button>
+                <button id="purchaseBtn" class="btn btn-primary" data-translate="buy">💳 Acheter</button>
               </div>
             </div>
           </div>
@@ -92,12 +92,12 @@
         <div class="card">
           <div class="card-header admin-header">
             <span class="card-icon">⚙️</span>
-            <h2>Gestion de la Boutique</h2>
-            <span class="admin-badge">Admin</span>
+            <h2 data-translate="adminManagement">Gestion de la Boutique</h2>
+            <span class="admin-badge" data-translate="admin">Admin</span>
           </div>
           <div class="card-body">
             <div class="admin-buttons">
-              <button id="addItemBtn" class="btn btn-primary">➕ Ajouter Article</button>
+              <button id="addItemBtn" class="btn btn-primary" data-translate="addItem">➕ Ajouter Article</button>
             </div>
           </div>
 
