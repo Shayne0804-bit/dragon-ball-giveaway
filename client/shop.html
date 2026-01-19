@@ -163,6 +163,14 @@
           <img id="previewImage" src="" alt="Aperçu" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
         </div>
 
+        <label style="color: var(--light); font-size: 0.9rem; margin-top: 15px; margin-bottom: 8px; display: block;" data-translate="galleryImages">
+          Ajouter des photos supplémentaires (optionnel)
+        </label>
+        <input type="file" id="itemGalleryInput" class="input" accept="image/*" multiple>
+        <small style="color: var(--gray); display: block; margin-top: 5px;">Vous pouvez sélectionner plusieurs photos</small>
+
+        <div id="galleryPreview" class="gallery-preview" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px;"></div>
+
         <input type="number" id="itemQuantity" class="input" data-translate-placeholder="quantityPlaceholder" placeholder="Quantité (laisser vide = illimité)" min="0" style="margin-top: 15px;">
 
         <!-- Account Details Fields -->

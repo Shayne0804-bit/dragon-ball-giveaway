@@ -540,6 +540,7 @@ async function submitItem() {
   const accountId = document.getElementById('itemAccountId').value.trim();
   const accountDetails = document.getElementById('itemAccountDetails').value.trim();
   const imageInput = document.getElementById('itemImageInput');
+  const galleryInput = document.getElementById('itemGalleryInput');
 
   // Validation
   if (!name || !price || isNaN(price) || price < 0) {
@@ -563,6 +564,21 @@ async function submitItem() {
       image = currentEditingItem.image;
     }
 
+    // Traiter les images de galerie
+    let gallery = [];
+    if (galleryInput.files.length) {
+      for (let file of galleryInput.files) {
+        const data = await fileToBase64(file);
+        gallery.push({
+          data,
+          mimetype: file.type || 'image/jpeg',
+        });
+      }
+    } else if (currentEditingItem && currentEditingItem.gallery) {
+      // Édition - garder la galerie existante
+      gallery = currentEditingItem.gallery;
+    }
+
     const payload = {
       name,
       description,
@@ -571,6 +587,7 @@ async function submitItem() {
       quantity: quantity ? parseInt(quantity) : null,
       image,
       imageMimetype: imageInput.files[0]?.type || 'image/jpeg',
+      gallery,
       accountId: accountId || null,
       accountDetails: accountDetails || null,
     };
@@ -713,6 +730,29 @@ function setupEventListeners() {
         preview.classList.remove('hidden');
       };
       reader.readAsDataURL(file);
+    }
+  });
+
+  // Gallery images
+  const galleryInput = document.getElementById('itemGalleryInput');
+  galleryInput.addEventListener('change', (e) => {
+    const preview = document.getElementById('galleryPreview');
+    preview.innerHTML = '';
+    
+    if (e.target.files.length) {
+      for (let file of e.target.files) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const div = document.createElement('div');
+          div.style.cssText = 'position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid rgba(88, 101, 242, 0.3);';
+          const img = document.createElement('img');
+          img.src = event.target.result;
+          img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+          div.appendChild(img);
+          preview.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   });
 
