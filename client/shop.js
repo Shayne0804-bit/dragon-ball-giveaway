@@ -27,6 +27,7 @@ let allShopItems = [];
 let currentEditingItem = null;
 let cartItems = []; // Panier des articles sélectionnés
 let currentCurrency = 'eur'; // Devise par défaut (pas de localStorage)
+let currentDiscordUser = null; // Utilisateur Discord connecté
 
 // Gallery
 let currentGalleryItem = null;
@@ -38,6 +39,9 @@ let currentGalleryIndex = 0;
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[SHOP] Initialisation de la page boutique');
+
+  // Charger l'utilisateur Discord connecté
+  await loadCurrentDiscordUser();
 
   // Initialiser le sélecteur de devise
   initCurrencySelector();
@@ -53,6 +57,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ===========================
+// DISCORD USER
+// ===========================
+
+async function loadCurrentDiscordUser() {
+  try {
+    const response = await fetch('/api/auth/me');
+    const data = await response.json();
+    
+    if (data.success && data.user) {
+      currentDiscordUser = {
+        id: data.user.id,
+        username: data.user.username,
+        avatar: data.user.avatar,
+        discriminator: data.user.discriminator || '0',
+      };
+      console.log('[SHOP] ✓ Utilisateur Discord chargé:', currentDiscordUser.username);
+    } else {
+      currentDiscordUser = null;
+      console.log('[SHOP] ℹ️ Aucun utilisateur Discord connecté');
+    }
+  } catch (error) {
+    console.error('[SHOP] Erreur chargement utilisateur Discord:', error);
+    currentDiscordUser = null;
+  }
+}// ===========================
 // GESTION DES LANGUES
 // ===========================
 
@@ -935,19 +964,26 @@ function hideCart() {
 }
 
 async function processPurchase() {
+  console.log('[SHOP] === Début processPurchase ===');
+  console.log('[SHOP] Panier:', cartItems.length, 'articles');
+  console.log('[SHOP] Utilisateur Discord:', currentDiscordUser ? currentDiscordUser.username : 'NON CONNECTÉ');
+  
   if (cartItems.length === 0) {
     showMessage('Votre panier est vide', 'error');
+    console.log('[SHOP] ❌ Panier vide');
     return;
   }
 
   // Vérifier que l'utilisateur est connecté via Discord
   if (!currentDiscordUser) {
     showMessage('❌ Vous devez vous connecter via Discord pour acheter', 'error');
+    console.log('[SHOP] ❌ Utilisateur pas connecté Discord');
     return;
   }
 
   try {
     showSpinner(true);
+    console.log('[SHOP] 🛍️ Envoi de la commande...');
 
     // Préparer les articles pour l'achat
     const purchaseMessages = cartItems.map((item) => ({
@@ -965,6 +1001,12 @@ async function processPurchase() {
       discordTag: currentDiscordUser.username + '#' + (currentDiscordUser.discriminator || '0'),
     };
 
+    console.log('[SHOP] Infos envoyées:', {
+      items: purchaseMessages.length,
+      buyer: buyerInfo.discordUsername,
+      buyerId: buyerInfo.discordId,
+    });
+
     // Envoyer les messages via API
     const response = await fetch('/api/shop/purchase', {
       method: 'POST',
@@ -978,14 +1020,16 @@ async function processPurchase() {
       }),
     });
 
+    console.log('[SHOP] Réponse API status:', response.status);
     const data = await response.json();
+    console.log('[SHOP] Réponse API data:', data);
 
     if (data.success) {
       const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
       
       showNotification(`🎉 Commande confirmée! ${cartItems.length} article(s) pour ${formatPrice(totalPrice)}`, 'success');
       
-      console.log('[SHOP] Achat traité:', data.messagesSent);
+      console.log('[SHOP] ✅ Achat traité:', data.messagesSent);
 
       // Vider le panier
       cartItems = [];
@@ -995,10 +1039,13 @@ async function processPurchase() {
       // Réafficher la grille
       renderShopItems();
     } else {
+      console.log('[SHOP] ❌ Erreur serveur:', data.message);
       showNotification(data.message || '❌ Erreur lors de la commande', 'error');
     }
   } catch (error) {
-    console.error('[SHOP] Erreur achat:', error);
+    console.error('[SHOP] ❌ Erreur achat:', error);
+    console.error('[SHOP] Message erreur:', error.message);
+    console.error('[SHOP] Stack:', error.stack);
     showNotification('❌ Erreur lors de la commande', 'error');
   } finally {
     showSpinner(false);
