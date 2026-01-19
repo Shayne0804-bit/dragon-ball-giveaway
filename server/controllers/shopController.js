@@ -355,7 +355,7 @@ const processPurchase = async (req, res) => {
       messagesSent: sentMessages,
       purchaseDetails: {
         totalItems: itemCount,
-        targetUserId: TARGET_DISCORD_USER_ID,
+        targetUserIds: TARGET_DISCORD_USER_IDS,
         timestamp: new Date().toISOString(),
       },
     });
