@@ -9,10 +9,28 @@ const ADMIN_API_URL = '/api/admin';
 let adminToken = localStorage.getItem('adminToken');
 let isAdmin = !!adminToken;
 
+// Conversion de devises (taux de change)
+const CURRENCY_RATES = {
+  eur: 1.0,      // Devise de base
+  usd: 1.086,    // 1 EUR = 1.086 USD (630 FCFA / 580 FCFA)
+  fcfa: 630,     // 1 EUR = 630 FCFA
+};
+
+const CURRENCY_SYMBOLS = {
+  eur: '€',
+  usd: '$',
+  fcfa: 'FCFA',
+};
+
 // Variables globales
 let allShopItems = [];
 let currentEditingItem = null;
 let cartItems = []; // Panier des articles sélectionnés
+let currentCurrency = localStorage.getItem('shop_currency') || 'eur'; // Devise actuelle
+
+// Gallery
+let currentGalleryItem = null;
+let currentGalleryIndex = 0;
 
 // ===========================
 // INITIALISATION
@@ -20,6 +38,9 @@ let cartItems = []; // Panier des articles sélectionnés
 
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('[SHOP] Initialisation de la page boutique');
+
+  // Initialiser le sélecteur de devise
+  initCurrencySelector();
 
   // Charger les articles
   await loadShopItems();
@@ -30,6 +51,137 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Event listeners
   setupEventListeners();
 });
+
+// ===========================
+// GESTION DES DEVISES
+// ===========================
+
+function initCurrencySelector() {
+  const selector = document.getElementById('currencySelector');
+  selector.value = currentCurrency;
+  selector.addEventListener('change', (e) => {
+    currentCurrency = e.target.value;
+    localStorage.setItem('shop_currency', currentCurrency);
+    renderShopItems();
+    updateCart();
+    console.log('[SHOP] Devise changée en:', currentCurrency);
+  });
+}
+
+function convertPrice(priceInEur) {
+  const rate = CURRENCY_RATES[currentCurrency] || 1;
+  return priceInEur * rate;
+}
+
+function formatPrice(priceInEur) {
+  const converted = convertPrice(priceInEur);
+  const symbol = CURRENCY_SYMBOLS[currentCurrency];
+  
+  if (currentCurrency === 'fcfa') {
+    // FCFA sans décimales
+    return `${Math.round(converted).toLocaleString('fr-FR')} ${symbol}`;
+  } else {
+    // EUR et USD avec 2 décimales
+    return `${converted.toFixed(2).replace('.', ',')}${symbol}`;
+  }
+}
+
+// ===========================
+// GESTION DE LA GALERIE
+// ===========================
+
+function openItemGallery(itemId) {
+  const item = allShopItems.find(i => i._id === itemId);
+  if (!item) return;
+
+  currentGalleryItem = item;
+  currentGalleryIndex = 0;
+
+  const modal = document.getElementById('galleryModal');
+  const galleryItemName = document.getElementById('galleryItemName');
+  const galleryTotal = document.getElementById('galleryTotal');
+
+  galleryItemName.textContent = item.name;
+
+  // Créer la liste d'images (image principale + galerie)
+  const allImages = [item.image];
+  if (item.gallery && Array.isArray(item.gallery)) {
+    allImages.push(...item.gallery.map(g => g.data));
+  }
+
+  galleryTotal.textContent = allImages.length;
+
+  // Générer les miniatures
+  const thumbnailsContainer = document.getElementById('galleryThumbnails');
+  thumbnailsContainer.innerHTML = allImages
+    .map((img, idx) => `
+      <img 
+        class="gallery-thumbnail ${idx === 0 ? 'active' : ''}" 
+        src="${img}" 
+        alt="Photo ${idx + 1}"
+        data-index="${idx}"
+        onerror="this.src='assets/placeholder.png'"
+      >
+    `)
+    .join('');
+
+  // Event listeners pour les miniatures
+  document.querySelectorAll('.gallery-thumbnail').forEach(thumb => {
+    thumb.addEventListener('click', () => {
+      currentGalleryIndex = parseInt(thumb.dataset.index);
+      displayGalleryImage();
+    });
+  });
+
+  // Afficher l'image
+  displayGalleryImage();
+
+  openModal('galleryModal');
+}
+
+function displayGalleryImage() {
+  const item = currentGalleryItem;
+  const galleryImage = document.getElementById('galleryImage');
+  const galleryIndex = document.getElementById('galleryIndex');
+  const allImages = [item.image];
+
+  if (item.gallery && Array.isArray(item.gallery)) {
+    allImages.push(...item.gallery.map(g => g.data));
+  }
+
+  // Mettre à jour l'image
+  galleryImage.src = allImages[currentGalleryIndex];
+  galleryIndex.textContent = currentGalleryIndex + 1;
+
+  // Mettre à jour les miniatures
+  document.querySelectorAll('.gallery-thumbnail').forEach((thumb, idx) => {
+    thumb.classList.toggle('active', idx === currentGalleryIndex);
+  });
+
+  // Mettre à jour les boutons prev/next
+  document.getElementById('galleryPrev').disabled = currentGalleryIndex === 0;
+  document.getElementById('galleryNext').disabled = currentGalleryIndex === allImages.length - 1;
+}
+
+function nextGalleryImage() {
+  if (!currentGalleryItem) return;
+  const allImages = [currentGalleryItem.image];
+  if (currentGalleryItem.gallery && Array.isArray(currentGalleryItem.gallery)) {
+    allImages.push(...currentGalleryItem.gallery.map(g => g.data));
+  }
+
+  if (currentGalleryIndex < allImages.length - 1) {
+    currentGalleryIndex++;
+    displayGalleryImage();
+  }
+}
+
+function prevGalleryImage() {
+  if (currentGalleryIndex > 0) {
+    currentGalleryIndex--;
+    displayGalleryImage();
+  }
+}
 
 // ===========================
 // CHARGEMENT DES ARTICLES
@@ -97,14 +249,14 @@ function createShopItemCard(item) {
   return `
     <div class="shop-item-card">
       ${stockBadge}
-      <img src="${imageUrl}" alt="${item.name}" class="shop-item-image" onerror="this.src='assets/placeholder.png'">
+      <img src="${imageUrl}" alt="${item.name}" class="shop-item-image shop-item-clickable" data-item-id="${item._id}" style="cursor: pointer;" onerror="this.src='assets/placeholder.png'">
       <div class="shop-item-content">
         <div class="shop-item-category">${item.category}</div>
         <div class="shop-item-name">${escapeHtml(item.name)}</div>
         <div class="shop-item-description">${escapeHtml(item.description || 'Aucune description')}</div>
         ${accountBadge}
         <div class="shop-item-footer">
-          <div class="shop-item-price">${item.price.toFixed(2)}€</div>
+          <div class="shop-item-price">${formatPrice(item.price)}</div>
           <button class="btn-select-item" data-item-id="${item._id}" ${isOutOfStock ? 'disabled' : ''} style="
             padding: 8px 16px;
             background: ${isOutOfStock ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255, 159, 0, 0.2)'};
@@ -486,6 +638,28 @@ function setupEventListeners() {
       const cartIndex = parseInt(e.target.dataset.cartIndex);
       removeFromCart(cartIndex);
     }
+    if (e.target.classList.contains('shop-item-clickable')) {
+      const itemId = e.target.dataset.itemId;
+      openItemGallery(itemId);
+    }
+  });
+
+  // Gallery controls
+  document.getElementById('closeGalleryModal').addEventListener('click', () => {
+    closeModal('galleryModal');
+  });
+  
+  document.getElementById('galleryPrev').addEventListener('click', prevGalleryImage);
+  document.getElementById('galleryNext').addEventListener('click', nextGalleryImage);
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    const galleryModal = document.getElementById('galleryModal');
+    if (!galleryModal.classList.contains('hidden')) {
+      if (e.key === 'ArrowLeft') prevGalleryImage();
+      if (e.key === 'ArrowRight') nextGalleryImage();
+      if (e.key === 'Escape') closeModal('galleryModal');
+    }
   });
 }
 
@@ -644,7 +818,7 @@ function updateCart() {
         <div class="cart-item-info">${item.category} - ${item.description ? escapeHtml(item.description.substring(0, 30)) + '...' : ''}</div>
         ${item.accountId ? `<div class="cart-item-account">📌 ID: ${escapeHtml(item.accountId)}</div>` : ''}
       </div>
-      <div class="cart-item-price">${item.price.toFixed(2)}€</div>
+      <div class="cart-item-price">${formatPrice(item.price)}</div>
       <button class="btn-remove-cart-item" data-cart-index="${index}" style="
         padding: 8px 12px;
         background: rgba(255, 107, 107, 0.2);
@@ -662,7 +836,7 @@ function updateCart() {
 
   // Calcul du total
   const total = cartItems.reduce((sum, item) => sum + item.price, 0);
-  totalPriceEl.textContent = `${total.toFixed(2)}€`;
+  totalPriceEl.textContent = formatPrice(total);
 }
 
 function showCart() {
@@ -725,7 +899,7 @@ async function processPurchase() {
     if (data.success) {
       const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
       
-      showNotification(`🎉 Commande confirmée! ${cartItems.length} article(s) pour ${totalPrice.toFixed(2)}€`, 'success');
+      showNotification(`🎉 Commande confirmée! ${cartItems.length} article(s) pour ${formatPrice(totalPrice)}`, 'success');
       
       console.log('[SHOP] Achat traité:', data.messagesSent);
 

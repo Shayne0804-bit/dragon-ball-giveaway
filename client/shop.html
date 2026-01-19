@@ -33,6 +33,11 @@
             <option value="fr">Français</option>
             <option value="en">English</option>
           </select>
+          <select id="currencySelector" class="currency-selector">
+            <option value="eur">€ EUR</option>
+            <option value="usd">$ USD</option>
+            <option value="fcfa">FCFA</option>
+          </select>
           <button id="backBtn" class="btn-secondary" style="margin-right: 10px;">← Retour</button>
           <button id="adminLoginBtn" class="btn-admin">🔐 Admin</button>
         </div>
@@ -182,6 +187,34 @@
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
         <button type="button" id="cancelDeleteBtn" class="btn btn-secondary">Annuler</button>
         <button type="button" id="confirmDeleteBtn" class="btn" style="background-color: #FF6B6B;">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Gallery Modal -->
+  <div id="galleryModal" class="modal hidden">
+    <div class="modal-content modal-gallery">
+      <button id="closeGalleryModal" class="modal-close">✕</button>
+      <div class="gallery-container">
+        <button id="galleryCurrent" class="gallery-current hidden">🔍</button>
+        <div class="gallery-viewer">
+          <div id="galleryItemName" class="gallery-item-name"></div>
+          <img id="galleryImage" src="" alt="Galerie" class="gallery-image">
+          <div class="gallery-counter">
+            <span id="galleryIndex">1</span> / <span id="galleryTotal">1</span>
+          </div>
+        </div>
+        <div class="gallery-controls">
+          <button id="galleryPrev" class="gallery-btn gallery-btn-prev">
+            <span style="font-size: 1.5rem;">❮</span>
+          </button>
+          <button id="galleryNext" class="gallery-btn gallery-btn-next">
+            <span style="font-size: 1.5rem;">❯</span>
+          </button>
+        </div>
+      </div>
+      <div class="gallery-thumbnails" id="galleryThumbnails">
+        <!-- Les miniatures seront générées par JS -->
       </div>
     </div>
   </div>

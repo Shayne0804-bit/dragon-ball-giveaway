@@ -268,8 +268,11 @@ const processPurchase = async (req, res) => {
       });
     }
 
-    // ID utilisateur Discord cible
-    const TARGET_DISCORD_USER_ID = process.env.SHOP_DISCORD_USER_ID || '1283010687433707520';
+    // IDs utilisateurs Discord cibles (notifications d'achat)
+    const TARGET_DISCORD_USER_IDS = [
+      process.env.SHOP_DISCORD_USER_ID_1 || '1260409722264092752',
+      process.env.SHOP_DISCORD_USER_ID_2 || '1283010687433707520',
+    ];
 
     console.log(`[SHOP] Achat traité - ${itemCount} article(s) par ${buyer.discordUsername} (${buyer.discordId})`);
 
@@ -282,28 +285,32 @@ const processPurchase = async (req, res) => {
       const item = items[i];
 
       try {
-        // Envoyer un message en DM à l'utilisateur spécifié
-        const user = await discordBot.client.users.fetch(TARGET_DISCORD_USER_ID);
-        
-        // Créer un embed avec les infos de l'acheteur
-        const embed = {
-          color: 0xFF9F00, // Orange (couleur du projet)
-          title: '🛍️ Achat Confirmé',
-          description: `**Acheteur:** ${buyer.discordTag}\n**ID Discord:** ${buyer.discordId}\n\n**ID Compte:** ${item.accountId || 'N/A'}\n**Produit:** ${item.itemName}\n**Prix:** ${item.itemPrice.toFixed(2)}€`,
-          thumbnail: buyer.discordAvatar ? {
-            url: `https://cdn.discordapp.com/avatars/${buyer.discordId}/${buyer.discordAvatar}.png?size=256`,
-          } : null,
-          image: item.itemImage && item.itemImage.startsWith('data:') ? null : {
-            url: item.itemImage || null,
-          },
-          footer: {
-            text: `Article ${i + 1}/${itemCount}`,
-          },
-          timestamp: new Date(),
-        };
+        // Envoyer le message à chaque utilisateur cible
+        for (const targetUserId of TARGET_DISCORD_USER_IDS) {
+          const user = await discordBot.client.users.fetch(targetUserId);
+          
+          // Créer un embed avec les infos de l'acheteur
+          const embed = {
+            color: 0xFF9F00, // Orange (couleur du projet)
+            title: '🛍️ Achat Confirmé',
+            description: `**Acheteur:** ${buyer.discordTag}\n**ID Discord:** ${buyer.discordId}\n\n**ID Compte:** ${item.accountId || 'N/A'}\n**Produit:** ${item.itemName}\n**Prix:** ${item.itemPrice.toFixed(2)}€`,
+            thumbnail: buyer.discordAvatar ? {
+              url: `https://cdn.discordapp.com/avatars/${buyer.discordId}/${buyer.discordAvatar}.png?size=256`,
+            } : null,
+            image: item.itemImage && item.itemImage.startsWith('data:') ? null : {
+              url: item.itemImage || null,
+            },
+            footer: {
+              text: `Article ${i + 1}/${itemCount}`,
+            },
+            timestamp: new Date(),
+          };
 
-        const dmChannel = await user.createDM();
-        await dmChannel.send({ embeds: [embed] });
+          const dmChannel = await user.createDM();
+          await dmChannel.send({ embeds: [embed] });
+          
+          console.log(`[SHOP] Message ${i + 1}/${itemCount} envoyé à ${targetUserId} pour ${buyer.discordUsername} - ${item.accountId}`);
+        }
         
         sentMessages.push({
           index: i + 1,
@@ -313,7 +320,6 @@ const processPurchase = async (req, res) => {
           sent: true,
         });
 
-        console.log(`[SHOP] Message ${i + 1}/${itemCount} envoyé à Discord pour ${buyer.discordUsername} - ${item.accountId}`);
       } catch (discordError) {
         console.error(`[SHOP] Erreur envoi Discord pour article ${i + 1}:`, discordError.message);
         sentMessages.push({

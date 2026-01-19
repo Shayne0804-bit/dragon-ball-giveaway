@@ -25,13 +25,22 @@ const shopItemSchema = new mongoose.Schema(
       min: [0, 'Le prix ne peut pas être négatif'],
     },
     image: {
-      type: String, // Base64 ou URL de l'image
-      required: [true, 'L\'image est requise'],
+      type: String, // Base64 ou URL de l'image principale
+      required: [true, 'L\'image principale est requise'],
     },
     imageMimetype: {
       type: String,
       default: 'image/jpeg',
     },
+    // Galerie d'images supplémentaires
+    gallery: [{
+      data: String,        // Base64 de l'image
+      mimetype: String,    // Type MIME
+      uploadedAt: {
+        type: Date,
+        default: Date.now,
+      },
+    }],
     category: {
       type: String,
       trim: true,
