@@ -91,13 +91,17 @@ function applyTranslation(lang = 'fr') {
 
 function initCurrencySelector() {
   const selector = document.getElementById('currencySelector');
+  // Assurer que currentCurrency est bien défini à EUR
+  currentCurrency = 'eur';
   selector.value = currentCurrency;
+  console.log('[SHOP] Devise initialisée à:', currentCurrency);
+  
   selector.addEventListener('change', (e) => {
     currentCurrency = e.target.value;
+    console.log('[SHOP] Devise changée en:', currentCurrency);
     // Pas de sauvegarde localStorage - réinitialiser à EUR après rechargement
     renderShopItems();
     updateCart();
-    console.log('[SHOP] Devise changée en:', currentCurrency);
   });
 }
 
