@@ -317,11 +317,18 @@ function createShopItemCard(item) {
 
 function checkAdminStatus() {
   const adminSection = document.getElementById('adminShopSection');
-  console.log('[SHOP] Vérification statut admin - isAdmin:', isAdmin, 'Token:', adminToken ? '✓ Présent' : '✗ Absent');
+  console.log('[SHOP] === Vérification statut admin ===');
+  console.log('[SHOP] isAdmin:', isAdmin);
+  console.log('[SHOP] adminToken:', adminToken ? '✓ Présent' : '✗ Absent');
+  console.log('[SHOP] Élément adminShopSection existe:', !!adminSection);
+  console.log('[SHOP] Classe hidden:', adminSection?.classList.contains('hidden'));
+  
   if (isAdmin) {
+    console.log('[SHOP] ✓ Admin actif - affichage de la section');
     adminSection.classList.remove('hidden');
     loadAdminShopItems();
   } else {
+    console.log('[SHOP] ✗ Admin inactif - masquage de la section');
     adminSection.classList.add('hidden');
   }
 }
@@ -597,9 +604,11 @@ async function loginAsAdmin() {
       adminToken = data.token;
       // Pas de sauvegarde localStorage - session temporaire
       isAdmin = true;
+      console.log('[SHOP] Variables définies - isAdmin:', isAdmin, 'adminToken:', adminToken ? '✓' : '✗');
 
       showMessageInElement('adminLoginMessage', 'Connexion réussie!', 'success');
       setTimeout(() => {
+        console.log('[SHOP] ⏱️ Après 1s - isAdmin:', isAdmin, 'adminToken:', adminToken ? '✓' : '✗');
         closeModal('adminLoginModal');
         checkAdminStatus();
         loadAdminShopItems();
