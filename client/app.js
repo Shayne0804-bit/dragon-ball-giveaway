@@ -727,38 +727,54 @@ function closeViewer() {
 /**
  * Aller à la photo précédente
  */
-document.getElementById('prevViewer')?.addEventListener('click', () => {
-  if (currentGalleryIndex > 0) {
-    currentGalleryIndex--;
-    displayGalleryPhoto();
+function attachPhotoGalleryListeners() {
+  const prevViewer = document.getElementById('prevViewer');
+  if (prevViewer) {
+    prevViewer.addEventListener('click', () => {
+      if (currentGalleryIndex > 0) {
+        currentGalleryIndex--;
+        displayGalleryPhoto();
+      }
+    });
   }
-});
 
-/**
- * Aller à la photo suivante
- */
-document.getElementById('nextViewer')?.addEventListener('click', () => {
-  if (currentGalleryIndex < giveawayPhotos.length - 1) {
-    currentGalleryIndex++;
-    displayGalleryPhoto();
+  /**
+   * Aller à la photo suivante
+   */
+  const nextViewer = document.getElementById('nextViewer');
+  if (nextViewer) {
+    nextViewer.addEventListener('click', () => {
+      if (currentGalleryIndex < giveawayPhotos.length - 1) {
+        currentGalleryIndex++;
+        displayGalleryPhoto();
+      }
+    });
   }
-});
 
-/**
- * Fermer le viewer en cliquant sur le X
- */
-document.getElementById('closeViewer')?.addEventListener('click', closeViewer);
-
-/**
- * Fermer le viewer en cliquant sur le fond
- */
-document.getElementById('fullscreenViewer')?.addEventListener('click', (e) => {
-  if (e.target.id === 'fullscreenViewer') {
-    closeViewer();
+  /**
+   * Fermer le viewer en cliquant sur le X
+   */
+  const closeViewer_btn = document.getElementById('closeViewer');
+  if (closeViewer_btn) {
+    closeViewer_btn.addEventListener('click', closeViewer);
   }
-});
+
+  /**
+   * Fermer le viewer en cliquant sur le fond
+   */
+  const fullscreenViewer = document.getElementById('fullscreenViewer');
+  if (fullscreenViewer) {
+    fullscreenViewer.addEventListener('click', (e) => {
+      if (e.target.id === 'fullscreenViewer') {
+        closeViewer();
+      }
+    });
+  }
+}
 
 /**
+ * Aller à la photo précédente
+ *//**
  * Navigation au clavier
  */
 document.addEventListener('keydown', (e) => {
@@ -820,30 +836,6 @@ function displayAdminGiveawayPhotos() {
 // ===========================
 
 /**
- * Ouvrir la modal de connexion admin
- */
-document.getElementById('adminLoginBtn').addEventListener('click', () => {
-  document.getElementById('adminLoginModal').classList.remove('hidden');
-  document.getElementById('adminLoginPassword').value = '';
-  document.getElementById('adminLoginMessage').textContent = '';
-});
-
-/**
- * Gérer le bouton de connexion Discord
- */
-document.getElementById('discordLoginBtn').addEventListener('click', () => {
-  // Rediriger vers la route Discord auth
-  window.location.href = DISCORD_AUTH_API;
-});
-
-/**
- * Gérer le bouton de déconnexion Discord
- */
-document.getElementById('discordLogoutBtn').addEventListener('click', async () => {
-  await discordLogout();
-});
-
-/**
  * Fermer la modal de connexion admin
  */
 function closeAdminLoginModal() {
@@ -852,129 +844,89 @@ function closeAdminLoginModal() {
   document.getElementById('adminLoginMessage').textContent = '';
 }
 
-document.getElementById('closeAdminLoginModal')?.addEventListener('click', closeAdminLoginModal);
-
 function closeDiscordAuthErrorModal() {
   document.getElementById('discordAuthErrorModal').classList.add('hidden');
 }
 
-document.getElementById('closeDiscordAuthErrorModal')?.addEventListener('click', closeDiscordAuthErrorModal);
-
-/**
- * Boutons admin pour créer et sélectionner giveaways
- */
-document.getElementById('createNewGiveawayBtn')?.addEventListener('click', () => {
-  document.getElementById('createGiveawayModal').classList.remove('hidden');
-  document.getElementById('giveawayName').value = '';
-  document.getElementById('giveawayDesc').value = '';
-  document.getElementById('giveawayDays').value = '0';
-  document.getElementById('giveawayHours').value = '0';
-  document.getElementById('createGiveawayMessage').textContent = '';
-});
-
-// Listener pour le bouton "Voir les Giveaways" (public)
-document.getElementById('publicSelectGiveawayBtn')?.addEventListener('click', async () => {
-  console.log('✅ Bouton publicSelectGiveawayBtn cliqué');
-  const modal = document.getElementById('selectGiveawayModal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    console.log('✅ Modal affichée');
-    await loadGiveaways();
-  } else {
-    console.error('❌ Modal selectGiveawayModal non trouvée');
-  }
-});
-
-// Listener pour le bouton "Sélectionner" (admin)
-document.getElementById('selectGiveawayBtn')?.addEventListener('click', async () => {
-  console.log('✅ Bouton selectGiveawayBtn cliqué');
-  const modal = document.getElementById('selectGiveawayModal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    console.log('✅ Modal affichée');
-    await loadGiveaways();
-  } else {
-    console.error('❌ Modal selectGiveawayModal non trouvée');
-  }
-});
-
-// Listener pour fermer la modale
-document.getElementById('closeSelectGiveawayModal')?.addEventListener('click', () => {
-  console.log('❌ Bouton closeSelectGiveawayModal cliqué');
-  const modal = document.getElementById('selectGiveawayModal');
-  if (modal) {
-    modal.classList.add('hidden');
-    console.log('✅ Modal fermée');
-  }
-});
-
 /**
  * Soumettre la connexion admin
  */
-document.getElementById('adminLoginSubmitBtn').addEventListener('click', async () => {
-  const password = document.getElementById('adminLoginPassword').value;
-  const messageBox = document.getElementById('adminLoginMessage');
-
-  if (!password) {
-    messageBox.textContent = '❌ Veuillez entrer le mot de passe';
-    messageBox.className = 'message-box error';
+function attachAdminSubmitListener() {
+  const btn = document.getElementById('adminLoginSubmitBtn');
+  if (!btn) {
+    console.warn('⚠️ adminLoginSubmitBtn non trouvé');
     return;
   }
+  
+  btn.addEventListener('click', async () => {
+    const password = document.getElementById('adminLoginPassword').value;
+    const messageBox = document.getElementById('adminLoginMessage');
 
-  try {
-    console.log('🔐 Tentative de connexion admin...');
-    const response = await fetch(ADMIN_LOGIN_API, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ password }),
-    });
-
-    console.log(`📊 Réponse status: ${response.status}`);
-    const data = await response.json();
-    console.log('📦 Données reçues:', data);
-
-    if (!response.ok || !data.success) {
-      console.error('❌ Authentification échouée:', data.message);
-      messageBox.textContent = data.message || 'Erreur d\'authentification';
+    if (!password) {
+      messageBox.textContent = '❌ Veuillez entrer le mot de passe';
       messageBox.className = 'message-box error';
       return;
     }
 
-    // Stocker le token
-    adminToken = data.token;
-    console.log('✅ Token reçu:', adminToken);
-    messageBox.textContent = '✅ Connecté en tant qu\'admin!';
-    messageBox.className = 'message-box success';
+    try {
+      console.log('🔐 Tentative de connexion admin...');
+      const response = await fetch(ADMIN_LOGIN_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
 
-    // Afficher la section admin
-    document.getElementById('adminGiveawaySection').classList.remove('hidden');
+      console.log(`📊 Réponse status: ${response.status}`);
+      const data = await response.json();
+      console.log('📦 Données reçues:', data);
 
-    // Charger les photos existantes seulement si un giveaway est sélectionné
-    if (currentGiveaway) {
-      try {
-        await loadGiveawayPhotos();
-        displayAdminGiveawayPhotos();
-      } catch (error) {
-        console.warn('⚠️ Impossible de charger les photos:', error);
+      if (!response.ok || !data.success) {
+        console.error('❌ Authentification échouée:', data.message);
+        messageBox.textContent = data.message || 'Erreur d\'authentification';
+        messageBox.className = 'message-box error';
+        return;
       }
-    } else {
-      console.log('ℹ️ Aucun giveaway sélectionné, skip chargement photos');
-    }
 
-    // Fermer la modal après un délai
-    setTimeout(() => {
-      closeAdminLoginModal();
-    }, 1500);
-  } catch (error) {
-    console.error('❌ Erreur fetch:', error);
-    console.error('Message:', error.message);
-    console.error('Stack:', error.stack);
-    messageBox.textContent = `Erreur de connexion: ${error.message}`;
-    messageBox.className = 'message-box error';
-  }
-});
+      // Stocker le token
+      adminToken = data.token;
+      console.log('✅ Token reçu:', adminToken);
+      messageBox.textContent = '✅ Connecté en tant qu\'admin!';
+      messageBox.className = 'message-box success';
+
+      // Afficher la section admin
+      document.getElementById('adminGiveawaySection').classList.remove('hidden');
+
+      // Charger les photos existantes seulement si un giveaway est sélectionné
+      if (currentGiveaway) {
+        try {
+          await loadGiveawayPhotos();
+          displayAdminGiveawayPhotos();
+        } catch (error) {
+          console.warn('⚠️ Impossible de charger les photos:', error);
+        }
+      } else {
+        console.log('ℹ️ Aucun giveaway sélectionné, skip chargement photos');
+      }
+
+      // Fermer la modal après un délai
+      setTimeout(() => {
+        const modal = document.getElementById('adminLoginModal');
+        if (modal) {
+          modal.classList.add('hidden');
+          document.getElementById('adminLoginPassword').value = '';
+          document.getElementById('adminLoginMessage').textContent = '';
+        }
+      }, 1500);
+    } catch (error) {
+      console.error('❌ Erreur fetch:', error);
+      console.error('Message:', error.message);
+      console.error('Stack:', error.stack);
+      messageBox.textContent = `Erreur de connexion: ${error.message}`;
+      messageBox.className = 'message-box error';
+    }
+}
 
 // ===========================
 // GESTION DES PHOTOS GIVEAWAY
@@ -1019,18 +971,37 @@ async function deleteGiveawayPhoto(photoId) {
 /**
  * Supprimer toutes les photos du giveaway
  */
-document.getElementById('clearPhotosBtn')?.addEventListener('click', async () => {
-  alert('Fonction suppression de photos non disponible dans cette version');
-});
+function attachPhotoManagementListeners() {
+  const uploadPhotosBtn = document.getElementById('uploadPhotosBtn');
+  if (uploadPhotosBtn) {
+    uploadPhotosBtn.addEventListener('click', async () => {
+      alert('Fonction upload de photos non disponible dans cette version');
+    });
+  }
 
-// ===========================// ===========================
+  const clearPhotosBtn = document.getElementById('clearPhotosBtn');
+  if (clearPhotosBtn) {
+    clearPhotosBtn.addEventListener('click', async () => {
+      alert('Fonction suppression de photos non disponible dans cette version');
+    });
+  }
+}
+
+// ===========================
 // FORMULAIRE DE PARTICIPATION
 // ===========================
 
 /**
- * Soumettre le formulaire de participation (Discord Auth)
+ * Attacher les listeners du formulaire de participation
  */
-document.getElementById('participantForm').addEventListener('submit', async (e) => {
+function attachParticipationFormListeners() {
+  const participantForm = document.getElementById('participantForm');
+  if (!participantForm) {
+    console.warn('⚠️ participantForm non trouvé');
+    return;
+  }
+
+  participantForm.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   // Vérifier qu'un giveaway est sélectionné
@@ -1111,7 +1082,8 @@ document.getElementById('participantForm').addEventListener('submit', async (e) 
   } finally {
     setLoading(false);
   }
-});
+  });
+}
 
 // ===========================
 // RÉCUPÉRER LES DONNÉES
@@ -2439,6 +2411,124 @@ function initializeApp() {
     });
   }
   
+  // ===== Attacher les event listeners après le DOM chargé =====
+  
+  // Ouvrir la modal de connexion admin
+  const adminLoginBtn = document.getElementById('adminLoginBtn');
+  if (adminLoginBtn) {
+    adminLoginBtn.addEventListener('click', () => {
+      document.getElementById('adminLoginModal').classList.remove('hidden');
+      document.getElementById('adminLoginPassword').value = '';
+      document.getElementById('adminLoginMessage').textContent = '';
+    });
+  } else {
+    console.warn('⚠️ adminLoginBtn non trouvé');
+  }
+
+  // Bouton de connexion Discord
+  const discordLoginBtn = document.getElementById('discordLoginBtn');
+  if (discordLoginBtn) {
+    discordLoginBtn.addEventListener('click', () => {
+      window.location.href = DISCORD_AUTH_API;
+    });
+  }
+
+  // Bouton de déconnexion Discord
+  const discordLogoutBtn = document.getElementById('discordLogoutBtn');
+  if (discordLogoutBtn) {
+    discordLogoutBtn.addEventListener('click', async () => {
+      await discordLogout();
+    });
+  }
+
+  // Fermer la modal de connexion admin
+  const closeAdminLoginModal = document.getElementById('closeAdminLoginModal');
+  if (closeAdminLoginModal) {
+    closeAdminLoginModal.addEventListener('click', () => {
+      document.getElementById('adminLoginModal').classList.add('hidden');
+      document.getElementById('adminLoginPassword').value = '';
+      document.getElementById('adminLoginMessage').textContent = '';
+    });
+  }
+
+  // Fermer la modal d'erreur Discord
+  const closeDiscordAuthErrorModal = document.getElementById('closeDiscordAuthErrorModal');
+  if (closeDiscordAuthErrorModal) {
+    closeDiscordAuthErrorModal.addEventListener('click', () => {
+      document.getElementById('discordAuthErrorModal').classList.add('hidden');
+    });
+  }
+
+  // Boutons admin pour créer giveaways
+  const createNewGiveawayBtn = document.getElementById('createNewGiveawayBtn');
+  if (createNewGiveawayBtn) {
+    createNewGiveawayBtn.addEventListener('click', () => {
+      document.getElementById('createGiveawayModal').classList.remove('hidden');
+      document.getElementById('giveawayName').value = '';
+      document.getElementById('giveawayDesc').value = '';
+      document.getElementById('giveawayDays').value = '0';
+      document.getElementById('giveawayHours').value = '0';
+      document.getElementById('createGiveawayMessage').textContent = '';
+    });
+  }
+
+  // Bouton "Voir les Giveaways" (public)
+  const publicSelectGiveawayBtn = document.getElementById('publicSelectGiveawayBtn');
+  if (publicSelectGiveawayBtn) {
+    publicSelectGiveawayBtn.addEventListener('click', async () => {
+      console.log('✅ Bouton publicSelectGiveawayBtn cliqué');
+      const modal = document.getElementById('selectGiveawayModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        console.log('✅ Modal affichée');
+        await loadGiveaways();
+      } else {
+        console.error('❌ Modal selectGiveawayModal non trouvée');
+      }
+    });
+  }
+
+  // Bouton "Sélectionner" (admin)
+  const selectGiveawayBtn = document.getElementById('selectGiveawayBtn');
+  if (selectGiveawayBtn) {
+    selectGiveawayBtn.addEventListener('click', async () => {
+      console.log('✅ Bouton selectGiveawayBtn cliqué');
+      const modal = document.getElementById('selectGiveawayModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        console.log('✅ Modal affichée');
+        await loadGiveaways();
+      } else {
+        console.error('❌ Modal selectGiveawayModal non trouvée');
+      }
+    });
+  }
+
+  // Fermer la modale de sélection des giveaways
+  const closeSelectGiveawayModal = document.getElementById('closeSelectGiveawayModal');
+  if (closeSelectGiveawayModal) {
+    closeSelectGiveawayModal.addEventListener('click', () => {
+      console.log('❌ Bouton closeSelectGiveawayModal cliqué');
+      const modal = document.getElementById('selectGiveawayModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        console.log('✅ Modal fermée');
+      }
+    });
+  }
+
+  // Attacher le listener pour la soumission de connexion admin
+  attachAdminSubmitListener();
+
+  // Attacher les listeners de la galerie de photos
+  attachPhotoGalleryListeners();
+
+  // Attacher les listeners de gestion des photos
+  attachPhotoManagementListeners();
+
+  // Attacher les listeners du formulaire de participation
+  attachParticipationFormListeners();
+
   // Exécuter tous les pending listeners
   pendingListeners.forEach(listener => listener());
   pendingListeners.length = 0;
