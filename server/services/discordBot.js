@@ -358,7 +358,7 @@ class DiscordBotService {
         winnersText = winners
           .slice(0, 10) // Limite à 10 gagnants pour éviter les messages trop longs
           .map((winner, idx) => {
-            const name = winner.name || winner.discordUsername || winner.username || 'Utilisateur inconnu';
+            const name = winner.discordDisplayName || winner.name || winner.discordUsername || winner.username || 'Utilisateur inconnu';
             return `${idx + 1}. **@${name}**`;
           })
           .join('\n');
