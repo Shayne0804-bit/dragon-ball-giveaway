@@ -62,23 +62,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadCurrentDiscordUser() {
   try {
-    const response = await fetch('/api/auth/me');
+    console.log('[SHOP] 🔍 Chargement utilisateur Discord...');
+    const response = await fetch('/api/auth/user', {
+      method: 'GET',
+      credentials: 'include', // Important pour envoyer les cookies de session
+    });
+
+    console.log('[SHOP] 📨 Réponse reçue - Status:', response.status);
     const data = await response.json();
+    console.log('[SHOP] 📦 Données reçues:', data);
     
     if (data.success && data.user) {
       currentDiscordUser = {
-        id: data.user.id,
-        username: data.user.username,
-        avatar: data.user.avatar,
+        id: data.user.discordId,
+        username: data.user.discordUsername,
+        avatar: data.user.discordAvatar,
         discriminator: data.user.discriminator || '0',
       };
-      console.log('[SHOP] ✓ Utilisateur Discord chargé:', currentDiscordUser.username);
+      console.log('[SHOP] ✅ Utilisateur Discord chargé:', currentDiscordUser.username);
     } else {
       currentDiscordUser = null;
-      console.log('[SHOP] ℹ️ Aucun utilisateur Discord connecté');
+      console.log('[SHOP] ⚠️ Pas d\'utilisateur Discord connecté - Status:', response.status);
     }
   } catch (error) {
-    console.error('[SHOP] Erreur chargement utilisateur Discord:', error);
+    console.error('[SHOP] ❌ Erreur chargement utilisateur Discord:', error);
     currentDiscordUser = null;
   }
 }// ===========================
