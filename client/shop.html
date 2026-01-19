@@ -103,16 +103,16 @@
 
           <!-- Shop Items Management Table -->
           <div class="shop-management-table" style="margin-top: 20px;">
-            <h3 style="color: var(--light); margin-bottom: 15px;">Gestion des Articles</h3>
+            <h3 style="color: var(--light); margin-bottom: 15px;" data-translate="management">Gestion des Articles</h3>
             <table id="adminShopTable" class="admin-table">
               <thead>
                 <tr>
-                  <th>Nom</th>
-                  <th>Description</th>
-                  <th>Prix</th>
-                  <th>Catégorie</th>
-                  <th>Stock</th>
-                  <th>Actions</th>
+                  <th data-translate="name">Nom</th>
+                  <th data-translate="description">Description</th>
+                  <th data-translate="price">Prix</th>
+                  <th data-translate="category">Catégorie</th>
+                  <th data-translate="stock">Stock</th>
+                  <th data-translate="actions">Actions</th>
                 </tr>
               </thead>
               <tbody id="adminShopTableBody">
@@ -133,10 +133,10 @@
   <div id="adminLoginModal" class="modal hidden">
     <div class="modal-content modal-sm">
       <button id="closeAdminLoginModal" class="modal-close">✕</button>
-      <h2>Connexion Admin</h2>
+      <h2 data-translate="adminLogin">Connexion Admin</h2>
       <form id="adminLoginForm">
-        <input type="password" id="adminLoginPassword" class="input" placeholder="Mot de passe" required>
-        <button id="adminLoginSubmitBtn" type="button" class="btn btn-primary btn-full">Se Connecter</button>
+        <input type="password" id="adminLoginPassword" class="input" data-translate-placeholder="password" placeholder="Mot de passe" required>
+        <button id="adminLoginSubmitBtn" type="button" class="btn btn-primary btn-full" data-translate="connect">Se Connecter</button>
       </form>
       <div id="adminLoginMessage" class="message-box"></div>
     </div>
@@ -146,32 +146,32 @@
   <div id="addEditItemModal" class="modal hidden">
     <div class="modal-content">
       <button id="closeAddEditItemModal" class="modal-close">✕</button>
-      <h2 id="addEditItemTitle">Ajouter un Article</h2>
+      <h2 id="addEditItemTitle" data-translate="addItem">Ajouter un Article</h2>
       <form id="addEditItemForm" class="form" style="margin-top: 15px;">
-        <input type="text" id="itemName" class="input" placeholder="Nom du produit" required>
-        <textarea id="itemDescription" class="input" placeholder="Description (optionnel)" rows="3"></textarea>
-        <input type="number" id="itemPrice" class="input" placeholder="Prix" step="0.01" min="0" required>
-        <input type="text" id="itemCategory" class="input" placeholder="Catégorie (ex: Divers)" value="Divers">
+        <input type="text" id="itemName" class="input" data-translate-placeholder="itemNamePlaceholder" placeholder="Nom du produit" required>
+        <textarea id="itemDescription" class="input" data-translate-placeholder="itemDescriptionPlaceholder" placeholder="Description (optionnel)" rows="3"></textarea>
+        <input type="number" id="itemPrice" class="input" data-translate-placeholder="itemPricePlaceholder" placeholder="Prix" step="0.01" min="0" required>
+        <input type="text" id="itemCategory" class="input" data-translate-placeholder="categoryPlaceholder" placeholder="Catégorie (ex: Divers)" value="Divers">
         
-        <label style="color: var(--light); font-size: 0.9rem; margin-top: 15px; margin-bottom: 8px; display: block;">
+        <label style="color: var(--light); font-size: 0.9rem; margin-top: 15px; margin-bottom: 8px; display: block;" data-translate="selectImage">
           Sélectionner une image
         </label>
         <input type="file" id="itemImageInput" class="input" accept="image/*" required>
-        <small style="color: var(--gray); display: block; margin-top: 5px;">Format: JPG, PNG (max 5MB)</small>
+        <small style="color: var(--gray); display: block; margin-top: 5px;" data-translate="imageFormat">Format: JPG, PNG (max 5MB)</small>
 
         <div id="imagePreview" class="image-preview hidden" style="margin-top: 15px;">
           <img id="previewImage" src="" alt="Aperçu" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
         </div>
 
-        <input type="number" id="itemQuantity" class="input" placeholder="Quantité (laisser vide = illimité)" min="0" style="margin-top: 15px;">
+        <input type="number" id="itemQuantity" class="input" data-translate-placeholder="quantityPlaceholder" placeholder="Quantité (laisser vide = illimité)" min="0" style="margin-top: 15px;">
 
         <!-- Account Details Fields -->
-        <input type="text" id="itemAccountId" class="input" placeholder="ID Compte (ex: ACC001)" style="margin-top: 15px;">
-        <textarea id="itemAccountDetails" class="input" placeholder="Détails du compte (optionnel)" rows="2" style="margin-top: 10px;"></textarea>
+        <input type="text" id="itemAccountId" class="input" data-translate-placeholder="accountIdPlaceholder" placeholder="ID Compte (ex: ACC001)" style="margin-top: 15px;">
+        <textarea id="itemAccountDetails" class="input" data-translate-placeholder="accountDetailsPlaceholder" placeholder="Détails du compte (optionnel)" rows="2" style="margin-top: 10px;"></textarea>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-          <button type="button" id="cancelItemBtn" class="btn btn-secondary">Annuler</button>
-          <button type="button" id="submitItemBtn" class="btn btn-primary">Sauvegarder</button>
+          <button type="button" id="cancelItemBtn" class="btn btn-secondary" data-translate="cancel">Annuler</button>
+          <button type="button" id="submitItemBtn" class="btn btn-primary" data-translate="save">Sauvegarder</button>
         </div>
       </form>
       <div id="addEditItemMessage" class="message-box" style="margin-top: 15px;"></div>
@@ -182,11 +182,11 @@
   <div id="deleteConfirmModal" class="modal hidden">
     <div class="modal-content modal-sm">
       <button class="modal-close" onclick="document.getElementById('deleteConfirmModal').classList.add('hidden')">✕</button>
-      <h2 style="color: #FF6B6B;">Confirmer la suppression</h2>
-      <p id="deleteConfirmMessage" style="margin-top: 15px; color: var(--light);">Êtes-vous sûr de vouloir supprimer cet article?</p>
+      <h2 style="color: #FF6B6B;" data-translate="confirmDelete">Confirmer la suppression</h2>
+      <p id="deleteConfirmMessage" style="margin-top: 15px; color: var(--light);" data-translate="deleteConfirmMessage">Êtes-vous sûr de vouloir supprimer cet article?</p>
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
-        <button type="button" id="cancelDeleteBtn" class="btn btn-secondary">Annuler</button>
-        <button type="button" id="confirmDeleteBtn" class="btn" style="background-color: #FF6B6B;">Supprimer</button>
+        <button type="button" id="cancelDeleteBtn" class="btn btn-secondary" data-translate="cancel">Annuler</button>
+        <button type="button" id="confirmDeleteBtn" class="btn" style="background-color: #FF6B6B;" data-translate="delete">Supprimer</button>
       </div>
     </div>
   </div>
@@ -200,7 +200,7 @@
         <div class="gallery-viewer">
           <div id="galleryItemName" class="gallery-item-name"></div>
           <img id="galleryImage" src="" alt="Galerie" class="gallery-image">
-          <div class="gallery-counter">
+          <div class="gallery-counter" style="color: var(--light);">
             <span id="galleryIndex">1</span> / <span id="galleryTotal">1</span>
           </div>
         </div>
