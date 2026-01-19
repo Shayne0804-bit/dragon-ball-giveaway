@@ -51,7 +51,7 @@ class DiscordBotService {
         ],
       });
 
-      this.client.once('clientReady', () => {
+      this.client.once('ready', () => {
         this.isReady = true;
         console.log(`[DISCORD] ✅ Bot connecté: ${this.client.user.tag}`);
       });

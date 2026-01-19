@@ -274,9 +274,20 @@ const processPurchase = async (req, res) => {
       process.env.SHOP_DISCORD_USER_ID_2 || '1283010687433707520',
     ];
 
-    console.log(`[SHOP] Achat traité - ${itemCount} article(s) par ${buyer.discordUsername} (${buyer.discordId})`);
+    console.log(`[SHOP] 🛍️ Achat traité - ${itemCount} article(s) par ${buyer.discordUsername} (${buyer.discordId})`);
 
     const discordBot = require('../services/discordBot');
+    
+    // Vérifier que le bot est prêt
+    console.log(`[SHOP] État du bot Discord - Prêt: ${discordBot.isReady}, Client: ${discordBot.client ? '✓' : '✗'}`);
+
+    if (!discordBot.isReady) {
+      console.error('[SHOP] ❌ Le bot Discord n\'est pas prêt!');
+      return res.status(503).json({
+        success: false,
+        message: 'Le bot Discord n\'est pas disponible',
+      });
+    }
 
     // Envoyer un message pour chaque article au bot Discord
     const sentMessages = [];
@@ -287,29 +298,35 @@ const processPurchase = async (req, res) => {
       try {
         // Envoyer le message à chaque utilisateur cible
         for (const targetUserId of TARGET_DISCORD_USER_IDS) {
-          const user = await discordBot.client.users.fetch(targetUserId);
-          
-          // Créer un embed avec les infos de l'acheteur
-          const embed = {
-            color: 0xFF9F00, // Orange (couleur du projet)
-            title: '🛍️ Achat Confirmé',
-            description: `**Acheteur:** ${buyer.discordTag}\n**ID Discord:** ${buyer.discordId}\n\n**ID Compte:** ${item.accountId || 'N/A'}\n**Produit:** ${item.itemName}\n**Prix:** ${item.itemPrice.toFixed(2)}€`,
-            thumbnail: buyer.discordAvatar ? {
-              url: `https://cdn.discordapp.com/avatars/${buyer.discordId}/${buyer.discordAvatar}.png?size=256`,
-            } : null,
-            image: item.itemImage && item.itemImage.startsWith('data:') ? null : {
-              url: item.itemImage || null,
-            },
-            footer: {
-              text: `Article ${i + 1}/${itemCount}`,
-            },
-            timestamp: new Date(),
-          };
+          try {
+            const user = await discordBot.client.users.fetch(targetUserId);
+            console.log(`[SHOP] ✓ Utilisateur trouvé: ${user.username}`);
+            
+            // Créer un embed avec les infos de l'acheteur
+            const embed = {
+              color: 0xFF9F00, // Orange (couleur du projet)
+              title: '🛍️ Achat Confirmé',
+              description: `**Acheteur:** ${buyer.discordTag}\n**ID Discord:** ${buyer.discordId}\n\n**ID Compte:** ${item.accountId || 'N/A'}\n**Produit:** ${item.itemName}\n**Prix:** ${item.itemPrice.toFixed(2)}€`,
+              thumbnail: buyer.discordAvatar ? {
+                url: `https://cdn.discordapp.com/avatars/${buyer.discordId}/${buyer.discordAvatar}.png?size=256`,
+              } : null,
+              image: item.itemImage && item.itemImage.startsWith('data:') ? null : {
+                url: item.itemImage || null,
+              },
+              footer: {
+                text: `Article ${i + 1}/${itemCount}`,
+              },
+              timestamp: new Date(),
+            };
 
-          const dmChannel = await user.createDM();
-          await dmChannel.send({ embeds: [embed] });
-          
-          console.log(`[SHOP] Message ${i + 1}/${itemCount} envoyé à ${targetUserId} pour ${buyer.discordUsername} - ${item.accountId}`);
+            const dmChannel = await user.createDM();
+            await dmChannel.send({ embeds: [embed] });
+            
+            console.log(`[SHOP] ✅ Message ${i + 1}/${itemCount} envoyé à ${targetUserId} (${user.username}) - ${item.itemName}`);
+          } catch (userError) {
+            console.error(`[SHOP] ❌ Erreur envoi à ${targetUserId}:`, userError.message);
+            throw userError;
+          }
         }
         
         sentMessages.push({
@@ -321,7 +338,7 @@ const processPurchase = async (req, res) => {
         });
 
       } catch (discordError) {
-        console.error(`[SHOP] Erreur envoi Discord pour article ${i + 1}:`, discordError.message);
+        console.error(`[SHOP] ❌ Erreur envoi Discord pour article ${i + 1}:`, discordError.message);
         sentMessages.push({
           index: i + 1,
           accountId: item.accountId,
