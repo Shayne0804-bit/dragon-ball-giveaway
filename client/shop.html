@@ -129,16 +129,16 @@
 
   <!-- Modals -->
 
-  <!-- Admin Login Modal -->
-  <div id="adminLoginModal" class="modal hidden">
+  <!-- Admin Login Modal (Shop-specific) -->
+  <div id="shopAdminLoginModal" class="modal hidden">
     <div class="modal-content modal-sm">
-      <button id="closeAdminLoginModal" class="modal-close">✕</button>
+      <button id="closeShopAdminLoginModal" class="modal-close">✕</button>
       <h2 data-translate="adminLogin">Connexion Admin</h2>
-      <form id="adminLoginForm" onsubmit="return false">
-        <input type="password" id="adminLoginPassword" class="input" data-translate-placeholder="password" placeholder="Mot de passe" required>
-        <button id="adminLoginSubmitBtn" type="button" class="btn btn-primary btn-full" data-translate="connect">Se Connecter</button>
+      <form id="shopAdminLoginForm" onsubmit="return false">
+        <input type="password" id="shopAdminLoginPassword" class="input" data-translate-placeholder="password" placeholder="Mot de passe" required>
+        <button id="shopAdminLoginSubmitBtn" type="button" class="btn btn-primary btn-full" data-translate="connect">Se Connecter</button>
       </form>
-      <div id="adminLoginMessage" class="message-box"></div>
+      <div id="shopAdminLoginMessage" class="message-box"></div>
     </div>
   </div>
 

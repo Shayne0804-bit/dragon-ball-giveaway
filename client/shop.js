@@ -576,11 +576,11 @@ async function submitItem() {
 // ===========================
 
 async function loginAsAdmin() {
-  const password = document.getElementById('adminLoginPassword').value.trim();
+  const password = document.getElementById('shopAdminLoginPassword').value.trim();
   console.log('[SHOP] Tentative de connexion admin - mot de passe vide:', !password);
 
   if (!password) {
-    showMessageInElement('adminLoginMessage', 'Veuillez entrer votre mot de passe', 'error');
+    showMessageInElement('shopAdminLoginMessage', 'Veuillez entrer votre mot de passe', 'error');
     return;
   }
 
@@ -606,20 +606,20 @@ async function loginAsAdmin() {
       isShopAdmin = true;
       console.log('[SHOP] Variables définies - isShopAdmin:', isShopAdmin, 'shopAdminToken:', shopAdminToken ? '✓' : '✗');
 
-      showMessageInElement('adminLoginMessage', 'Connexion réussie!', 'success');
+      showMessageInElement('shopAdminLoginMessage', 'Connexion réussie!', 'success');
       setTimeout(() => {
         console.log('[SHOP] ⏱️ Après 1s - isShopAdmin:', isShopAdmin, 'shopAdminToken:', shopAdminToken ? '✓' : '✗');
-        closeModal('adminLoginModal');
+        closeModal('shopAdminLoginModal');
         checkAdminStatus();
         loadAdminShopItems();
       }, 1000);
     } else {
       console.log('[SHOP] Connexion échouée:', data.message);
-      showMessageInElement('adminLoginMessage', data.message || 'Mot de passe incorrect', 'error');
+      showMessageInElement('shopAdminLoginMessage', data.message || 'Mot de passe incorrect', 'error');
     }
   } catch (error) {
     console.error('[SHOP] Erreur login:', error);
-    showMessageInElement('adminLoginMessage', 'Erreur lors de la connexion', 'error');
+    showMessageInElement('shopAdminLoginMessage', 'Erreur lors de la connexion', 'error');
   } finally {
     showSpinner(false);
   }
@@ -652,7 +652,7 @@ function setupEventListeners() {
       checkAdminStatus();
       location.reload();
     } else {
-      openModal('adminLoginModal');
+      openModal('shopAdminLoginModal');
     }
   });
 
@@ -682,11 +682,11 @@ function setupEventListeners() {
   document.getElementById('submitItemBtn').addEventListener('click', submitItem);
 
   // Admin Login
-  document.getElementById('closeAdminLoginModal').addEventListener('click', () => {
-    closeModal('adminLoginModal');
+  document.getElementById('closeShopAdminLoginModal').addEventListener('click', () => {
+    closeModal('shopAdminLoginModal');
   });
 
-  document.getElementById('adminLoginSubmitBtn').addEventListener('click', loginAsAdmin);
+  document.getElementById('shopAdminLoginSubmitBtn').addEventListener('click', loginAsAdmin);
 
   // Add/Edit Modal
   document.getElementById('closeAddEditItemModal').addEventListener('click', () => {
@@ -699,7 +699,7 @@ function setupEventListeners() {
   });
 
   // Enter key in password field
-  document.getElementById('adminLoginPassword').addEventListener('keypress', (e) => {
+  document.getElementById('shopAdminLoginPassword').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') loginAsAdmin();
   });
 
