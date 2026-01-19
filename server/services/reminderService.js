@@ -23,9 +23,10 @@ class ReminderService {
     
     // Ne pas envoyer un rappel immÃ©diatement - attendre au moins 5 secondes
     // pour que le client Discord soit prÃªt
-    setTimeout(() => {
-      this.sendReminder().catch(e => console.error('[Reminder Service] Erreur lors du premier rappel:', e));
-    }, 5000);
+    // DÉSACTIVÉ: Ne pas envoyer de rappel au démarrage
+    // setTimeout(() => {
+    //   this.sendReminder().catch(e => console.error('[Reminder Service] Erreur lors du premier rappel:', e));
+    // }, 5000);
     
     // Puis toutes les 12 heures
     this.reminderInterval = setInterval(() => {
@@ -205,3 +206,5 @@ ${giveaway.description || 'Un superbe giveaway vous attend!'}
 }
 
 module.exports = ReminderService;
+
+
