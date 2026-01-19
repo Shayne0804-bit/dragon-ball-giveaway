@@ -916,11 +916,11 @@ function updateCart() {
   cartCountEl.textContent = `(${cartItems.length})`;
 
   if (cartItems.length === 0) {
-    cartSection.style.display = 'none';
+    cartSection.classList.add('hidden');
     return;
   }
 
-  cartSection.style.display = 'block';
+  cartSection.classList.remove('hidden');
 
   // Rendu des articles du panier
   cartItemsEl.innerHTML = cartItems.map((item, index) => `
@@ -954,13 +954,13 @@ function updateCart() {
 
 function showCart() {
   const cartSection = document.getElementById('cartSection');
-  cartSection.style.display = 'block';
+  cartSection.classList.remove('hidden');
   cartSection.scrollIntoView({ behavior: 'smooth' });
 }
 
 function hideCart() {
   const cartSection = document.getElementById('cartSection');
-  cartSection.style.display = 'none';
+  cartSection.classList.add('hidden');
 }
 
 async function processPurchase() {
