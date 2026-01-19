@@ -242,7 +242,8 @@ function renderShopItems() {
   const badge = document.getElementById('itemCountBadge');
 
   if (allShopItems.length === 0) {
-    grid.innerHTML = '<p class="empty-state">Aucun article disponible pour le moment</p>';
+    const emptyMessage = t('noItems', currentLanguage);
+    grid.innerHTML = `<p class="empty-state">${emptyMessage}</p>`;
     if (badge) badge.textContent = '0 articles';
     return;
   }
@@ -394,7 +395,9 @@ function renderAdminTable() {
 async function addNewItem() {
   console.log('[SHOP] Clic sur "Ajouter Article"');
   currentEditingItem = null;
-  document.getElementById('addEditItemTitle').textContent = 'Ajouter un Article';
+  const titleEl = document.getElementById('addEditItemTitle');
+  titleEl.textContent = t('addItem', currentLanguage);
+  titleEl.setAttribute('data-translate', 'addItem');
   document.getElementById('addEditItemForm').reset();
   document.getElementById('imagePreview').classList.add('hidden');
   document.getElementById('itemQuantity').value = '';
@@ -404,12 +407,14 @@ async function addNewItem() {
 async function editItem(itemId) {
   const item = allShopItems.find(i => i._id === itemId);
   if (!item) {
-    showMessage('Article non trouvé', 'error');
+    showMessage(t('error', currentLanguage), 'error');
     return;
   }
 
   currentEditingItem = item;
-  document.getElementById('addEditItemTitle').textContent = 'Modifier l\'Article';
+  const titleEl = document.getElementById('addEditItemTitle');
+  titleEl.textContent = t('editArticle', currentLanguage);
+  titleEl.removeAttribute('data-translate');
 
   // Remplir le formulaire
   document.getElementById('itemName').value = item.name;
@@ -435,7 +440,10 @@ async function editItem(itemId) {
 async function deleteItem(itemId, itemName) {
   const modal = document.getElementById('deleteConfirmModal');
   const message = document.getElementById('deleteConfirmMessage');
-  message.textContent = `Êtes-vous sûr de vouloir supprimer l'article "${itemName}"?`;
+  const baseMessage = t('deleteConfirmMessage', currentLanguage);
+  // For simplicity, use just the base message since it includes the item confirmation
+  message.textContent = baseMessage;
+  message.removeAttribute('data-translate'); // Prevent re-translation from overriding our custom text
 
   document.getElementById('confirmDeleteBtn').onclick = async () => {
     await performDeleteItem(itemId);
