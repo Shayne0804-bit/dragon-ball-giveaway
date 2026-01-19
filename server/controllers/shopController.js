@@ -306,7 +306,7 @@ const processPurchase = async (req, res) => {
             const embed = {
               color: 0xFF9F00, // Orange (couleur du projet)
               title: '🛍️ Achat Confirmé',
-              description: `**Acheteur:** ${buyer.discordTag}\n**ID Discord:** ${buyer.discordId}\n\n**ID Compte:** ${item.accountId || 'N/A'}\n**Produit:** ${item.itemName}\n**Prix:** ${item.itemPrice.toFixed(2)}€`,
+              description: `**Acheteur:** ${buyer.discordDisplayName}\n**ID Discord:** ${buyer.discordId}\n\n**ID Compte:** ${item.accountId || 'N/A'}\n**Produit:** ${item.itemName}\n**Prix:** ${item.itemPrice.toFixed(2)}€`,
               thumbnail: buyer.discordAvatar ? {
                 url: `https://cdn.discordapp.com/avatars/${buyer.discordId}/${buyer.discordAvatar}.png?size=256`,
               } : null,

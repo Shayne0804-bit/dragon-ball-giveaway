@@ -240,6 +240,7 @@ async function fetchDiscordUser() {
         console.log('✅ Utilisateur Discord reçu:', {
           discordId: currentDiscordUser.discordId,
           discordUsername: currentDiscordUser.discordUsername,
+          discordDisplayName: currentDiscordUser.discordDisplayName,
           avatarPresent: !!currentDiscordUser.discordAvatar,
           avatarUrl: currentDiscordUser.discordAvatar ? currentDiscordUser.discordAvatar.substring(0, 50) + '...' : 'null',
         });
@@ -274,7 +275,7 @@ function updateDiscordAuthUI() {
 
   if (currentDiscordUser) {
     // Utilisateur connecté avec Discord
-    console.log('✅ Affichage du profil Discord pour:', currentDiscordUser.discordUsername);
+    console.log('✅ Affichage du profil Discord pour:', currentDiscordUser.discordDisplayName || currentDiscordUser.discordUsername);
     
     if (discordBtn) {
       discordBtn.style.display = 'none';
@@ -320,7 +321,8 @@ function updateDiscordAuthUI() {
     
     // Mettre à jour le nom d'utilisateur
     if (usernameEl) {
-      usernameEl.textContent = currentDiscordUser.discordUsername || 'Utilisateur';
+      usernameEl.textContent = currentDiscordUser.discordDisplayName || currentDiscordUser.discordUsername || 'Utilisateur';
+      console.log('   ✓ Display Name:', currentDiscordUser.discordDisplayName);
       console.log('   ✓ Username:', currentDiscordUser.discordUsername);
     } else {
       console.error('❌ Élément .discord-username non trouvé');

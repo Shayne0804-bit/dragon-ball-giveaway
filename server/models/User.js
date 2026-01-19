@@ -18,6 +18,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
       required: true,
     },
+    discordDisplayName: {
+      type: String, // Nom d'affichage Discord (globalName)
+      trim: true,
+    },
     discordAvatar: {
       type: String, // URL de l'avatar Discord
     },

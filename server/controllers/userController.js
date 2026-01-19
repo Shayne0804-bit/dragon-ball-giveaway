@@ -17,6 +17,7 @@ const createOrUpdateUser = async (discordUser) => {
     if (user) {
       // Mettre à jour les infos
       user.discordUsername = discordUser.username;
+      user.discordDisplayName = discordUser.global_name || discordUser.username; // Récupérer le nom d'affichage
       user.discriminator = discordUser.discriminator;
       user.discordAvatar = discordUser.avatar
         ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
@@ -24,12 +25,13 @@ const createOrUpdateUser = async (discordUser) => {
       user.email = discordUser.email;
       user.isActive = true;
       await user.save();
-      console.log(`[USER] Mise à jour: ${discordUser.username}`);
+      console.log(`[USER] Mise à jour: ${discordUser.username} (display: ${user.discordDisplayName})`);
     } else {
       // Créer un nouvel utilisateur
       user = new User({
         discordId: discordUser.id,
         discordUsername: discordUser.username,
+        discordDisplayName: discordUser.global_name || discordUser.username, // Récupérer le nom d'affichage
         discriminator: discordUser.discriminator,
         discordAvatar: discordUser.avatar
           ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
@@ -37,7 +39,7 @@ const createOrUpdateUser = async (discordUser) => {
         email: discordUser.email,
       });
       await user.save();
-      console.log(`[USER] Création: ${discordUser.username}`);
+      console.log(`[USER] Création: ${discordUser.username} (display: ${user.discordDisplayName})`);
     }
 
     return user;

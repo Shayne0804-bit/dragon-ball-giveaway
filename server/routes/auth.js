@@ -85,6 +85,7 @@ router.get('/user', (req, res) => {
   console.log('[AUTH USER] Utilisateur trouvé:', {
     discordId: req.user.discordId,
     discordUsername: req.user.discordUsername,
+    discordDisplayName: req.user.discordDisplayName,
     discordAvatar: req.user.discordAvatar ? '✓ présent' : '✗ manquant',
   });
 
@@ -93,6 +94,7 @@ router.get('/user', (req, res) => {
     user: {
       discordId: req.user.discordId,
       discordUsername: req.user.discordUsername,
+      discordDisplayName: req.user.discordDisplayName,
       discordAvatar: req.user.discordAvatar,
       email: req.user.email,
     },

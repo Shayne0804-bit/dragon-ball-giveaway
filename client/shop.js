@@ -76,10 +76,11 @@ async function loadCurrentDiscordUser() {
       currentDiscordUser = {
         id: data.user.discordId,
         username: data.user.discordUsername,
+        displayName: data.user.discordDisplayName,
         avatar: data.user.discordAvatar,
         discriminator: data.user.discriminator || '0',
       };
-      console.log('[SHOP] ✅ Utilisateur Discord chargé:', currentDiscordUser.username);
+      console.log('[SHOP] ✅ Utilisateur Discord chargé:', currentDiscordUser.displayName || currentDiscordUser.username);
     } else {
       currentDiscordUser = null;
       console.log('[SHOP] ⚠️ Pas d\'utilisateur Discord connecté - Status:', response.status);
@@ -1022,6 +1023,7 @@ async function processPurchase() {
     // Ajouter les infos de l'utilisateur Discord
     const buyerInfo = {
       discordUsername: currentDiscordUser.username,
+      discordDisplayName: currentDiscordUser.displayName || currentDiscordUser.username,
       discordId: currentDiscordUser.id,
       discordAvatar: currentDiscordUser.avatar,
       discordTag: currentDiscordUser.username + '#' + (currentDiscordUser.discriminator || '0'),
@@ -1029,7 +1031,7 @@ async function processPurchase() {
 
     console.log('[SHOP] Infos envoyées:', {
       items: purchaseMessages.length,
-      buyer: buyerInfo.discordUsername,
+      buyer: buyerInfo.discordDisplayName,
       buyerId: buyerInfo.discordId,
     });
 
