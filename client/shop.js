@@ -1,0 +1,746 @@
+/**
+ * Shop.js - Gestion de la boutique (Achat/Divers)
+ * Permet aux utilisateurs de voir les articles et aux admins de les gérer
+ */
+
+// Configuration
+const API_URL = '/api/shop';
+const ADMIN_API_URL = '/api/admin';
+let adminToken = localStorage.getItem('adminToken');
+let isAdmin = !!adminToken;
+
+// Variables globales
+let allShopItems = [];
+let currentEditingItem = null;
+let cartItems = []; // Panier des articles sélectionnés
+
+// ===========================
+// INITIALISATION
+// ===========================
+
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('[SHOP] Initialisation de la page boutique');
+
+  // Charger les articles
+  await loadShopItems();
+
+  // Vérifier le statut admin
+  checkAdminStatus();
+
+  // Event listeners
+  setupEventListeners();
+});
+
+// ===========================
+// CHARGEMENT DES ARTICLES
+// ===========================
+
+async function loadShopItems() {
+  try {
+    const response = await fetch(`${API_URL}/items`);
+    const data = await response.json();
+
+    if (data.success) {
+      allShopItems = data.data || [];
+      renderShopItems();
+    } else {
+      showMessage('Erreur lors du chargement des articles', 'error');
+    }
+  } catch (error) {
+    console.error('[SHOP] Erreur chargement articles:', error);
+    showMessage('Erreur lors de la connexion au serveur', 'error');
+  }
+}
+
+function renderShopItems() {
+  const grid = document.getElementById('shopItemsGrid');
+  const badge = document.getElementById('itemCountBadge');
+
+  if (allShopItems.length === 0) {
+    grid.innerHTML = '<p class="empty-state">Aucun article disponible pour le moment</p>';
+    if (badge) badge.textContent = '0 articles';
+    return;
+  }
+
+  if (badge) badge.textContent = `${allShopItems.length} article${allShopItems.length > 1 ? 's' : ''}`;
+
+  grid.innerHTML = allShopItems
+    .sort((a, b) => a.order - b.order)
+    .map(item => createShopItemCard(item))
+    .join('');
+}
+
+function createShopItemCard(item) {
+  const isOutOfStock = !item.inStock || (item.quantity !== null && item.quantity <= 0);
+  const stockLevel = item.quantity;
+  
+  let stockBadge = '';
+  if (isOutOfStock) {
+    stockBadge = '<div class="stock-badge out">Stock Épuisé</div>';
+  } else if (item.quantity === null) {
+    stockBadge = '<div class="stock-badge">Stock Illimité</div>';
+  } else if (stockLevel <= 2) {
+    stockBadge = `<div class="stock-badge low">⚠️ ${stockLevel} Restant${stockLevel > 1 ? 's' : ''}</div>`;
+  } else {
+    stockBadge = `<div class="stock-badge">✓ En Stock</div>`;
+  }
+
+  let imageUrl;
+  if (item.image.startsWith('data:') || item.image.startsWith('http')) {
+    imageUrl = item.image;
+  } else {
+    imageUrl = item.image;
+  }
+
+  const accountBadge = item.accountId ? `<div class="cart-item-account">ID: ${escapeHtml(item.accountId)}</div>` : '';
+
+  return `
+    <div class="shop-item-card">
+      ${stockBadge}
+      <img src="${imageUrl}" alt="${item.name}" class="shop-item-image" onerror="this.src='assets/placeholder.png'">
+      <div class="shop-item-content">
+        <div class="shop-item-category">${item.category}</div>
+        <div class="shop-item-name">${escapeHtml(item.name)}</div>
+        <div class="shop-item-description">${escapeHtml(item.description || 'Aucune description')}</div>
+        ${accountBadge}
+        <div class="shop-item-footer">
+          <div class="shop-item-price">${item.price.toFixed(2)}€</div>
+          <button class="btn-select-item" data-item-id="${item._id}" ${isOutOfStock ? 'disabled' : ''} style="
+            padding: 8px 16px;
+            background: ${isOutOfStock ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255, 159, 0, 0.2)'};
+            border: 2px solid ${isOutOfStock ? 'rgba(255, 107, 107, 0.4)' : 'rgba(255, 159, 0, 0.4)'};
+            color: ${isOutOfStock ? 'var(--danger)' : 'var(--accent)'};
+            border-radius: 8px;
+            cursor: ${isOutOfStock ? 'not-allowed' : 'pointer'};
+            font-weight: 600;
+            transition: var(--transition-fast);
+            font-size: 0.85rem;
+            opacity: ${isOutOfStock ? '0.5' : '1'};
+          ">
+            ${isOutOfStock ? '❌ Rupture' : '➕ Sélectionner'}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ===========================
+// VÉRIFICATION DU STATUT ADMIN
+// ===========================
+
+function checkAdminStatus() {
+  const adminSection = document.getElementById('adminShopSection');
+  if (isAdmin) {
+    adminSection.classList.remove('hidden');
+    loadAdminShopItems();
+  } else {
+    adminSection.classList.add('hidden');
+  }
+}
+
+async function loadAdminShopItems() {
+  try {
+    const response = await fetch(`${API_URL}/items`);
+    const data = await response.json();
+
+    if (data.success) {
+      allShopItems = data.data || [];
+      renderAdminTable();
+    }
+  } catch (error) {
+    console.error('[SHOP] Erreur chargement admin:', error);
+  }
+}
+
+function renderAdminTable() {
+  const tbody = document.getElementById('adminShopTableBody');
+
+  if (allShopItems.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; color: var(--gray);">Aucun article ajouté</td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = allShopItems
+    .sort((a, b) => a.order - b.order)
+    .map((item, index) => `
+      <tr>
+        <td>${escapeHtml(item.name)}</td>
+        <td>${escapeHtml((item.description || '').substring(0, 50))}</td>
+        <td>${item.price.toFixed(2)}€</td>
+        <td>${item.category}</td>
+        <td>${item.quantity === null ? 'Illimité' : item.quantity}</td>
+        <td>
+          <div class="admin-actions">
+            <button class="btn-action" onclick="editItem('${item._id}')">✏️ Éditer</button>
+            <button class="btn-action danger" onclick="deleteItem('${item._id}', '${item.name}')">🗑️ Supprimer</button>
+          </div>
+        </td>
+      </tr>
+    `)
+    .join('');
+}
+
+// ===========================
+// GESTION DES ARTICLES
+// ===========================
+
+async function addNewItem() {
+  currentEditingItem = null;
+  document.getElementById('addEditItemTitle').textContent = 'Ajouter un Article';
+  document.getElementById('addEditItemForm').reset();
+  document.getElementById('imagePreview').classList.add('hidden');
+  document.getElementById('itemQuantity').value = '';
+  openModal('addEditItemModal');
+}
+
+async function editItem(itemId) {
+  const item = allShopItems.find(i => i._id === itemId);
+  if (!item) {
+    showMessage('Article non trouvé', 'error');
+    return;
+  }
+
+  currentEditingItem = item;
+  document.getElementById('addEditItemTitle').textContent = 'Modifier l\'Article';
+
+  // Remplir le formulaire
+  document.getElementById('itemName').value = item.name;
+  document.getElementById('itemDescription').value = item.description || '';
+  document.getElementById('itemPrice').value = item.price;
+  document.getElementById('itemCategory').value = item.category;
+  document.getElementById('itemQuantity').value = item.quantity || '';
+  document.getElementById('itemAccountId').value = item.accountId || '';
+  document.getElementById('itemAccountDetails').value = item.accountDetails || '';
+
+  // Afficher l'aperçu de l'image
+  const preview = document.getElementById('imagePreview');
+  const previewImg = document.getElementById('previewImage');
+  previewImg.src = item.image;
+  preview.classList.remove('hidden');
+
+  // L'input file n'est pas obligatoire si on édite
+  document.getElementById('itemImageInput').required = false;
+
+  openModal('addEditItemModal');
+}
+
+async function deleteItem(itemId, itemName) {
+  const modal = document.getElementById('deleteConfirmModal');
+  const message = document.getElementById('deleteConfirmMessage');
+  message.textContent = `Êtes-vous sûr de vouloir supprimer l'article "${itemName}"?`;
+
+  document.getElementById('confirmDeleteBtn').onclick = async () => {
+    await performDeleteItem(itemId);
+  };
+
+  openModal('deleteConfirmModal');
+}
+
+async function performDeleteItem(itemId) {
+  try {
+    showSpinner(true);
+
+    const response = await fetch(`${API_URL}/items/${itemId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      showMessage('Article supprimé avec succès!', 'success');
+      closeModal('deleteConfirmModal');
+      await loadAdminShopItems();
+      renderAdminTable();
+      renderShopItems();
+    } else {
+      showMessage(data.message || 'Erreur lors de la suppression', 'error');
+    }
+  } catch (error) {
+    console.error('[SHOP] Erreur suppression:', error);
+    showMessage('Erreur lors de la suppression de l\'article', 'error');
+  } finally {
+    showSpinner(false);
+  }
+}
+
+async function submitItem() {
+  const name = document.getElementById('itemName').value.trim();
+  const description = document.getElementById('itemDescription').value.trim();
+  const price = parseFloat(document.getElementById('itemPrice').value);
+  const category = document.getElementById('itemCategory').value.trim();
+  const quantity = document.getElementById('itemQuantity').value;
+  const accountId = document.getElementById('itemAccountId').value.trim();
+  const accountDetails = document.getElementById('itemAccountDetails').value.trim();
+  const imageInput = document.getElementById('itemImageInput');
+
+  // Validation
+  if (!name || !price || isNaN(price) || price < 0) {
+    showMessage('Veuillez remplir tous les champs obligatoires correctement', 'error');
+    return;
+  }
+
+  if (!currentEditingItem && !imageInput.files.length) {
+    showMessage('Veuillez sélectionner une image', 'error');
+    return;
+  }
+
+  try {
+    showSpinner(true);
+
+    let image = null;
+    if (imageInput.files.length) {
+      image = await fileToBase64(imageInput.files[0]);
+    } else {
+      // Édition - garder l'image existante
+      image = currentEditingItem.image;
+    }
+
+    const payload = {
+      name,
+      description,
+      price,
+      category,
+      quantity: quantity ? parseInt(quantity) : null,
+      image,
+      imageMimetype: imageInput.files[0]?.type || 'image/jpeg',
+      accountId: accountId || null,
+      accountDetails: accountDetails || null,
+    };
+
+    const url = currentEditingItem 
+      ? `${API_URL}/items/${currentEditingItem._id}`
+      : `${API_URL}/items`;
+
+    const method = currentEditingItem ? 'PUT' : 'POST';
+
+    const response = await fetch(url, {
+      method,
+      headers: {
+        'Authorization': `Bearer ${adminToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      const message = currentEditingItem 
+        ? 'Article modifié avec succès!'
+        : 'Article créé avec succès!';
+      showMessage(message, 'success');
+      closeModal('addEditItemModal');
+      await loadAdminShopItems();
+      renderAdminTable();
+      renderShopItems();
+    } else {
+      showMessage(data.message || 'Erreur lors de l\'enregistrement', 'error');
+    }
+  } catch (error) {
+    console.error('[SHOP] Erreur soumission:', error);
+    showMessage('Erreur lors de l\'enregistrement de l\'article', 'error');
+  } finally {
+    showSpinner(false);
+  }
+}
+
+// ===========================
+// AUTHENTIFICATION ADMIN
+// ===========================
+
+async function loginAsAdmin() {
+  const password = document.getElementById('adminLoginPassword').value.trim();
+
+  if (!password) {
+    showMessageInElement('adminLoginMessage', 'Veuillez entrer votre mot de passe', 'error');
+    return;
+  }
+
+  try {
+    showSpinner(true);
+
+    const response = await fetch('/api/auth/admin/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ password }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      adminToken = data.token;
+      localStorage.setItem('adminToken', adminToken);
+      isAdmin = true;
+
+      showMessageInElement('adminLoginMessage', 'Connexion réussie!', 'success');
+      setTimeout(() => {
+        closeModal('adminLoginModal');
+        checkAdminStatus();
+        loadAdminShopItems();
+      }, 1000);
+    } else {
+      showMessageInElement('adminLoginMessage', data.message || 'Mot de passe incorrect', 'error');
+    }
+  } catch (error) {
+    console.error('[SHOP] Erreur login:', error);
+    showMessageInElement('adminLoginMessage', 'Erreur lors de la connexion', 'error');
+  } finally {
+    showSpinner(false);
+  }
+}
+
+// ===========================
+// EVENT LISTENERS
+// ===========================
+
+function setupEventListeners() {
+  // Header
+  document.getElementById('backBtn').addEventListener('click', () => {
+    window.location.href = '/';
+  });
+
+  document.getElementById('adminLoginBtn').addEventListener('click', () => {
+    if (isAdmin) {
+      adminToken = null;
+      localStorage.removeItem('adminToken');
+      isAdmin = false;
+      checkAdminStatus();
+      location.reload();
+    } else {
+      openModal('adminLoginModal');
+    }
+  });
+
+  // Admin
+  document.getElementById('addItemBtn').addEventListener('click', addNewItem);
+
+  // Form
+  const imageInput = document.getElementById('itemImageInput');
+  imageInput.addEventListener('change', (e) => {
+    if (e.target.files.length) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const preview = document.getElementById('imagePreview');
+        const img = document.getElementById('previewImage');
+        img.src = event.target.result;
+        preview.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  document.getElementById('cancelItemBtn').addEventListener('click', () => {
+    closeModal('addEditItemModal');
+  });
+
+  document.getElementById('submitItemBtn').addEventListener('click', submitItem);
+
+  // Admin Login
+  document.getElementById('closeAdminLoginModal').addEventListener('click', () => {
+    closeModal('adminLoginModal');
+  });
+
+  document.getElementById('adminLoginSubmitBtn').addEventListener('click', loginAsAdmin);
+
+  // Add/Edit Modal
+  document.getElementById('closeAddEditItemModal').addEventListener('click', () => {
+    closeModal('addEditItemModal');
+  });
+
+  // Delete Modal
+  document.getElementById('cancelDeleteBtn').addEventListener('click', () => {
+    closeModal('deleteConfirmModal');
+  });
+
+  // Enter key in password field
+  document.getElementById('adminLoginPassword').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') loginAsAdmin();
+  });
+
+  // Cart buttons
+  document.getElementById('clearCartBtn').addEventListener('click', clearCart);
+  document.getElementById('continueShopping').addEventListener('click', hideCart);
+  document.getElementById('purchaseBtn').addEventListener('click', processPurchase);
+
+  // Delegation pour les boutons de sélection d'articles
+  document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('btn-select-item')) {
+      const itemId = e.target.dataset.itemId;
+      addToCart(itemId);
+    }
+    if (e.target.classList.contains('btn-remove-cart-item')) {
+      const cartIndex = parseInt(e.target.dataset.cartIndex);
+      removeFromCart(cartIndex);
+    }
+  });
+}
+
+// ===========================
+// UTILITAIRES
+// ===========================
+
+function openModal(modalId) {
+  const modal = document.getElementById(modalId);
+  modal.classList.remove('hidden');
+}
+
+function closeModal(modalId) {
+  const modal = document.getElementById(modalId);
+  modal.classList.add('hidden');
+}
+
+function showSpinner(show) {
+  const spinner = document.getElementById('loadingSpinner');
+  if (show) {
+    spinner.classList.remove('hidden');
+  } else {
+    spinner.classList.add('hidden');
+  }
+}
+
+function showMessage(message, type = 'info') {
+  // Afficher dans la fenêtre modale active, sinon en haut
+  const modals = document.querySelectorAll('.modal:not(.hidden)');
+  if (modals.length > 0) {
+    const lastModal = modals[modals.length - 1];
+    const msgBox = lastModal.querySelector('.message-box');
+    if (msgBox) {
+      showMessageInElement(msgBox, message, type);
+      return;
+    }
+  }
+}
+
+function showMessageInElement(element, message, type = 'info') {
+  let msgBox;
+  if (typeof element === 'string') {
+    msgBox = document.getElementById(element);
+  } else {
+    msgBox = element;
+  }
+
+  msgBox.textContent = message;
+  msgBox.className = `message-box show ${type}`;
+
+  setTimeout(() => {
+    msgBox.classList.remove('show');
+  }, 5000);
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ===========================
+// GESTION DU PANIER
+// ===========================
+
+function addToCart(itemId) {
+  const item = allShopItems.find(i => i._id === itemId);
+  if (!item) {
+    showMessage('Article non trouvé', 'error');
+    return;
+  }
+
+  // Ajouter au panier
+  cartItems.push({
+    ...item,
+    cartItemId: Date.now() + Math.random(), // ID unique pour ce panier
+  });
+
+  // Animation du badge
+  showCartNotification(cartItems.length);
+  showNotification(`✅ ${item.name} ajouté au panier!`, 'success');
+  updateCart();
+  showCart();
+}
+
+function removeFromCart(cartIndex) {
+  if (cartIndex >= 0 && cartIndex < cartItems.length) {
+    const removed = cartItems.splice(cartIndex, 1);
+    showNotification(`🗑️ ${removed[0].name} retiré du panier`, 'info');
+    updateCart();
+  }
+}
+
+function clearCart() {
+  if (cartItems.length === 0) return;
+  
+  cartItems = [];
+  updateCart();
+  showNotification('🧹 Panier vidé', 'info');
+}
+
+function showCartNotification(count) {
+  // Créer ou mettre à jour le badge du panier
+  let badge = document.getElementById('cartBadgeNotif');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'cartBadgeNotif';
+    badge.className = 'cart-badge-notification';
+    document.body.appendChild(badge);
+  }
+  badge.textContent = count;
+}
+
+function showNotification(message, type = 'info') {
+  const notif = document.createElement('div');
+  notif.className = `notification ${type}`;
+  notif.textContent = message;
+  document.body.appendChild(notif);
+
+  setTimeout(() => {
+    notif.remove();
+  }, 3000);
+}
+
+function updateCart() {
+  const cartSection = document.getElementById('cartSection');
+  const cartCountEl = document.getElementById('cartCount');
+  const cartItemsEl = document.getElementById('cartItems');
+  const totalPriceEl = document.getElementById('totalPrice');
+
+  // Mise à jour du compteur
+  cartCountEl.textContent = `(${cartItems.length})`;
+
+  if (cartItems.length === 0) {
+    cartSection.style.display = 'none';
+    return;
+  }
+
+  cartSection.style.display = 'block';
+
+  // Rendu des articles du panier
+  cartItemsEl.innerHTML = cartItems.map((item, index) => `
+    <div class="cart-item">
+      <img src="${item.image}" alt="${item.name}" class="cart-item-image" onerror="this.src='assets/placeholder.png'">
+      <div class="cart-item-details">
+        <div class="cart-item-name">${escapeHtml(item.name)}</div>
+        <div class="cart-item-info">${item.category} - ${item.description ? escapeHtml(item.description.substring(0, 30)) + '...' : ''}</div>
+        ${item.accountId ? `<div class="cart-item-account">📌 ID: ${escapeHtml(item.accountId)}</div>` : ''}
+      </div>
+      <div class="cart-item-price">${item.price.toFixed(2)}€</div>
+      <button class="btn-remove-cart-item" data-cart-index="${index}" style="
+        padding: 8px 12px;
+        background: rgba(255, 107, 107, 0.2);
+        border: none;
+        color: var(--danger);
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: var(--transition-fast);
+      ">
+        ✕
+      </button>
+    </div>
+  `).join('');
+
+  // Calcul du total
+  const total = cartItems.reduce((sum, item) => sum + item.price, 0);
+  totalPriceEl.textContent = `${total.toFixed(2)}€`;
+}
+
+function showCart() {
+  const cartSection = document.getElementById('cartSection');
+  cartSection.style.display = 'block';
+  cartSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+function hideCart() {
+  const cartSection = document.getElementById('cartSection');
+  cartSection.style.display = 'none';
+}
+
+async function processPurchase() {
+  if (cartItems.length === 0) {
+    showMessage('Votre panier est vide', 'error');
+    return;
+  }
+
+  // Vérifier que l'utilisateur est connecté via Discord
+  if (!currentDiscordUser) {
+    showMessage('❌ Vous devez vous connecter via Discord pour acheter', 'error');
+    return;
+  }
+
+  try {
+    showSpinner(true);
+
+    // Préparer les articles pour l'achat
+    const purchaseMessages = cartItems.map((item) => ({
+      accountId: item.accountId || `ITEM_${item._id}`,
+      itemName: item.name,
+      itemPrice: item.price,
+      itemImage: item.image,
+    }));
+
+    // Ajouter les infos de l'utilisateur Discord
+    const buyerInfo = {
+      discordUsername: currentDiscordUser.username,
+      discordId: currentDiscordUser.id,
+      discordAvatar: currentDiscordUser.avatar,
+      discordTag: currentDiscordUser.username + '#' + (currentDiscordUser.discriminator || '0'),
+    };
+
+    // Envoyer les messages via API
+    const response = await fetch('/api/shop/purchase', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        items: purchaseMessages,
+        itemCount: cartItems.length,
+        buyer: buyerInfo,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
+      
+      showNotification(`🎉 Commande confirmée! ${cartItems.length} article(s) pour ${totalPrice.toFixed(2)}€`, 'success');
+      
+      console.log('[SHOP] Achat traité:', data.messagesSent);
+
+      // Vider le panier
+      cartItems = [];
+      updateCart();
+      hideCart();
+
+      // Réafficher la grille
+      renderShopItems();
+    } else {
+      showNotification(data.message || '❌ Erreur lors de la commande', 'error');
+    }
+  } catch (error) {
+    console.error('[SHOP] Erreur achat:', error);
+    showNotification('❌ Erreur lors de la commande', 'error');
+  } finally {
+    showSpinner(false);
+  }
+}

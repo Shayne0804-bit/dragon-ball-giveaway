@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Achat/Divers - Dragon Ball Legends</title>
+  <link rel="icon" type="image/jpeg" href="assets/dragon-ball-icon.jpg">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="shop.css">
+  <script src="translations.js"></script>
+</head>
+<body>
+  <!-- Background -->
+  <video id="backgroundVideo" class="background-video" autoplay muted loop>
+    <source src="assets/background.mp4" type="video/mp4">
+  </video>
+  <div class="overlay"></div>
+
+  <!-- Page Container -->
+  <div class="page-wrapper">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <div class="logo-section">
+          <img src="assets/dragon-ball-icon.jpg" alt="Logo" class="logo-image">
+          <div class="logo-text">
+            <h1>Dragon Ball Legends - Shop</h1>
+            <p>Achat / Divers</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <select id="languageSelector" class="language-selector">
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </select>
+          <button id="backBtn" class="btn-secondary" style="margin-right: 10px;">← Retour</button>
+          <button id="adminLoginBtn" class="btn-admin">🔐 Admin</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container shop-container">
+      <!-- Shop Items Grid -->
+      <section class="shop-section">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">🛍️</span>
+            <h2>Articles Disponibles</h2>
+            <span id="itemCountBadge" class="admin-badge" style="margin-left: auto; background: rgba(255, 159, 0, 0.2);">0 articles</span>
+          </div>
+          <div class="card-body">
+            <div id="shopItemsGrid" class="shop-items-grid">
+              <p class="empty-state">Chargement des articles...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Shopping Cart Section -->
+      <section class="cart-section" id="cartSection" style="display: none; margin-top: 20px;">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-icon">🛒</span>
+            <h2>Panier <span id="cartCount" class="admin-badge" style="margin-left: 10px;">(0)</span></h2>
+            <button id="clearCartBtn" class="btn btn-secondary" style="margin-left: auto; padding: 6px 12px; font-size: 0.85rem;">🗑️ Vider</button>
+          </div>
+          <div class="card-body">
+            <div id="cartItems" class="cart-items-list"></div>
+            
+            <div class="cart-summary" style="margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(88, 101, 242, 0.2);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="color: var(--light); margin: 0;">Total</h3>
+                <span id="totalPrice" style="font-size: 1.8rem; color: var(--accent); font-weight: 800;">0.00€</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button id="continueShopping" class="btn btn-secondary">← Continuer</button>
+                <button id="purchaseBtn" class="btn btn-primary">💳 Acheter</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Admin Section (initially hidden) -->
+      <div id="adminShopSection" class="admin-section hidden" style="margin-top: 20px;">
+        <div class="card">
+          <div class="card-header admin-header">
+            <span class="card-icon">⚙️</span>
+            <h2>Gestion de la Boutique</h2>
+            <span class="admin-badge">Admin</span>
+          </div>
+          <div class="card-body">
+            <div class="admin-buttons">
+              <button id="addItemBtn" class="btn btn-primary">➕ Ajouter Article</button>
+            </div>
+          </div>
+
+          <!-- Shop Items Management Table -->
+          <div class="shop-management-table" style="margin-top: 20px;">
+            <h3 style="color: var(--light); margin-bottom: 15px;">Gestion des Articles</h3>
+            <table id="adminShopTable" class="admin-table">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>Description</th>
+                  <th>Prix</th>
+                  <th>Catégorie</th>
+                  <th>Stock</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminShopTableBody">
+                <tr>
+                  <td colspan="6" style="text-align: center; color: var(--gray);">Chargement des articles...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modals -->
+
+  <!-- Admin Login Modal -->
+  <div id="adminLoginModal" class="modal hidden">
+    <div class="modal-content modal-sm">
+      <button id="closeAdminLoginModal" class="modal-close">✕</button>
+      <h2>Connexion Admin</h2>
+      <form id="adminLoginForm">
+        <input type="password" id="adminLoginPassword" class="input" placeholder="Mot de passe" required>
+        <button id="adminLoginSubmitBtn" type="button" class="btn btn-primary btn-full">Se Connecter</button>
+      </form>
+      <div id="adminLoginMessage" class="message-box"></div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Item Modal -->
+  <div id="addEditItemModal" class="modal hidden">
+    <div class="modal-content">
+      <button id="closeAddEditItemModal" class="modal-close">✕</button>
+      <h2 id="addEditItemTitle">Ajouter un Article</h2>
+      <form id="addEditItemForm" class="form" style="margin-top: 15px;">
+        <input type="text" id="itemName" class="input" placeholder="Nom du produit" required>
+        <textarea id="itemDescription" class="input" placeholder="Description (optionnel)" rows="3"></textarea>
+        <input type="number" id="itemPrice" class="input" placeholder="Prix" step="0.01" min="0" required>
+        <input type="text" id="itemCategory" class="input" placeholder="Catégorie (ex: Divers)" value="Divers">
+        
+        <label style="color: var(--light); font-size: 0.9rem; margin-top: 15px; margin-bottom: 8px; display: block;">
+          Sélectionner une image
+        </label>
+        <input type="file" id="itemImageInput" class="input" accept="image/*" required>
+        <small style="color: var(--gray); display: block; margin-top: 5px;">Format: JPG, PNG (max 5MB)</small>
+
+        <div id="imagePreview" class="image-preview hidden" style="margin-top: 15px;">
+          <img id="previewImage" src="" alt="Aperçu" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+        </div>
+
+        <input type="number" id="itemQuantity" class="input" placeholder="Quantité (laisser vide = illimité)" min="0" style="margin-top: 15px;">
+
+        <!-- Account Details Fields -->
+        <input type="text" id="itemAccountId" class="input" placeholder="ID Compte (ex: ACC001)" style="margin-top: 15px;">
+        <textarea id="itemAccountDetails" class="input" placeholder="Détails du compte (optionnel)" rows="2" style="margin-top: 10px;"></textarea>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+          <button type="button" id="cancelItemBtn" class="btn btn-secondary">Annuler</button>
+          <button type="button" id="submitItemBtn" class="btn btn-primary">Sauvegarder</button>
+        </div>
+      </form>
+      <div id="addEditItemMessage" class="message-box" style="margin-top: 15px;"></div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteConfirmModal" class="modal hidden">
+    <div class="modal-content modal-sm">
+      <button class="modal-close" onclick="document.getElementById('deleteConfirmModal').classList.add('hidden')">✕</button>
+      <h2 style="color: #FF6B6B;">Confirmer la suppression</h2>
+      <p id="deleteConfirmMessage" style="margin-top: 15px; color: var(--light);">Êtes-vous sûr de vouloir supprimer cet article?</p>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+        <button type="button" id="cancelDeleteBtn" class="btn btn-secondary">Annuler</button>
+        <button type="button" id="confirmDeleteBtn" class="btn" style="background-color: #FF6B6B;">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div id="loadingSpinner" class="spinner hidden"></div>
+
+  <script src="shop.js"></script>
+</body>
+</html>

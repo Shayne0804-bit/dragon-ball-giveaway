@@ -20,6 +20,7 @@ const giveawayRoutes = require('./routes/giveaway');
 const giveawaysRoutes = require('./routes/giveaways');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
+const shopRoutes = require('./routes/shop');
 
 // Importer la configuration
 const { connectDB } = require('./config/database');
@@ -119,6 +120,7 @@ app.use('/api/participants', participantRoutes);
 app.use('/api/giveaway', giveawayRoutes);
 app.use('/api/giveaways', giveawaysRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/shop', shopRoutes);
 
 // Route de test
 app.get('/api/health', (req, res) => {
