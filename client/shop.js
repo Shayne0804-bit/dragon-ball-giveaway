@@ -131,6 +131,7 @@ function createShopItemCard(item) {
 
 function checkAdminStatus() {
   const adminSection = document.getElementById('adminShopSection');
+  console.log('[SHOP] Vérification statut admin - isAdmin:', isAdmin, 'Token:', adminToken ? '✓ Présent' : '✗ Absent');
   if (isAdmin) {
     adminSection.classList.remove('hidden');
     loadAdminShopItems();
@@ -190,6 +191,7 @@ function renderAdminTable() {
 // ===========================
 
 async function addNewItem() {
+  console.log('[SHOP] Clic sur "Ajouter Article"');
   currentEditingItem = null;
   document.getElementById('addEditItemTitle').textContent = 'Ajouter un Article';
   document.getElementById('addEditItemForm').reset();
@@ -368,7 +370,7 @@ async function loginAsAdmin() {
   try {
     showSpinner(true);
 
-    const response = await fetch('/api/auth/admin/login', {
+    const response = await fetch('/api/auth/admin-login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
