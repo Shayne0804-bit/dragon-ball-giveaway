@@ -431,7 +431,7 @@ function renderAdminTable() {
       <tr>
         <td>${escapeHtml(item.name)}</td>
         <td>${escapeHtml((item.description || '').substring(0, 50))}</td>
-        <td>${formatPrice(item.price)}</td>
+        <td>${Math.round(item.price * 630).toLocaleString('fr-FR')} FCFA</td>
         <td>${item.category}</td>
         <td>${item.quantity === null ? 'Illimité' : item.quantity}</td>
         <td>
@@ -492,7 +492,8 @@ async function editItem(itemId) {
   // Remplir le formulaire
   document.getElementById('itemName').value = item.name;
   document.getElementById('itemDescription').value = item.description || '';
-  document.getElementById('itemPrice').value = item.price;
+  // Convertir EUR en FCFA pour l'affichage
+  document.getElementById('itemPrice').value = Math.round(item.price * 630);
   document.getElementById('itemCategory').value = item.category;
   document.getElementById('itemQuantity').value = item.quantity || '';
   document.getElementById('itemAccountId').value = item.accountId || '';
@@ -577,7 +578,7 @@ async function performDeleteItem(itemId) {
 async function submitItem() {
   const name = document.getElementById('itemName').value.trim();
   const description = document.getElementById('itemDescription').value.trim();
-  const price = parseFloat(document.getElementById('itemPrice').value);
+  const priceFcfa = parseFloat(document.getElementById('itemPrice').value);
   const category = document.getElementById('itemCategory').value.trim();
   const quantity = document.getElementById('itemQuantity').value;
   const accountId = document.getElementById('itemAccountId').value.trim();
@@ -586,10 +587,13 @@ async function submitItem() {
   const galleryInput = document.getElementById('itemGalleryInput');
 
   // Validation
-  if (!name || !price || isNaN(price) || price < 0) {
+  if (!name || !priceFcfa || isNaN(priceFcfa) || priceFcfa < 0) {
     showMessage('Veuillez remplir tous les champs obligatoires correctement', 'error');
     return;
   }
+
+  // Convertir FCFA en EUR pour le stockage
+  const priceEur = Math.round((priceFcfa / 630) * 100) / 100; // 630 FCFA = 1 EUR
 
   if (!currentEditingItem && !imageInput.files.length) {
     showMessage('Veuillez sélectionner une image', 'error');
@@ -629,7 +633,7 @@ async function submitItem() {
     const payload = {
       name,
       description,
-      price,
+      price: priceEur,
       category,
       quantity: quantity ? parseInt(quantity) : null,
       image,
