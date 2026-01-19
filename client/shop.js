@@ -737,16 +737,26 @@ function setupEventListeners() {
   });
 
   // Cart buttons
-  document.getElementById('clearCartBtn').addEventListener('click', clearCart);
-  document.getElementById('continueShopping').addEventListener('click', hideCart);
-  document.getElementById('purchaseBtn').addEventListener('click', processPurchase);
+  const clearCartBtn = document.getElementById('clearCartBtn');
+  const continueShopping = document.getElementById('continueShopping');
+  const purchaseBtn = document.getElementById('purchaseBtn');
+  const closePurchaseSuccessModal = document.getElementById('closePurchaseSuccessModal');
+  const closePurchaseSuccessBtn = document.getElementById('closePurchaseSuccessBtn');
 
-  // Purchase Success Modal close buttons
-  document.getElementById('closePurchaseSuccessModal').addEventListener('click', () => {
+  console.log('[SHOP] Attachement des event listeners - Boutons trouvés:');
+  console.log('[SHOP] clearCartBtn:', clearCartBtn ? '✓' : '✗');
+  console.log('[SHOP] continueShopping:', continueShopping ? '✓' : '✗');
+  console.log('[SHOP] purchaseBtn:', purchaseBtn ? '✓' : '✗');
+  console.log('[SHOP] closePurchaseSuccessModal:', closePurchaseSuccessModal ? '✓' : '✗');
+  console.log('[SHOP] closePurchaseSuccessBtn:', closePurchaseSuccessBtn ? '✓' : '✗');
+
+  if (clearCartBtn) clearCartBtn.addEventListener('click', clearCart);
+  if (continueShopping) continueShopping.addEventListener('click', hideCart);
+  if (purchaseBtn) purchaseBtn.addEventListener('click', processPurchase);
+  if (closePurchaseSuccessModal) closePurchaseSuccessModal.addEventListener('click', () => {
     closeModal('purchaseSuccessModal');
   });
-
-  document.getElementById('closePurchaseSuccessBtn').addEventListener('click', () => {
+  if (closePurchaseSuccessBtn) closePurchaseSuccessBtn.addEventListener('click', () => {
     closeModal('purchaseSuccessModal');
   });
 
@@ -1043,9 +1053,22 @@ async function processPurchase() {
       console.log('[SHOP] Messages Discord envoyés:', data.messagesSent);
 
       // Afficher le modal de succès
+      console.log('[SHOP] Ouverture du modal de succès');
       const detailsEl = document.getElementById('purchaseDetails');
-      detailsEl.textContent = `${itemCount} article(s) - Total: ${formatPrice(totalPrice)}`;
+      console.log('[SHOP] détailsEl:', detailsEl);
+      if (detailsEl) {
+        detailsEl.textContent = `${itemCount} article(s) - Total: ${formatPrice(totalPrice)}`;
+        console.log('[SHOP] Détails mis à jour:', detailsEl.textContent);
+      } else {
+        console.error('[SHOP] ❌ Élément purchaseDetails introuvable!');
+      }
+      
+      const modal = document.getElementById('purchaseSuccessModal');
+      console.log('[SHOP] Modal element:', modal);
+      console.log('[SHOP] Modal classes avant:', modal?.className);
+      
       openModal('purchaseSuccessModal');
+      console.log('[SHOP] Modal classes après openModal:', modal?.className);
 
       // Vider le panier après 2 secondes
       setTimeout(() => {
