@@ -570,6 +570,7 @@ async function submitItem() {
 
 async function loginAsAdmin() {
   const password = document.getElementById('adminLoginPassword').value.trim();
+  console.log('[SHOP] Tentative de connexion admin - mot de passe vide:', !password);
 
   if (!password) {
     showMessageInElement('adminLoginMessage', 'Veuillez entrer votre mot de passe', 'error');
@@ -578,6 +579,7 @@ async function loginAsAdmin() {
 
   try {
     showSpinner(true);
+    console.log('[SHOP] Envoi de la demande de connexion admin...');
 
     const response = await fetch('/api/auth/admin-login', {
       method: 'POST',
@@ -588,8 +590,10 @@ async function loginAsAdmin() {
     });
 
     const data = await response.json();
+    console.log('[SHOP] Réponse serveur:', data);
 
     if (data.success) {
+      console.log('[SHOP] Connexion admin réussie!');
       adminToken = data.token;
       // Pas de sauvegarde localStorage - session temporaire
       isAdmin = true;
@@ -601,6 +605,7 @@ async function loginAsAdmin() {
         loadAdminShopItems();
       }, 1000);
     } else {
+      console.log('[SHOP] Connexion échouée:', data.message);
       showMessageInElement('adminLoginMessage', data.message || 'Mot de passe incorrect', 'error');
     }
   } catch (error) {
