@@ -358,8 +358,11 @@ class DiscordBotService {
         winnersText = winners
           .slice(0, 10) // Limite à 10 gagnants pour éviter les messages trop longs
           .map((winner, idx) => {
+            const discordId = winner.discordId;
             const name = winner.discordDisplayName || winner.name || winner.discordUsername || winner.username || 'Utilisateur inconnu';
-            return `${idx + 1}. **@${name}**`;
+            // Ping l'utilisateur avec <@discordId> s'il a un ID Discord, sinon affiche juste le nom
+            const mention = discordId ? `<@${discordId}>` : `**@${name}**`;
+            return `${idx + 1}. ${mention}`;
           })
           .join('\n');
 
