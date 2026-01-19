@@ -951,14 +951,22 @@ document.getElementById('adminLoginSubmitBtn').addEventListener('click', async (
     // Afficher la section admin
     document.getElementById('adminGiveawaySection').classList.remove('hidden');
 
-    // Charger les photos existantes
-    await loadGiveawayPhotos();
-    displayAdminGiveawayPhotos();
+    // Charger les photos existantes seulement si un giveaway est sélectionné
+    if (currentGiveaway) {
+      try {
+        await loadGiveawayPhotos();
+        displayAdminGiveawayPhotos();
+      } catch (error) {
+        console.warn('⚠️ Impossible de charger les photos:', error);
+      }
+    } else {
+      console.log('ℹ️ Aucun giveaway sélectionné, skip chargement photos');
+    }
 
-    // Fermer la modal après 1 seconde
+    // Fermer la modal après un délai
     setTimeout(() => {
       closeAdminLoginModal();
-    }, 1000);
+    }, 1500);
   } catch (error) {
     console.error('❌ Erreur fetch:', error);
     console.error('Message:', error.message);
