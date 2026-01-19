@@ -219,6 +219,22 @@
     </div>
   </div>
 
+  <!-- Purchase Success Modal -->
+  <div id="purchaseSuccessModal" class="modal hidden">
+    <div class="modal-content modal-sm">
+      <button id="closePurchaseSuccessModal" class="modal-close">✕</button>
+      <div style="text-align: center; padding: 20px;">
+        <div style="font-size: 3rem; margin-bottom: 20px;">🎉</div>
+        <h2 style="color: #4CAF50; margin-bottom: 15px;" data-translate="orderConfirmed">Commande Confirmée!</h2>
+        <p style="color: var(--light); margin-bottom: 20px; line-height: 1.6;">
+          ✅ Votre demande d'achat a été envoyée à l'admin sur Discord
+        </p>
+        <p id="purchaseDetails" style="color: var(--gray); font-size: 0.9rem; margin-bottom: 20px;"></p>
+        <button id="closePurchaseSuccessBtn" class="btn btn-primary" style="width: 100%;" data-translate="ok">OK</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Loading Spinner -->
   <div id="loadingSpinner" class="spinner hidden"></div>
 

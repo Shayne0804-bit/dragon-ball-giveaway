@@ -741,6 +741,15 @@ function setupEventListeners() {
   document.getElementById('continueShopping').addEventListener('click', hideCart);
   document.getElementById('purchaseBtn').addEventListener('click', processPurchase);
 
+  // Purchase Success Modal close buttons
+  document.getElementById('closePurchaseSuccessModal').addEventListener('click', () => {
+    closeModal('purchaseSuccessModal');
+  });
+
+  document.getElementById('closePurchaseSuccessBtn').addEventListener('click', () => {
+    closeModal('purchaseSuccessModal');
+  });
+
   // Delegation pour les boutons de sélection d'articles
   document.addEventListener('click', (e) => {
     if (e.target.classList.contains('btn-select-item')) {
@@ -1026,18 +1035,25 @@ async function processPurchase() {
 
     if (data.success) {
       const totalPrice = cartItems.reduce((sum, item) => sum + item.price, 0);
+      const itemCount = cartItems.length;
       
-      showNotification(`🎉 Commande confirmée! ${cartItems.length} article(s) pour ${formatPrice(totalPrice)}`, 'success');
-      
-      console.log('[SHOP] ✅ Achat traité:', data.messagesSent);
+      console.log('[SHOP] ✅ Achat réussi!');
+      console.log('[SHOP] Articles:', itemCount);
+      console.log('[SHOP] Prix total:', totalPrice);
+      console.log('[SHOP] Messages Discord envoyés:', data.messagesSent);
 
-      // Vider le panier
-      cartItems = [];
-      updateCart();
-      hideCart();
+      // Afficher le modal de succès
+      const detailsEl = document.getElementById('purchaseDetails');
+      detailsEl.textContent = `${itemCount} article(s) - Total: ${formatPrice(totalPrice)}`;
+      openModal('purchaseSuccessModal');
 
-      // Réafficher la grille
-      renderShopItems();
+      // Vider le panier après 2 secondes
+      setTimeout(() => {
+        cartItems = [];
+        updateCart();
+        hideCart();
+        renderShopItems();
+      }, 2000);
     } else {
       console.log('[SHOP] ❌ Erreur serveur:', data.message);
       showNotification(data.message || '❌ Erreur lors de la commande', 'error');
