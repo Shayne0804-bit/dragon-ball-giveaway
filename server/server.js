@@ -163,27 +163,39 @@ const startServer = async () => {
     // Connecter à MongoDB
     await connectDB();
 
-    // Initialiser le bot Discord
-    const discordReady = await discordBot.initialize();
-    if (discordReady) {
-      console.log('✅ Bot Discord connecté et prêt à envoyer des notifications');
+    // Vérifier si le bot Discord est activé
+    const BOT_ENABLED = process.env.BOT_ENABLED !== 'false';
+
+    if (BOT_ENABLED) {
+      // Initialiser le bot Discord
+      const discordReady = await discordBot.initialize();
+      if (discordReady) {
+        console.log('✅ Bot Discord connecté et prêt à envoyer des notifications');
+      } else {
+        console.warn('⚠️  Bot Discord non initialisé - vérifiez la configuration');
+      }
     } else {
-      console.warn('⚠️  Bot Discord non initialisé - vérifiez la configuration');
+      console.log('ℹ️  Bot Discord désactivé (mode développement)');
     }
 
     // Démarrer le service d'auto-tirage des giveaways expirés
     autoGiveawayService.start();
 
     // Démarrer le service de rappel (toutes les 12 heures)
-    reminderService = new ReminderService(discordBot);
-    reminderService.start();
-    global.reminderService = reminderService;
+    if (BOT_ENABLED) {
+      reminderService = new ReminderService(discordBot);
+      reminderService.start();
+      global.reminderService = reminderService;
+    }
 
     // Démarrer le serveur
     app.listen(PORT, () => {
       console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
       console.log(`📝 Environnement: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🌐 CORS Origin: ${process.env.CORS_ORIGIN || 'http://localhost:5000'}`);
+      console.log(`🌐 CORS Origin: ${process.env.CORS_ORIGIN || 'http://localhost:5001'}`);
+      if (!BOT_ENABLED) {
+        console.log(`🤖 Mode: DEV (Bot Discord désactivé)`);
+      }
     });
   } catch (error) {
     console.error('❌ Erreur au démarrage:', error.message);

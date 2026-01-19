@@ -178,9 +178,9 @@ function openItemGallery(itemId) {
   galleryItemName.textContent = item.name;
 
   // Créer la liste d'images (image principale + galerie)
-  const allImages = [item.image];
+  const allImages = [ensureBase64Prefix(item.image, item.imageMimetype || 'image/jpeg')];
   if (item.gallery && Array.isArray(item.gallery)) {
-    allImages.push(...item.gallery.map(g => g.data));
+    allImages.push(...item.gallery.map(g => ensureBase64Prefix(g.data, g.mimetype)));
   }
 
   galleryTotal.textContent = allImages.length;
@@ -213,14 +213,21 @@ function openItemGallery(itemId) {
   openModal('galleryModal');
 }
 
+// Function helper pour formater les images en Base64
+function ensureBase64Prefix(imgData, mimetype = 'image/jpeg') {
+  if (!imgData) return 'assets/placeholder.png';
+  if (imgData.startsWith('data:')) return imgData;
+  return `data:${mimetype};base64,${imgData}`;
+}
+
 function displayGalleryImage() {
   const item = currentGalleryItem;
   const galleryImage = document.getElementById('galleryImage');
   const galleryIndex = document.getElementById('galleryIndex');
-  const allImages = [item.image];
+  const allImages = [ensureBase64Prefix(item.image, item.imageMimetype || 'image/jpeg')];
 
   if (item.gallery && Array.isArray(item.gallery)) {
-    allImages.push(...item.gallery.map(g => g.data));
+    allImages.push(...item.gallery.map(g => ensureBase64Prefix(g.data, g.mimetype)));
   }
 
   // Mettre à jour l'image
@@ -239,9 +246,9 @@ function displayGalleryImage() {
 
 function nextGalleryImage() {
   if (!currentGalleryItem) return;
-  const allImages = [currentGalleryItem.image];
+  const allImages = [ensureBase64Prefix(currentGalleryItem.image, currentGalleryItem.imageMimetype || 'image/jpeg')];
   if (currentGalleryItem.gallery && Array.isArray(currentGalleryItem.gallery)) {
-    allImages.push(...currentGalleryItem.gallery.map(g => g.data));
+    allImages.push(...currentGalleryItem.gallery.map(g => ensureBase64Prefix(g.data, g.mimetype)));
   }
 
   if (currentGalleryIndex < allImages.length - 1) {
@@ -316,7 +323,7 @@ function createShopItemCard(item) {
   if (item.image.startsWith('data:') || item.image.startsWith('http')) {
     imageUrl = item.image;
   } else {
-    imageUrl = item.image;
+    imageUrl = ensureBase64Prefix(item.image, item.imageMimetype || 'image/jpeg');
   }
 
   const accountBadge = item.accountId ? `<div class="cart-item-account">ID: ${escapeHtml(item.accountId)}</div>` : '';
@@ -362,26 +369,44 @@ function checkAdminStatus() {
   console.log('[SHOP] isShopAdmin:', isShopAdmin);
   console.log('[SHOP] shopAdminToken:', shopAdminToken ? '✓ Présent' : '✗ Absent');
   console.log('[SHOP] Élément adminShopSection existe:', !!adminSection);
-  console.log('[SHOP] Classe hidden:', adminSection?.classList.contains('hidden'));
   
-  if (isShopAdmin) {
+  if (!adminSection) {
+    console.log('[SHOP] ⚠️  adminShopSection introuvable au moment du check');
+    return;
+  }
+  
+  console.log('[SHOP] Classe hidden avant:', adminSection.classList.contains('hidden'));
+  
+  if (isShopAdmin && shopAdminToken) {
     console.log('[SHOP] ✓ Admin actif - affichage de la section');
     adminSection.classList.remove('hidden');
-    loadAdminShopItems();
+    adminSection.style.display = 'block';
+    console.log('[SHOP] Classe hidden après remove:', adminSection.classList.contains('hidden'));
+    // Scroll vers la section admin
+    setTimeout(() => {
+      adminSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   } else {
     console.log('[SHOP] ✗ Admin inactif - masquage de la section');
     adminSection.classList.add('hidden');
+    adminSection.style.display = 'none';
+    console.log('[SHOP] Classe hidden après add:', adminSection.classList.contains('hidden'));
   }
 }
 
 async function loadAdminShopItems() {
   try {
+    console.log('[SHOP] Chargement des articles pour l\'admin...');
     const response = await fetch(`${API_URL}/items`);
     const data = await response.json();
 
     if (data.success) {
       allShopItems = data.data || [];
+      console.log('[SHOP] Articles chargés:', allShopItems.length);
       renderAdminTable();
+      loadCartStats(); // Mettre à jour les stats
+    } else {
+      console.error('[SHOP] Erreur API:', data.message);
     }
   } catch (error) {
     console.error('[SHOP] Erreur chargement admin:', error);
@@ -479,8 +504,26 @@ async function editItem(itemId) {
   previewImg.src = item.image;
   preview.classList.remove('hidden');
 
+  // Afficher les miniatures de la galerie existante
+  const galleryPreview = document.getElementById('galleryPreview');
+  galleryPreview.innerHTML = '';
+  if (item.gallery && Array.isArray(item.gallery) && item.gallery.length > 0) {
+    for (let galImg of item.gallery) {
+      const div = document.createElement('div');
+      div.style.cssText = 'position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 2px solid rgba(88, 101, 242, 0.3);';
+      const img = document.createElement('img');
+      img.src = galImg.data;
+      img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+      div.appendChild(img);
+      galleryPreview.appendChild(div);
+    }
+  }
+
   // L'input file n'est pas obligatoire si on édite
   document.getElementById('itemImageInput').required = false;
+  
+  // Réinitialiser l'input de galerie pour qu'on puisse ajouter de NOUVELLES images
+  document.getElementById('itemGalleryInput').value = '';
 
   openModal('addEditItemModal');
 }
@@ -566,6 +609,13 @@ async function submitItem() {
 
     // Traiter les images de galerie
     let gallery = [];
+    
+    // Commencer par la galerie existante si on édite
+    if (currentEditingItem && currentEditingItem.gallery && Array.isArray(currentEditingItem.gallery)) {
+      gallery = [...currentEditingItem.gallery];
+    }
+    
+    // Ajouter les NOUVELLES images à la galerie existante
     if (galleryInput.files.length) {
       for (let file of galleryInput.files) {
         const data = await fileToBase64(file);
@@ -574,9 +624,6 @@ async function submitItem() {
           mimetype: file.type || 'image/jpeg',
         });
       }
-    } else if (currentEditingItem && currentEditingItem.gallery) {
-      // Édition - garder la galerie existante
-      gallery = currentEditingItem.gallery;
     }
 
     const payload = {
@@ -668,9 +715,9 @@ async function loginAsAdmin() {
       setTimeout(() => {
         console.log('[SHOP] ⏱️ Après 1s - isShopAdmin:', isShopAdmin, 'shopAdminToken:', shopAdminToken ? '✓' : '✗');
         closeModal('shopAdminLoginModal');
-        checkAdminStatus();
-        loadAdminShopItems();
-      }, 1000);
+        checkAdminStatus(); // Afficher la section admin
+        loadAdminShopItems(); // Charger les articles
+      }, 500);
     } else {
       console.log('[SHOP] Connexion échouée:', data.message);
       showMessageInElement('shopAdminLoginMessage', data.message || 'Mot de passe incorrect', 'error');
@@ -798,7 +845,8 @@ function setupEventListeners() {
   console.log('[SHOP] closePurchaseSuccessModal:', closePurchaseSuccessModal ? '✓' : '✗');
   console.log('[SHOP] closePurchaseSuccessBtn:', closePurchaseSuccessBtn ? '✓' : '✗');
 
-  if (clearCartBtn) clearCartBtn.addEventListener('click', clearCart);
+  // clearCartBtn event listener moved to delegation
+  // if (clearCartBtn) clearCartBtn.addEventListener('click', clearCart);
   if (continueShopping) continueShopping.addEventListener('click', hideCart);
   if (purchaseBtn) purchaseBtn.addEventListener('click', processPurchase);
   if (closePurchaseSuccessModal) closePurchaseSuccessModal.addEventListener('click', () => {
@@ -815,8 +863,20 @@ function setupEventListeners() {
       addToCart(itemId);
     }
     if (e.target.classList.contains('btn-remove-cart-item')) {
+      console.log('[SHOP] btn-remove-cart-item clicked directly');
       const cartIndex = parseInt(e.target.dataset.cartIndex);
+      console.log('[SHOP] Removing cart item at index:', cartIndex);
       removeFromCart(cartIndex);
+    } else if (e.target.closest('.btn-remove-cart-item')) {
+      console.log('[SHOP] btn-remove-cart-item clicked via child element');
+      const button = e.target.closest('.btn-remove-cart-item');
+      const cartIndex = parseInt(button.dataset.cartIndex);
+      console.log('[SHOP] Removing cart item at index:', cartIndex);
+      removeFromCart(cartIndex);
+    }
+    if (e.target.id === 'clearCartBtn') {
+      console.log('[SHOP] clearCartBtn clicked');
+      clearCart();
     }
     if (e.target.classList.contains('shop-item-clickable')) {
       const itemId = e.target.dataset.itemId;
@@ -943,10 +1003,16 @@ function removeFromCart(cartIndex) {
 }
 
 function clearCart() {
-  if (cartItems.length === 0) return;
+  console.log('[SHOP] clearCart called');
+  console.log('[SHOP] cartItems.length before:', cartItems.length);
   
+  if (cartItems.length === 0) {
+    console.log('[SHOP] Cart already empty, returning');
+    return;
+  }
+
   cartItems = [];
-  updateCart();
+  console.log('[SHOP] cartItems cleared:', cartItems.length);
   showNotification('🧹 Panier vidé', 'info');
 }
 
@@ -974,20 +1040,31 @@ function showNotification(message, type = 'info') {
 }
 
 function updateCart() {
+  console.log('[SHOP] updateCart called, cartItems.length:', cartItems.length);
+  
   const cartSection = document.getElementById('cartSection');
   const cartCountEl = document.getElementById('cartCount');
   const cartItemsEl = document.getElementById('cartItems');
   const totalPriceEl = document.getElementById('totalPrice');
 
+  console.log('[SHOP] DOM elements:', {
+    cartSection: !!cartSection,
+    cartCountEl: !!cartCountEl,
+    cartItemsEl: !!cartItemsEl,
+    totalPriceEl: !!totalPriceEl
+  });
+
   // Mise à jour du compteur
   cartCountEl.textContent = `(${cartItems.length})`;
 
   if (cartItems.length === 0) {
-    cartSection.classList.add('hidden');
+    console.log('[SHOP] Panier vide - affichage du message vide');
+    cartItemsEl.innerHTML = '<p style="text-align: center; color: var(--gray);">Le panier est vide</p>';
+    totalPriceEl.textContent = formatPrice(0);
     return;
   }
 
-  cartSection.classList.remove('hidden');
+  console.log('[SHOP] Panier non vide - affichage des articles');
 
   // Rendu des articles du panier
   cartItemsEl.innerHTML = cartItems.map((item, index) => `
@@ -1139,3 +1216,9 @@ async function processPurchase() {
     showSpinner(false);
   }
 }
+
+
+
+
+
+

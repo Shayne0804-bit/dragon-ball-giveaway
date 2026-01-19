@@ -6,7 +6,7 @@ const ShopItem = require('../models/ShopItem');
  */
 const createShopItem = async (req, res) => {
   try {
-    const { name, description, price, image, imageMimetype, category, quantity } = req.body;
+    const { name, description, price, image, imageMimetype, category, quantity, gallery } = req.body;
 
     // Validation
     if (!name || !price || !image) {
@@ -24,6 +24,7 @@ const createShopItem = async (req, res) => {
       imageMimetype: imageMimetype || 'image/jpeg',
       category: category || 'Divers',
       quantity: quantity ? parseInt(quantity) : null,
+      gallery: gallery || [],
       order: await ShopItem.countDocuments(),
     });
 
@@ -103,7 +104,7 @@ const getShopItemById = async (req, res) => {
  */
 const updateShopItem = async (req, res) => {
   try {
-    const { name, description, price, image, imageMimetype, category, quantity, inStock, order } = req.body;
+    const { name, description, price, image, imageMimetype, category, quantity, inStock, order, gallery } = req.body;
 
     const shopItem = await ShopItem.findById(req.params.id);
 
@@ -124,6 +125,7 @@ const updateShopItem = async (req, res) => {
     if (quantity !== undefined) shopItem.quantity = quantity ? parseInt(quantity) : null;
     if (inStock !== undefined) shopItem.inStock = inStock;
     if (order !== undefined) shopItem.order = parseInt(order);
+    if (gallery !== undefined) shopItem.gallery = gallery;
     shopItem.updatedAt = new Date();
 
     await shopItem.save();
@@ -380,3 +382,7 @@ module.exports = {
   getItemsByCategory,
   processPurchase,
 };
+
+
+
+

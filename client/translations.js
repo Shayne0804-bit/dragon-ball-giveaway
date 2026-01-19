@@ -450,3 +450,44 @@ function translatePage() {
 
   console.log(`[i18n] Page traduite en ${lang}`);
 }
+
+
+// === Gestion globale du sélecteur de langue ===
+window.initLanguageSelector = function() {
+  const languageSelector = document.getElementById('languageSelector');
+  if (!languageSelector) return;
+  
+  // Récupérer la langue depuis l'URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const currentLang = urlParams.get('lang') || window.currentLanguage || 'fr';
+  languageSelector.value = currentLang;
+  
+  // Listener pour le changement
+  languageSelector.addEventListener('change', (e) => {
+    const newLang = e.target.value;
+    // Ajouter le param lang à l'URL
+    const url = new URL(window.location);
+    url.searchParams.set('lang', newLang);
+    window.history.pushState({}, '', url);
+    
+    // Appliquer la traduction
+    window.currentLanguage = newLang;
+    if (typeof setLanguage === 'function') {
+      setLanguage(newLang);
+    }
+    if (typeof applyTranslation === 'function') {
+      applyTranslation(newLang);
+    }
+  });
+};
+
+// Initialiser la langue au chargement
+initLanguage();
+
+// Auto-init au chargement
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', window.initLanguageSelector);
+} else {
+  window.initLanguageSelector();
+}
+

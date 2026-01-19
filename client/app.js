@@ -2421,7 +2421,13 @@ function initializeApp() {
   if (languageSelector) {
     languageSelector.value = window.currentLanguage || 'fr';
     languageSelector.addEventListener('change', (e) => {
-      setLanguage(e.target.value);
+      const newLang = e.target.value;
+      // Synchroniser via URL
+      const url = new URL(window.location);
+      url.searchParams.set('lang', newLang);
+      window.history.pushState({}, '', url);
+      // Appliquer la traduction
+      setLanguage(newLang);
     });
   }
   
