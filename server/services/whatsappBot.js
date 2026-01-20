@@ -17,8 +17,7 @@ class WhatsAppBotService {
     this.maxReconnectAttempts = 5;
     this.commandHandler = null;
     this.messageHandlers = null;
-    this.lastQRCode = null; // Stocker le dernier QR code
-    this.qrGenerated = false; // Flag pour savoir si QR a été généré
+    this.lastPairingCode = null; // Stocker le dernier code d'appairage
     
     // Déterminer l'URL du site
     let siteUrl = process.env.CORS_ORIGIN;
@@ -61,7 +60,7 @@ class WhatsAppBotService {
       // Logger configuration
       const logger = P({ level: 'silent' });
 
-      // Créer la socket
+      // Créer la socket avec support des pairing codes
       this.sock = makeWASocket({
         auth: state,
         logger,
@@ -69,6 +68,7 @@ class WhatsAppBotService {
         syncFullHistory: false,
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: true,
+        pairingCodeTimeoutMs: 60000, // 60 secondes pour entrer le code
       });
 
       // Initialiser le gestionnaire de commandes
@@ -81,28 +81,34 @@ class WhatsAppBotService {
 
       // Connexion
       this.sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, isNewLogin, qr } = update;
+        const { connection, lastDisconnect, isNewLogin } = update;
 
-        // Mode production - désactiver QR code après la première authentification
-        const isProduction = process.env.NODE_ENV === 'production';
-        
-        // QR Code - Seulement si :
-        // 1. C'est une nouvelle connexion (isNewLogin)
-        // 2. Et pas en production avec session existante
-        if (qr) {
-          if (isNewLogin && !hasExistingAuth) {
-            // Première connexion - afficher le QR
-            console.log('[WHATSAPP] ⚠️  PREMIÈRE CONNEXION - QR Code généré');
-            console.log('[WHATSAPP] Scannez le code ci-dessous avec WhatsApp:');
-            qrcode.generate(qr, { small: false, width: 10 });
-            this.lastQRCode = qr;
-            this.qrGenerated = true;
-            console.log('[WHATSAPP] Code scanné? Attendez la connexion...');
-          } else if (!isNewLogin || hasExistingAuth) {
-            // Reconnexion avec session existante - pas de QR
-            if (this.qrGenerated) {
-              console.log('[WHATSAPP] Session authentifiée détectée - Reconnexion sans QR');
+        // Afficher le pairing code pour la première connexion
+        if (!isNewLogin && !hasExistingAuth) {
+          try {
+            const pairingCode = await this.sock?.requestPairingCode(this.phoneNumber);
+            if (pairingCode) {
+              console.log('\n');
+              console.log('╔════════════════════════════════════════════════════════════╗');
+              console.log('║     🔐 PREMIÈRE CONNEXION - CODE D\'APPAIRAGE WhatsApp    ║');
+              console.log('╚════════════════════════════════════════════════════════════╝');
+              console.log('');
+              console.log(`  📱 ENTREZ CE CODE dans votre téléphone WhatsApp:`);
+              console.log('');
+              console.log(`     ┌─────────────────────┐`);
+              console.log(`     │  ${pairingCode}      │`);
+              console.log(`     └─────────────────────┘`);
+              console.log('');
+              console.log('  ⏱️  Vous avez 60 secondes pour entrer ce code');
+              console.log('  📍 Allez dans: Paramètres → Appareils liés → Ajouter un appareil');
+              console.log('  💬 Puis sélectionnez "Utiliser un code d\'appairage"');
+              console.log('');
+              console.log('╔════════════════════════════════════════════════════════════╗');
+              console.log('');
+              this.lastPairingCode = pairingCode;
             }
+          } catch (error) {
+            console.log('[WHATSAPP] Erreur lors de la génération du code d\'appairage:', error.message);
           }
         }
 
@@ -110,7 +116,8 @@ class WhatsAppBotService {
           this.isReady = true;
           this.reconnectAttempts = 0;
           if (isNewLogin && !hasExistingAuth) {
-            console.log('[WHATSAPP] ✅ Authentification réussie - Session sauvegardée');
+            console.log('[WHATSAPP] ✅ Authentification réussie');
+            console.log('[WHATSAPP] 📝 Session sauvegardée pour les redémarrages futurs');
             console.log('[WHATSAPP] 🎉 Bot connecté et prêt à l\'emploi');
           } else if (hasExistingAuth) {
             console.log('[WHATSAPP] ✅ Connexion avec session persistante');

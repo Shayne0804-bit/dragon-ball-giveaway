@@ -22,7 +22,7 @@ router.get('/status', (req, res) => {
       timestamp: new Date(),
       uptime: Math.floor(process.uptime() / 60),
       environment: process.env.NODE_ENV,
-      qrGenerated: whatsappBot.qrGenerated || false,
+      lastPairingCode: whatsappBot.lastPairingCode || null,
     };
 
     res.json(status);
@@ -33,29 +33,35 @@ router.get('/status', (req, res) => {
 });
 
 /**
- * GET /api/whatsapp/qr-code
- * Récupérer le dernier QR code généré (si disponible)
+ * GET /api/whatsapp/pairing-code
+ * Récupérer le dernier code d'appairage généré (si disponible)
  * En production, ceci est limité à la première connexion
  */
-router.get('/qr-code', (req, res) => {
+router.get('/pairing-code', (req, res) => {
   try {
     const whatsappBot = global.whatsappBot;
     
-    if (!whatsappBot || !whatsappBot.lastQRCode) {
+    if (!whatsappBot || !whatsappBot.lastPairingCode) {
       return res.status(404).json({
-        error: 'QR code non disponible',
+        error: 'Code d\'appairage non disponible',
         message: 'Le bot est peut-être déjà authentifié ou pas encore initialisé'
       });
     }
 
-    // Retourner le QR code en ASCII
+    // Retourner le code d'appairage
     res.json({
-      qr: whatsappBot.lastQRCode,
+      pairingCode: whatsappBot.lastPairingCode,
       timestamp: new Date(),
-      message: 'Scannez ce code avec WhatsApp'
+      instructions: {
+        step1: 'Ouvrez WhatsApp sur votre téléphone',
+        step2: 'Allez à: Paramètres → Appareils liés → Ajouter un appareil',
+        step3: 'Sélectionnez "Utiliser un code d\'appairage"',
+        step4: 'Entrez le code ci-dessus',
+        timeout: '60 secondes'
+      }
     });
   } catch (error) {
-    console.error('[WHATSAPP ROUTE] Erreur QR:', error.message);
+    console.error('[WHATSAPP ROUTE] Erreur pairing code:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
