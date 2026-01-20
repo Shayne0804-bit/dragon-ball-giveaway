@@ -18,10 +18,12 @@ class TwitterService {
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', ''); // Garder la casse originale
     const handle = this.twitterHandle.toLowerCase(); // Minuscules pour les URLs
     
-    // Sources RSS pour Twitter - services fiables et accessibles
+    // Sources RSS pour Twitter - instances Nitter stables
     this.rssInstances = [
-      `https://twitrss.me/twitter_user_to_rss.php?user=${handle}`, // Twitrss.me (très stable)
-      `https://nitter.net/${handle}/rss`, // Nitter.net stable
+      `https://nitter.1d4.us/${handle}/rss`, // Nitter US
+      `https://nitter.privacy.com.de/${handle}/rss`, // Nitter privé
+      `https://nitter.cz/${handle}/rss`, // Nitter Czech
+      `https://nitter.bird.mk/${handle}/rss`, // Nitter bird.mk
     ];
     this.maxResults = 10;
   }
