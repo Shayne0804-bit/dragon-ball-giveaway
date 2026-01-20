@@ -21,20 +21,14 @@ class TwitterService {
     // URL de l'instance RSSHub privée (à configurer dans .env après déploiement)
     const rsshubUrl = process.env.RSSHUB_URL;
     
-    // Sources RSS pour Twitter - RSSHub privé + fallbacks publics
+    // Sources RSS pour Twitter - RSSHub privé (config après déploiement)
     this.rssInstances = rsshubUrl 
       ? [
           `${rsshubUrl}/twitter/user/${handle}`, // RSSHub privé Railway
           `${rsshubUrl}/x/user/${handle}`, // RSSHub privé X endpoint
-          `https://rsshub.app/twitter/user/${handle}`, // RSSHub public fallback
-          `https://nitter.unixfox.eu/${handle}/rss`, // Nitter EU
         ]
       : [
-          // Si RSSHUB_URL non configurée, utiliser RSSHub public
-          `https://rsshub.app/twitter/user/${handle}`, // RSSHub public
-          `https://nitter.unixfox.eu/${handle}/rss`, // Nitter EU
-          `https://nitter.mstdn.social/${handle}/rss`, // Nitter Mastodon
-          `https://nitter.kavin.rocks/${handle}/rss`, // Nitter Rocks
+          // Fallback: aucune source valide jusqu'à RSSHub déployé
         ];
     this.maxResults = 10;
   }
