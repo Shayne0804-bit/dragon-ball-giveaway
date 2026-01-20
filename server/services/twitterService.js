@@ -3,7 +3,9 @@ const TweetLog = require('../models/TweetLog');
 
 class TwitterService {
   constructor() {
-    this.client = new TwitterApi(process.env.TWITTER_BEARER_TOKEN).readOnlyClient;
+    // Créer un client avec uniquement le Bearer Token (lecture seule)
+    this.client = new TwitterApi(process.env.TWITTER_BEARER_TOKEN);
+    this.twitterClient = this.client.readOnlyClient;
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
     this.maxResults = 10; // Récupérer les 10 derniers tweets à chaque check
   }
@@ -17,15 +19,15 @@ class TwitterService {
       console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle}...`);
 
       // Récupère l'ID utilisateur
-      const user = await this.client.v2.userByUsername(this.twitterHandle);
-      if (!user) {
+      const user = await this.twitterClient.v2.userByUsername(this.twitterHandle);
+      if (!user || !user.data) {
         throw new Error(`Utilisateur @${this.twitterHandle} non trouvé`);
       }
 
       const userId = user.data.id;
 
       // Récupère les tweets
-      const tweets = await this.client.v2.userTimeline(userId, {
+      const tweets = await this.twitterClient.v2.userTimeline(userId, {
         max_results: this.maxResults,
         'tweet.fields': ['created_at', 'public_metrics'],
         'expansions': ['author_id'],
