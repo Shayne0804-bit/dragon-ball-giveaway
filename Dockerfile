@@ -3,16 +3,20 @@ FROM node:20-alpine
 # Définir le répertoire de travail
 WORKDIR /app
 
-# Installer les dépendances système minimales
+# Installer les dépendances système minimales (inclure git pour npm)
 RUN apk add --no-cache \
     ca-certificates \
-    curl
+    curl \
+    git \
+    python3 \
+    make \
+    g++
 
 # Copier les fichiers de configuration
 COPY package*.json ./
 
 # Installer les dépendances
-RUN npm install --production
+RUN npm install --omit=dev
 
 # Copier le code source
 COPY . .
