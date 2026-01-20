@@ -1,118 +1,52 @@
-const Parser = require('rss-parser');
-const https = require('https');
+const { Scraper } = require('twitter-scraper');
 const TweetLog = require('../models/TweetLog');
 
 class TwitterService {
   constructor() {
-    // Parser avec agent HTTPS qui ignore les erreurs SSL
-    const httpsAgent = new https.Agent({
-      rejectUnauthorized: false, // Pour dev uniquement
-      timeout: 10000,
-    });
-
-    this.parser = new Parser({
-      timeout: 10000,
-      requestOptions: {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        },
-        agent: httpsAgent,
-      },
-    });
-
+    this.scraper = new Scraper();
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
-    
-    // Plusieurs instances Nitter (ajoutées)
-    this.nitterInstances = [
-      `https://nitter.net/${this.twitterHandle}/rss`,
-      `https://nitter.1d4.us/${this.twitterHandle}/rss`,
-      `https://nitter.privacy.com.de/${this.twitterHandle}/rss`,
-      `https://nitter.poast.org/${this.twitterHandle}/rss`,
-      `https://nitter.cz/${this.twitterHandle}/rss`,
-      `https://nitter.fdn.fr/${this.twitterHandle}/rss`,
-    ];
     this.maxResults = 10;
   }
 
   /**
-   * Récupère les derniers tweets via RSS (gratuit)
+   * Récupère les derniers tweets en scrapant Twitter directement
    * @returns {Promise<Array>} Tableau des tweets
    */
   async getLatestTweets() {
     try {
-      console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle} via RSS...`);
+      console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle}...`);
+
+      const tweets = [];
       
-      // Essayer toutes les instances Nitter
-      for (let i = 0; i < this.nitterInstances.length; i++) {
-        try {
-          const rssUrl = this.nitterInstances[i];
-          console.log(`[Twitter] Tentative ${i + 1}/${this.nitterInstances.length}: ${rssUrl}`);
-          
-          const feed = await this.parser.parseURL(rssUrl);
-          
-          if (feed.items && feed.items.length > 0) {
-            console.log(`✅ [Twitter] Succès avec: ${rssUrl}`);
-            console.log(`[Twitter] ${feed.items.length} éléments trouvés`);
-            return this.formatTweets(feed.items);
-          } else {
-            console.log(`⚠️  [Twitter] Aucun élément trouvé avec: ${rssUrl}`);
-          }
-        } catch (error) {
-          console.error(`❌ [Twitter] Erreur instance ${i + 1}:`);
-          console.error(`   URL: ${this.nitterInstances[i]}`);
-          console.error(`   Type: ${error.code || error.message}`);
-          console.error(`   Message: ${error.message}`);
-          
-          // Attendre avant la prochaine tentative
-          if (i < this.nitterInstances.length - 1) {
-            console.log(`[Twitter] Attente 2s avant tentative suivante...`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-        }
+      // Scraper les tweets du compte
+      for await (const tweet of this.scraper.getTweets(this.twitterHandle, this.maxResults)) {
+        tweets.push({
+          id: tweet.id,
+          text: tweet.text,
+          created_at: tweet.timestamp ? new Date(tweet.timestamp * 1000).toISOString() : new Date().toISOString(),
+          public_metrics: {
+            like_count: tweet.likes || 0,
+            retweet_count: tweet.retweets || 0,
+            reply_count: tweet.replies || 0,
+          },
+          link: `https://twitter.com/${this.twitterHandle}/status/${tweet.id}`,
+        });
+
+        if (tweets.length >= this.maxResults) break;
       }
-      
-      console.error(`[Twitter] ❌ AUCUNE instance Nitter n'a fonctionné!`);
-      console.log(`[Twitter] Vérifiez que:`);
-      console.log(`  - Le compte @${this.twitterHandle} existe`);
-      console.log(`  - Le compte n'est pas privé`);
-      console.log(`  - Il y a au moins 1 tweet public`);
-      return [];
+
+      if (tweets.length === 0) {
+        console.log(`[Twitter] Aucun tweet trouvé pour @${this.twitterHandle}`);
+        return [];
+      }
+
+      console.log(`✅ [Twitter] ${tweets.length} tweets récupérés avec succès`);
+      return tweets;
     } catch (error) {
-      console.error('[Twitter] Erreur générale lors de la récupération:', error.message);
+      console.error('[Twitter] Erreur lors du scraping:', error.message);
+      console.error('[Twitter] Stack:', error.stack);
       return [];
     }
-  }
-
-  /**
-   * Formate les tweets du flux RSS
-   */
-  formatTweets(items) {
-    return items.slice(0, this.maxResults).map(item => ({
-      id: item.guid || item.link,
-      text: this.extractText(item.content || item.description),
-      created_at: item.pubDate,
-      public_metrics: {
-        like_count: 0,
-        retweet_count: 0,
-        reply_count: 0,
-      },
-      link: item.link,
-    }));
-  }
-
-  /**
-   * Extraire le texte du tweet (nettoyer le HTML)
-   */
-  extractText(html) {
-    if (!html) return '';
-    let text = html.replace(/<[^>]*>/g, '');
-    text = text
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'");
-    return text.trim();
   }
 
   /**
@@ -159,6 +93,7 @@ class TwitterService {
 ━━━━━━━━━━━━━━━━━━━━━
 ${tweet.text}
 ━━━━━━━━━━━━━━━━━━━━━
+📊 ${tweet.public_metrics.like_count} ❤️ | ${tweet.public_metrics.retweet_count} 🔄 | ${tweet.public_metrics.reply_count} 💬
 🔗 [Voir sur Twitter](${tweet.link})
 📅 ${timestamp}
     `.trim();
@@ -176,6 +111,7 @@ ${tweet.text}
 
       let sentCount = 0;
 
+      // Traiter les tweets du plus ancien au plus récent
       for (const tweet of tweets.reverse()) {
         const alreadySent = await this.isTweetAlreadySent(tweet.id);
 
