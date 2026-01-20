@@ -69,9 +69,9 @@ class WhatsAppBotService {
       // Vérifier si une session existe déjà
       const hasExistingAuth = Object.keys(state.creds || {}).length > 0;
       if (hasExistingAuth) {
-        console.log('[WHATSAPP] ✅ Session authentifiée détectée - Reconnexion directe');
+        console.error('[WHATSAPP] ✅ Session authentifiée détectée - Reconnexion directe');
       } else {
-        console.log('[WHATSAPP] ⚠️  Pas de session - Code d\'appairage sera généré');
+        console.error('[WHATSAPP] ⚠️  Pas de session - Code d\'appairage sera généré');
       }
 
       // Logger configuration
@@ -105,6 +105,7 @@ class WhatsAppBotService {
           if (!pairingCodeGenerated && this.sock) {
             console.error('[WHATSAPP] ⏰ Fallback: Tentative de génération du code d\'appairage (délai 3s)...');
             try {
+              console.error('[WHATSAPP] 🔧 Numéro du bot pour le pairing: ' + this.phoneNumber);
               const pairingCode = await this.sock?.requestPairingCode(this.phoneNumber);
               if (pairingCode && !pairingCodeGenerated) {
                 pairingCodeGenerated = true;
@@ -128,25 +129,24 @@ class WhatsAppBotService {
                 this.lastPairingCode = pairingCode;
                 console.error(`[WHATSAPP] ✅ Code d\'appairage GÉNÉRÉ: ${pairingCode}`);
                 console.error('[WHATSAPP] ✅ Code d\'appairage sauvegardé. En attente de saisie...\n');
+              } else {
+                console.error('[WHATSAPP] ⚠️  Pas de code d\'appairage retourné (null ou déjà généré)');
               }
             } catch (error) {
               console.error('[WHATSAPP] ❌ Erreur fallback:', error.message);
+              console.error('[WHATSAPP] Stack fallback:', error.stack);
             }
           }
         }, 3000); // Attendre 3 secondes avant le fallback
       }
 
-      // Événement QR/Pairing code
-      this.sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr, isNewLogin } = update;
-        
-        console.error(`[WHATSAPP] Connection Update: connection=${connection}, qr=${qr ? 'exists' : 'null'}`);
+      // Événement QR/Pairing code, hasExistingAuth=${hasExistingAuth}, pairingCodeGenerated=${pairingCodeGenerated}`);
 
         // Si on a un QR et pas encore généré le code, générer le pairing code
         if (qr && !hasExistingAuth && !pairingCodeGenerated) {
           pairingCodeGenerated = true;
           try {
-            console.error('[WHATSAPP] 📲 Tentative de génération du code d\'appairage...');
+            console.error('[WHATSAPP] 📲 QR event - Tentative de génération du code d\'appairage...');
             const pairingCode = await this.sock?.requestPairingCode(this.phoneNumber);
             
             if (pairingCode) {
@@ -168,10 +168,14 @@ class WhatsAppBotService {
               console.error('╔════════════════════════════════════════════════════════════╗');
               console.error('\n');
               this.lastPairingCode = pairingCode;
-              console.error(`[WHATSAPP] ✅ Code d\'appairage GÉNÉRÉ: ${pairingCode}`);
+              console.error(`[WHATSAPP] ✅ Code d\'appairage GÉNÉRÉ (QR event): ${pairingCode}`);
               console.error('[WHATSAPP] ✅ Code d\'appairage sauvegardé. En attente de saisie...\n');
             } else {
-              console.error('[WHATSAPP] ⚠️  Pas de code d\'appairage retourné (null)');
+              console.error('[WHATSAPP] ⚠️  Pas de code d\'appairage retourné du QR event (null)');
+            }
+          } catch (error) {
+            console.error('[WHATSAPP] ❌ Erreur lors de la génération du code d\'appairage (QR event):', error.message);
+            console.error('[WHATSAPP] Stack (QR event) Pas de code d\'appairage retourné (null)');
             }
           } catch (error) {
             console.error('[WHATSAPP] ❌ Erreur lors de la génération du code d\'appairage:', error.message);
