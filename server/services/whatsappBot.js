@@ -106,8 +106,11 @@ class WhatsAppBotService {
             console.error('[WHATSAPP] ⏰ Fallback: Tentative de génération du code d\'appairage (délai 3s)...');
             try {
               console.error('[WHATSAPP] 🔧 Numéro du bot pour le pairing: ' + this.phoneNumber);
-              const pairingCode = await this.sock?.requestPairingCode(this.phoneNumber);
-              if (pairingCode && !pairingCodeGenerated) {
+              // Demander le code d'appairage Baileys valide
+              const pairingCode = await this.sock.requestPairingCode(this.phoneNumber);
+              console.error('[WHATSAPP] 📝 Code d\'appairage retourné par Baileys:', pairingCode);
+              
+              if (pairingCode && pairingCode.length === 8 && !pairingCodeGenerated) {
                 pairingCodeGenerated = true;
                 console.error('\n\n');
                 console.error('╔════════════════════════════════════════════════════════════╗');
@@ -127,10 +130,11 @@ class WhatsAppBotService {
                 console.error('╔════════════════════════════════════════════════════════════╗');
                 console.error('\n');
                 this.lastPairingCode = pairingCode;
-                console.error(`[WHATSAPP] ✅ Code d\'appairage GÉNÉRÉ: ${pairingCode}`);
+                console.error(`[WHATSAPP] ✅ Code d\'appairage VALIDE GÉNÉRÉ: ${pairingCode}`);
                 console.error('[WHATSAPP] ✅ Code d\'appairage sauvegardé. En attente de saisie...\n');
               } else {
-                console.error('[WHATSAPP] ⚠️  Pas de code d\'appairage retourné (null ou déjà généré)');
+                console.error('[WHATSAPP] ⚠️  Code d\'appairage invalide:', pairingCode);
+                console.error('[WHATSAPP] ⚠️  Attendu: 8 caractères alphanumériques (format Crockford)');
               }
             } catch (error) {
               console.error('[WHATSAPP] ❌ Erreur fallback:', error.message);
@@ -151,9 +155,10 @@ class WhatsAppBotService {
           pairingCodeGenerated = true;
           try {
             console.error('[WHATSAPP] 📲 QR event - Tentative de génération du code d\'appairage...');
-            const pairingCode = await this.sock?.requestPairingCode(this.phoneNumber);
+            const pairingCode = await this.sock.requestPairingCode(this.phoneNumber);
+            console.error('[WHATSAPP] 📝 Code d\'appairage retourné par Baileys (QR event):', pairingCode);
             
-            if (pairingCode) {
+            if (pairingCode && pairingCode.length === 8) {
               console.error('\n\n');
               console.error('╔════════════════════════════════════════════════════════════╗');
               console.error('║     🔐 PREMIÈRE CONNEXION - CODE D\'APPAIRAGE WhatsApp    ║');
@@ -172,10 +177,11 @@ class WhatsAppBotService {
               console.error('╔════════════════════════════════════════════════════════════╗');
               console.error('\n');
               this.lastPairingCode = pairingCode;
-              console.error(`[WHATSAPP] ✅ Code d\'appairage GÉNÉRÉ (QR event): ${pairingCode}`);
+              console.error(`[WHATSAPP] ✅ Code d\'appairage VALIDE (QR event): ${pairingCode}`);
               console.error('[WHATSAPP] ✅ Code d\'appairage sauvegardé. En attente de saisie...\n');
             } else {
-              console.error('[WHATSAPP] ⚠️  Pas de code d\'appairage retourné du QR event (null)');
+              console.error('[WHATSAPP] ⚠️  Code d\'appairage invalide du QR event:', pairingCode);
+              console.error('[WHATSAPP] ⚠️  Attendu: 8 caractères alphanumériques (format Crockford)');
             }
           } catch (error) {
             console.error('[WHATSAPP] ❌ Erreur lors de la génération du code d\'appairage (QR event):', error.message);
