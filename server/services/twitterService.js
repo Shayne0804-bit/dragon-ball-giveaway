@@ -3,27 +3,35 @@ const TweetLog = require('../models/TweetLog');
 
 class TwitterService {
   constructor() {
+    // Parser avec headers complets pour éviter les blocages
     this.parser = new Parser({
-      timeout: 10000,
+      timeout: 15000, // Augmenté pour Cloudflare
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
       },
     });
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
-    // Instances RSSHub et Nitter comme fallback
+    // Sources RSS: priorité à rsshub.rss.im (très stable), puis fallbacks
     this.rssInstances = [
-      `https://rsshub.app/twitter/user/${this.twitterHandle}`, // RSSHub principal
+      `https://rsshub.rss.im/twitter/user/${this.twitterHandle}`, // RSSHub stable
+      `https://rsshub.rss.im/x/user/${this.twitterHandle}`, // RSSHub X (Twitter)
+      `https://twiiit.com/${this.twitterHandle}/rss`, // Twiiit.com direct
+      `https://rsshub.app/twitter/user/${this.twitterHandle}`, // RSSHub fallback
+      `https://nitter.space/${this.twitterHandle}/rss`, // Nitter.space
       `https://nitter.poast.org/${this.twitterHandle}/rss`, // Nitter fallback
       `https://nitter.cz/${this.twitterHandle}/rss`,
       `https://nitter.fdn.fr/${this.twitterHandle}/rss`,
-      `https://nitter.1d4.us/${this.twitterHandle}/rss`,
-      `https://nitter.net/${this.twitterHandle}/rss`,
     ];
     this.maxResults = 10;
   }
 
   /**
-   * Récupère les derniers tweets via RSSHub ou Nitter
+   * Récupère les derniers tweets via Twiiit.com RSS ou RSSHub/Nitter
    * @returns {Promise<Array>} Tableau des tweets
    */
   async getLatestTweets() {
@@ -33,13 +41,17 @@ class TwitterService {
     for (let i = 0; i < this.rssInstances.length; i++) {
       try {
         const rssUrl = this.rssInstances[i];
-        const source = i === 0 ? 'RSSHub' : 'Nitter';
+        let source = 'Inconnu';
+        if (rssUrl.includes('twiiit.com')) source = 'Twiiit.com';
+        else if (rssUrl.includes('rsshub')) source = 'RSSHub';
+        else if (rssUrl.includes('nitter')) source = 'Nitter';
+        
         console.log(`[Twitter] Tentative ${i + 1}/${this.rssInstances.length} (${source}): ${rssUrl}`);
         
         const feed = await this.parser.parseURL(rssUrl);
         
         if (feed.items && feed.items.length > 0) {
-          console.log(`✅ [Twitter] Succès avec ${source}: ${rssUrl}`);
+          console.log(`✅ [Twitter] Succès avec ${source}!`);
           
           const tweets = feed.items.slice(0, this.maxResults).map(item => ({
             id: item.guid || item.link || `tweet-${item.pubDate}`,
@@ -57,7 +69,11 @@ class TwitterService {
           return tweets;
         }
       } catch (error) {
-        const source = i === 0 ? 'RSSHub' : 'Nitter';
+        let source = 'Inconnu';
+        if (this.rssInstances[i].includes('twiiit.com')) source = 'Twiiit.com';
+        else if (this.rssInstances[i].includes('rsshub')) source = 'RSSHub';
+        else if (this.rssInstances[i].includes('nitter')) source = 'Nitter';
+        
         console.log(`❌ [Twitter] Échec avec ${source} (${i + 1}): ${error.message}`);
         if (i < this.rssInstances.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1500));
@@ -68,7 +84,7 @@ class TwitterService {
     console.error(`[Twitter] ❌ Aucune source RSS n'a fonctionné`);
     console.log(`[Twitter] Vérifiez que:`);
     console.log(`  1. Le compte @${this.twitterHandle} existe`);
-    console.log(`  2. RSSHub et Nitter sont accessibles`);
+    console.log(`  2. Les sources RSS sont accessibles`);
     console.log(`  3. Il y a des tweets publics disponibles`);
     return [];
   }
