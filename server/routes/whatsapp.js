@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const whatsappBot = require('../services/whatsappBot');
-const { validateRequest } = require('../middlewares/validation');
 
 /**
  * GET /api/whatsapp/status
@@ -28,7 +27,7 @@ router.get('/status', (req, res) => {
  * Envoyer un message WhatsApp
  * Body: { phoneNumber, message }
  */
-router.post('/send-message', validateRequest, async (req, res) => {
+router.post('/send-message', async (req, res) => {
   try {
     const { phoneNumber, message } = req.body;
 
@@ -61,7 +60,7 @@ router.post('/send-message', validateRequest, async (req, res) => {
  * Notifier les utilisateurs d'un nouveau giveaway
  * Body: { giveawayId, phoneNumbers: [...] }
  */
-router.post('/notify-giveaway', validateRequest, async (req, res) => {
+router.post('/notify-giveaway', async (req, res) => {
   try {
     const { giveawayId, phoneNumbers } = req.body;
 
@@ -102,7 +101,7 @@ router.post('/notify-giveaway', validateRequest, async (req, res) => {
  * Notifier le gagnant
  * Body: { winnerId }
  */
-router.post('/notify-winner', validateRequest, async (req, res) => {
+router.post('/notify-winner', async (req, res) => {
   try {
     const { winnerId } = req.body;
 
