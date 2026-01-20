@@ -12,21 +12,23 @@ class WhatsAppBotService {
   constructor() {
     this.sock = null;
     this.isReady = false;
-    // Nettoyer le numéro: enlever les espaces et caractères spéciaux
+    // Nettoyer le numéro: enlever les espaces et caractères spéciaux, garder juste les chiffres
     const rawPhone = process.env.WHATSAPP_PHONE_NUMBER || '';
-    this.phoneNumber = rawPhone.replace(/\s+/g, '').trim(); // Enlever tous les espaces
+    // Extraire uniquement les chiffres
+    let cleanPhone = rawPhone.replace(/[^0-9]/g, '').trim();
     
-    if (!this.phoneNumber) {
+    if (!cleanPhone) {
       throw new Error('❌ WHATSAPP_PHONE_NUMBER non configuré dans les variables d\'environnement');
     }
     
-    // Vérifier le format de base
-    if (!this.phoneNumber.startsWith('+')) {
-      console.warn(`[WHATSAPP] ⚠️  Numéro sans +, ajout automatique`);
-      this.phoneNumber = '+' + this.phoneNumber;
-    }
+    // Stocker le numéro sans le + (pour Baileys et requestPairingCode)
+    this.phoneNumber = cleanPhone;
     
-    console.log(`[WHATSAPP] 📱 Numéro du bot configuré: ${this.phoneNumber}`);
+    // Aussi stocker avec le + pour les JID (format WhatsApp)
+    this.phoneNumberWithPlus = '+' + cleanPhone;
+    
+    console.log(`[WHATSAPP] 📱 Numéro du bot (sans +): ${this.phoneNumber}`);
+    console.log(`[WHATSAPP] 📱 Numéro du bot (avec +): ${this.phoneNumberWithPlus}`);
     
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
