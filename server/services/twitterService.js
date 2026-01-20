@@ -3,10 +3,20 @@ const TweetLog = require('../models/TweetLog');
 
 class TwitterService {
   constructor() {
-    this.parser = new Parser();
+    this.parser = new Parser({
+      timeout: 10000, // Timeout 10s
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
-    // URL RSS pour récupérer les tweets (gratuit avec Nitter)
-    this.rssUrl = `https://nitter.net/${this.twitterHandle}/rss`;
+    // Plusieurs instances Nitter (fallback)
+    this.nitterInstances = [
+      `https://nitter.net/${this.twitterHandle}/rss`,
+      `https://nitter.1d4.us/${this.twitterHandle}/rss`,
+      `https://nitter.privacy.com.de/${this.twitterHandle}/rss`,
+      `https://nitter.poast.org/${this.twitterHandle}/rss`,
+    ];
     this.maxResults = 10;
   }
 
@@ -17,70 +27,51 @@ class TwitterService {
   async getLatestTweets() {
     try {
       console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle} via RSS...`);
-      console.log(`[Twitter] URL RSS: ${this.rssUrl}`);
-
-      const feed = await this.parser.parseURL(this.rssUrl);
       
-      if (!feed.items || feed.items.length === 0) {
-        console.log(`[Twitter] Aucun tweet trouvé pour @${this.twitterHandle}`);
-        return [];
+      // Essayer toutes les instances Nitter
+      for (let i = 0; i < this.nitterInstances.length; i++) {
+        try {
+          const rssUrl = this.nitterInstances[i];
+          console.log(`[Twitter] Tentative ${i + 1}/${this.nitterInstances.length}: ${rssUrl}`);
+          
+          const feed = await this.parser.parseURL(rssUrl);
+          
+          if (feed.items && feed.items.length > 0) {
+            console.log(`✅ [Twitter] Succès avec: ${rssUrl}`);
+            return this.formatTweets(feed.items);
+          }
+        } catch (error) {
+          console.log(`❌ [Twitter] Échec avec instance ${i + 1}: ${error.message}`);
+          // Continuer vers la prochaine instance
+          if (i < this.nitterInstances.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre 1s
+          }
+        }
       }
-
-      // Limiter aux N derniers tweets
-      const tweets = feed.items.slice(0, this.maxResults).map(item => ({
-        id: item.guid || item.link, // Utiliser le GUID ou le lien comme ID unique
-        text: this.extractText(item.content || item.description),
-        created_at: item.pubDate,
-        public_metrics: {
-          like_count: 0, // RSS ne fournit pas ces infos
-          retweet_count: 0,
-          reply_count: 0,
-        },
-        link: item.link,
-      }));
-
-      console.log(`[Twitter] ${tweets.length} tweets récupérés`);
-      return tweets;
+      
+      console.log(`[Twitter] Aucune instance Nitter n'a fonctionné`);
+      return [];
     } catch (error) {
-      console.error('[Twitter] Erreur lors de la récupération du flux RSS:', error.message);
-      // Fallback: essayer avec un autre service RSS
-      console.log('[Twitter] Tentative avec service alternatif...');
-      return this.getLatestTweetsAlternative();
+      console.error('[Twitter] Erreur générale lors de la récupération:', error.message);
+      return [];
     }
   }
 
   /**
-   * Fallback avec un autre service RSS
+   * Formate les tweets du flux RSS
    */
-  async getLatestTweetsAlternative() {
-    try {
-      const rssUrlAlt = `https://feeds.nitter.net/${this.twitterHandle}/rss`;
-      console.log(`[Twitter] Tentative avec URL alternative: ${rssUrlAlt}`);
-      
-      const feed = await this.parser.parseURL(rssUrlAlt);
-      
-      if (!feed.items || feed.items.length === 0) {
-        return [];
-      }
-
-      const tweets = feed.items.slice(0, this.maxResults).map(item => ({
-        id: item.guid || item.link,
-        text: this.extractText(item.content || item.description),
-        created_at: item.pubDate,
-        public_metrics: {
-          like_count: 0,
-          retweet_count: 0,
-          reply_count: 0,
-        },
-        link: item.link,
-      }));
-
-      console.log(`[Twitter] ${tweets.length} tweets récupérés (alternative)`);
-      return tweets;
-    } catch (error) {
-      console.error('[Twitter] Erreur avec URL alternative:', error.message);
-      return [];
-    }
+  formatTweets(items) {
+    return items.slice(0, this.maxResults).map(item => ({
+      id: item.guid || item.link, // Utiliser le GUID ou le lien comme ID unique
+      text: this.extractText(item.content || item.description),
+      created_at: item.pubDate,
+      public_metrics: {
+        like_count: 0,
+        retweet_count: 0,
+        reply_count: 0,
+      },
+      link: item.link,
+    }));
   }
 
   /**
@@ -176,7 +167,9 @@ ${tweet.text}
         }
       }
 
-      console.log(`[Twitter] ${sentCount} nouveau(x) tweet(s) envoyé(s)`);
+      if (sentCount > 0) {
+        console.log(`[Twitter] ✅ ${sentCount} nouveau(x) tweet(s) envoyé(s)`);
+      }
       return sentCount;
     } catch (error) {
       console.error('[Twitter] Erreur lors du traitement des tweets:', error.message);
