@@ -138,7 +138,7 @@ class WhatsAppBotService {
 
       // Événement QR/Pairing code
       this.sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr } = update;
+        const { connection, lastDisconnect, qr, isNewLogin } = update;
         
         console.error(`[WHATSAPP] Connection Update: connection=${connection}, qr=${qr ? 'exists' : 'null'}`);
 
