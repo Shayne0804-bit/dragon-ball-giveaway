@@ -1,0 +1,135 @@
+╔════════════════════════════════════════════════════════════╗
+║  VARIABLES D'ENVIRONNEMENT POUR RAILWAY                    ║
+╚════════════════════════════════════════════════════════════╝
+
+📍 ACCÉDEZ À: https://railway.app
+
+ÉTAPES:
+1. Sélectionnez votre projet
+2. Cliquez sur l'onglet "Variables"
+3. Cliquez sur "New Variable"
+4. Collez chaque variable ci-dessous
+
+════════════════════════════════════════════════════════════
+
+🔴 ESSENTIELLES (Obligatoires)
+
+1️⃣ MONGODB_URI
+   Valeur: mongodb+srv://USERNAME:PASSWORD@cluster.mongodb.net/giveaways?retryWrites=true&w=majority
+   Obtenir: MongoDB Atlas (https://www.mongodb.com/cloud/atlas)
+
+2️⃣ PORT
+   Valeur: 5000
+
+3️⃣ NODE_ENV
+   Valeur: production
+
+4️⃣ SESSION_SECRET
+   Valeur: (générez une clé aléatoire sécurisée longue)
+
+5️⃣ ADMIN_PASSWORD
+   Valeur: (changez par un mot de passe sécurisé)
+
+6️⃣ CORS_ORIGIN
+   Valeur: https://votre-app.railway.app
+   (Remplacez "votre-app" par le nom réel)
+
+7️⃣ RAILWAY_PUBLIC_DOMAIN
+   Valeur: votre-app.railway.app
+
+════════════════════════════════════════════════════════════
+
+🟠 DISCORD (Optionnel mais recommandé)
+
+8️⃣ DISCORD_CLIENT_ID
+   Obtenir: https://discord.com/developers/applications
+
+9️⃣ DISCORD_CLIENT_SECRET
+   Obtenir: Discord Developer Portal → OAuth2
+
+🔟 DISCORD_CALLBACK_URL
+   Valeur: https://votre-app.railway.app/api/auth/discord/callback
+
+1️⃣1️⃣ DISCORD_BOT_TOKEN
+   Obtenir: Discord Bot Application
+
+1️⃣2️⃣ DISCORD_GUILD_ID
+   ID de votre serveur Discord
+
+1️⃣3️⃣ DISCORD_CHANNEL_ID
+   ID du canal pour les notifications
+
+1️⃣4️⃣ BOT_ENABLED
+   Valeur: true
+
+════════════════════════════════════════════════════════════
+
+🟡 TWITTER (Optionnel - RSS gratuit)
+
+1️⃣5️⃣ TWITTER_ACCOUNT
+   Valeur: @votre_compte (exemple: @DB_Legends)
+
+1️⃣6️⃣ DISCORD_TWEET_CHANNEL_ID
+   ID du canal pour les tweets
+
+1️⃣7️⃣ TWEET_CHECK_INTERVAL
+   Valeur: 30 (minutes)
+
+════════════════════════════════════════════════════════════
+
+🟢 WHATSAPP (Optionnel)
+
+1️⃣8️⃣ WHATSAPP_ENABLED
+   Valeur: true
+
+1️⃣9️⃣ ADMIN_WHATSAPP_NUMBERS
+   Format: 336xxxxxxxx,336xxxxxxxx (séparé par virgules)
+
+2️⃣0️⃣ OWNER_WHATSAPP_NUMBER
+   Format: 336xxxxxxxx
+
+2️⃣1️⃣ OWNER_EMAIL
+   Valeur: admin@example.com
+
+════════════════════════════════════════════════════════════
+
+🔵 SÉCURITÉ & LIMITES
+
+2️⃣2️⃣ RATE_LIMIT_WINDOW_MS
+   Valeur: 9000000
+
+2️⃣3️⃣ RATE_LIMIT_MAX_REQUESTS
+   Valeur: 500
+
+2️⃣4️⃣ ANTI_SPAM_MINUTES
+   Valeur: 300
+
+════════════════════════════════════════════════════════════
+
+✅ APRÈS AVOIR AJOUTÉ TOUTES LES VARIABLES:
+
+1. Cliquez sur le bouton "Deploy" en haut
+2. Attendez que le redéploiement se termine
+3. Vérifiez dans les logs que tout fonctionne
+4. Testez votre application sur https://votre-app.railway.app
+
+════════════════════════════════════════════════════════════
+
+📁 FICHIERS DE RÉFÉRENCE:
+
+- RAILWAY_VARIABLES.md → Guide complet avec explications
+- .env.production.example → Template à remplir
+
+════════════════════════════════════════════════════════════
+
+⚠️ SÉCURITÉ:
+
+❌ Ne commitez JAMAIS les vraies valeurs dans Git
+❌ Ne partagez JAMAIS vos tokens/secrets
+✅ Utilisez Railroad pour gérer les secrets
+✅ Régénérez les secrets tous les 6 mois
+✅ Changez les mots de passe par défaut
+
+════════════════════════════════════════════════════════════
+
+🎉 C'est tout! Votre app est prête pour la production!
