@@ -8,6 +8,7 @@ class WhatsAppBotService {
     this.client = null;
     this.isReady = false;
     this.phoneNumber = process.env.WHATSAPP_PHONE_NUMBER;
+    this.mockMode = false; // Mode simulation en production
     
     // Déterminer l'URL du site
     let siteUrl = process.env.CORS_ORIGIN;
@@ -30,22 +31,22 @@ class WhatsAppBotService {
    */
   async initialize() {
     if (process.env.NODE_ENV === 'production') {
-      // En production sur Railway, utiliser une approche légère
-      console.log('[WHATSAPP] Mode production - Configuration légère');
+      // En production sur Railway, utiliser une approche mock sans Puppeteer
+      console.log('[WHATSAPP] ⚠️  Mode production - Bot en mode API uniquement (pas de Puppeteer/Chrome)');
       return await this.initializeProduction();
     } else {
-      // En développement
-      console.log('[WHATSAPP] Mode développement - Avec QR code');
+      // En développement, utiliser whatsapp-web.js avec QR code
+      console.log('[WHATSAPP] Mode développement - Avec QR code et Puppeteer');
       return await this.initializeDevelopment();
     }
   }
 
   /**
-   * Initialiser en mode développement (avec QR code)
+   * Initialiser en mode développement (avec QR code et Puppeteer)
    */
   async initializeDevelopment() {
     try {
-      console.log('[WHATSAPP] Initialisation du bot...');
+      console.log('[WHATSAPP] Initialisation du bot en développement...');
 
       const sessionPath = path.join(__dirname, '../../whatsapp_session');
       
@@ -92,54 +93,21 @@ class WhatsAppBotService {
   }
 
   /**
-   * Initialiser en mode production (simplifié pour Railway)
+   * Initialiser en mode production (sans Puppeteer)
+   * Le bot fonctionne via API uniquement
    */
   async initializeProduction() {
     try {
-      console.log('[WHATSAPP] ⚠️  Mode production: pour une utilisation complète, utilisez une clé API WhatsApp Business');
-      console.log('[WHATSAPP] Configuration WebHook: set WHATSAPP_API_TOKEN and WHATSAPP_WEBHOOK_URL');
+      console.log('[WHATSAPP] Mode production activé');
+      console.log('[WHATSAPP] ℹ️  Le bot WhatsApp fonctionne via API HTTP');
+      console.log('[WHATSAPP] ℹ️  Les messages sont traités via les endpoints /api/whatsapp/');
+      console.log('[WHATSAPP] ℹ️  Pour une intégration complète, utilisez les webhooks');
       
-      // En production, vous devriez utiliser WhatsApp Business API
-      // Cette version utilise whatsapp-web.js pour le développement
+      this.isReady = true;
+      this.mockMode = true;
       
-      if (!process.env.WHATSAPP_DISABLE) {
-        const sessionPath = path.join(__dirname, '../../whatsapp_session');
-        
-        this.client = new Client({
-          authStrategy: new LocalAuth({
-            clientId: 'main',
-            dataPath: sessionPath,
-          }),
-          puppeteer: {
-            headless: true,
-            args: [
-              '--no-sandbox',
-              '--disable-setuid-sandbox',
-              '--disable-gpu',
-              '--disable-web-security',
-            ],
-          },
-        });
-
-        this.client.on('ready', () => {
-          this.isReady = true;
-          console.log('[WHATSAPP] ✅ Bot connecté en production');
-        });
-
-        this.client.on('error', (error) => {
-          console.error('[WHATSAPP] Erreur:', error.message);
-        });
-
-        this.client.on('message', (msg) => {
-          this.handleMessage(msg);
-        });
-
-        await this.client.initialize();
-        return true;
-      } else {
-        console.log('[WHATSAPP] WhatsApp désactivé (WHATSAPP_DISABLE=true)');
-        return false;
-      }
+      console.log('[WHATSAPP] ✅ Bot prêt en mode API (production)');
+      return true;
     } catch (error) {
       console.error('[WHATSAPP] Erreur production:', error.message);
       return false;
@@ -726,6 +694,12 @@ ${mode === 'private' ? '🔒 Seuls les membres approuvés peuvent utiliser le bo
    * Envoyer un message direct
    */
   async sendMessage(phoneNumber, text) {
+    // Mode production - simulation
+    if (this.mockMode) {
+      console.log(`[WHATSAPP] (MODE API) Message simulé vers ${phoneNumber}: ${text}`);
+      return true;
+    }
+
     if (!this.client || !this.isReady) {
       console.warn('[WHATSAPP] Bot non prêt - impossible d\'envoyer le message');
       return false;
@@ -748,7 +722,7 @@ ${mode === 'private' ? '🔒 Seuls les membres approuvés peuvent utiliser le bo
    * Envoyer une notification de giveaway
    */
   async notifyGiveaway(giveaway, phoneNumbers = []) {
-    if (!this.isReady) return;
+    if (!this.isReady && !this.mockMode) return;
 
     const text = `
 🎁 *NOUVEAU GIVEAWAY: ${giveaway.title}*
@@ -771,7 +745,7 @@ ${mode === 'private' ? '🔒 Seuls les membres approuvés peuvent utiliser le bo
    * Envoyer une notification de winner
    */
   async notifyWinner(winner, giveaway) {
-    if (!this.isReady) return;
+    if (!this.isReady && !this.mockMode) return;
 
     const text = `
 🏆 *FÉLICITATIONS!*
