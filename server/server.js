@@ -21,12 +21,14 @@ const giveawaysRoutes = require('./routes/giveaways');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const shopRoutes = require('./routes/shop');
+const whatsappRoutes = require('./routes/whatsapp');
 
 // Importer la configuration
 const { connectDB } = require('./config/database');
 
 // Importer les services
 const discordBot = require('./services/discordBot');
+const whatsappBot = require('./services/whatsappBot');
 const autoGiveawayService = require('./services/autoGiveawayService');
 const ReminderService = require('./services/reminderService');
 const twitterScheduler = require('./services/twitterScheduler');
@@ -122,6 +124,7 @@ app.use('/api/giveaway', giveawayRoutes);
 app.use('/api/giveaways', giveawaysRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/shop', shopRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // Route de test
 app.get('/api/health', (req, res) => {
@@ -166,6 +169,7 @@ const startServer = async () => {
 
     // Vérifier si le bot Discord est activé
     const BOT_ENABLED = process.env.BOT_ENABLED !== 'false';
+    const WHATSAPP_ENABLED = process.env.WHATSAPP_ENABLED !== 'false';
 
     if (BOT_ENABLED) {
       // Initialiser le bot Discord
@@ -177,6 +181,18 @@ const startServer = async () => {
       }
     } else {
       console.log('ℹ️  Bot Discord désactivé (mode développement)');
+    }
+
+    // Initialiser le bot WhatsApp
+    if (WHATSAPP_ENABLED) {
+      const whatsappReady = await whatsappBot.initialize();
+      if (whatsappReady) {
+        console.log('✅ Bot WhatsApp connecté et prêt');
+      } else {
+        console.warn('⚠️  Bot WhatsApp non initialisé - vérifiez la configuration');
+      }
+    } else {
+      console.log('ℹ️  Bot WhatsApp désactivé (WHATSAPP_ENABLED=false)');
     }
 
     // Démarrer le service d'auto-tirage des giveaways expirés
@@ -200,9 +216,8 @@ const startServer = async () => {
       console.log(`✅ Serveur démarré sur http://localhost:${PORT}`);
       console.log(`📝 Environnement: ${process.env.NODE_ENV || 'development'}`);
       console.log(`🌐 CORS Origin: ${process.env.CORS_ORIGIN || 'http://localhost:5001'}`);
-      if (!BOT_ENABLED) {
-        console.log(`🤖 Mode: DEV (Bot Discord désactivé)`);
-      }
+      console.log(`🤖 Bot Discord: ${BOT_ENABLED ? 'ACTIVÉ' : 'DÉSACTIVÉ'}`);
+      console.log(`💬 Bot WhatsApp: ${WHATSAPP_ENABLED ? 'ACTIVÉ' : 'DÉSACTIVÉ'}`);
     });
   } catch (error) {
     console.error('❌ Erreur au démarrage:', error.message);
@@ -217,6 +232,7 @@ process.on('SIGINT', () => {
   if (reminderService) reminderService.stop();
   twitterScheduler.stop();
   discordBot.shutdown();
+  whatsappBot.stop();
   process.exit(0);
 });
 
@@ -226,6 +242,7 @@ process.on('SIGTERM', () => {
   if (reminderService) reminderService.stop();
   twitterScheduler.stop();
   discordBot.shutdown();
+  whatsappBot.stop();
   process.exit(0);
 });
 
