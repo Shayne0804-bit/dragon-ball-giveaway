@@ -15,7 +15,7 @@ class TwitterService {
         'Upgrade-Insecure-Requests': '1',
       },
     });
-    this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
+    this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '').toLowerCase(); // En minuscules!
     // Sources RSS: priorité à rsshub.rss.im (très stable), puis fallbacks
     this.rssInstances = [
       `https://rsshub.rss.im/twitter/user/${this.twitterHandle}`, // RSSHub stable
