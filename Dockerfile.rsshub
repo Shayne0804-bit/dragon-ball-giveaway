@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Cloner RSSHub depuis GitHub
+RUN git clone https://github.com/DIYgod/RSSHub.git .
+
+# Installer les dépendances
+RUN npm install --legacy-peer-deps
+
+# Compiler RSSHub
+RUN npm run build
+
+# Exposer le port
+EXPOSE 1200
+
+# Démarrer RSSHub
+CMD ["npm", "start"]

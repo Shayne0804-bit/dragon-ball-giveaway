@@ -14,34 +14,6 @@ services:
       - giveaway-network
     restart: unless-stopped
 
-  rsshub:
-    image: diygod/rsshub:latest
-    container_name: giveaway-rsshub
-    ports:
-      - "1200:1200"
-    environment:
-      NODE_ENV: production
-      PORT: 1200
-      CACHE_TYPE: redis
-      REDIS_URL: redis://redis:6379
-      REQUEST_TIMEOUT: 10000
-    depends_on:
-      - redis
-    networks:
-      - giveaway-network
-    restart: unless-stopped
-
-  redis:
-    image: redis:latest
-    container_name: giveaway-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    networks:
-      - giveaway-network
-    restart: unless-stopped
-
   app:
     build: .
     container_name: giveaway-app
@@ -55,17 +27,14 @@ services:
       RATE_LIMIT_WINDOW_MS: 600000
       RATE_LIMIT_MAX_REQUESTS: 5
       ANTI_SPAM_MINUTES: 30
-      RSSHUB_URL: http://rsshub:1200
     depends_on:
       - mongodb
-      - rsshub
     networks:
       - giveaway-network
     restart: unless-stopped
 
 volumes:
   mongodb_data:
-  redis_data:
 
 networks:
   giveaway-network:
