@@ -12,7 +12,22 @@ class WhatsAppBotService {
   constructor() {
     this.sock = null;
     this.isReady = false;
-    this.phoneNumber = process.env.WHATSAPP_PHONE_NUMBER;
+    // Nettoyer le numéro: enlever les espaces et caractères spéciaux
+    const rawPhone = process.env.WHATSAPP_PHONE_NUMBER || '';
+    this.phoneNumber = rawPhone.replace(/\s+/g, '').trim(); // Enlever tous les espaces
+    
+    if (!this.phoneNumber) {
+      throw new Error('❌ WHATSAPP_PHONE_NUMBER non configuré dans les variables d\'environnement');
+    }
+    
+    // Vérifier le format de base
+    if (!this.phoneNumber.startsWith('+')) {
+      console.warn(`[WHATSAPP] ⚠️  Numéro sans +, ajout automatique`);
+      this.phoneNumber = '+' + this.phoneNumber;
+    }
+    
+    console.log(`[WHATSAPP] 📱 Numéro du bot configuré: ${this.phoneNumber}`);
+    
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 5;
     this.commandHandler = null;
@@ -54,7 +69,9 @@ class WhatsAppBotService {
       // Vérifier si une session existe déjà
       const hasExistingAuth = Object.keys(state.creds || {}).length > 0;
       if (hasExistingAuth) {
-        console.log('[WHATSAPP] Session authentifiée détectée - Reconnexion directe');
+        console.log('[WHATSAPP] ✅ Session authentifiée détectée - Reconnexion directe');
+      } else {
+        console.log('[WHATSAPP] ⚠️  Pas de session - Code d\'appairage sera généré');
       }
 
       // Logger configuration
@@ -79,13 +96,18 @@ class WhatsAppBotService {
       // Sauvegarder les credentials
       this.sock.ev.on('creds.update', saveCreds);
 
+      // Variable pour tracker si on a déjà généré le code
+      let pairingCodeGenerated = false;
+
       // Connexion
       this.sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, isNewLogin } = update;
 
-        // Afficher le pairing code pour la première connexion
-        if (!isNewLogin && !hasExistingAuth) {
+        // Afficher le pairing code dès que possible si pas de session existante
+        if (!hasExistingAuth && !pairingCodeGenerated && connection !== 'closed') {
+          pairingCodeGenerated = true;
           try {
+            console.log('[WHATSAPP] 📲 Génération du code d\'appairage...');
             const pairingCode = await this.sock?.requestPairingCode(this.phoneNumber);
             if (pairingCode) {
               console.log('\n');
@@ -106,9 +128,13 @@ class WhatsAppBotService {
               console.log('╔════════════════════════════════════════════════════════════╗');
               console.log('');
               this.lastPairingCode = pairingCode;
+              console.log('[WHATSAPP] Code d\'appairage sauvegardé. En attente de saisie...');
+            } else {
+              console.log('[WHATSAPP] ⚠️  Pas de code d\'appairage retourné');
             }
           } catch (error) {
             console.log('[WHATSAPP] Erreur lors de la génération du code d\'appairage:', error.message);
+            pairingCodeGenerated = false; // Retry si erreur
           }
         }
 

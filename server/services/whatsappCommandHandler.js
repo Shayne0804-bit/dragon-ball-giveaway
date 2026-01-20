@@ -8,9 +8,24 @@ class CommandHandler {
   constructor(whatsappBot) {
     this.bot = whatsappBot;
     this.commandPrefix = '.';
-    this.ownerNumbers = process.env.WHATSAPP_OWNER_NUMBERS ? 
-      process.env.WHATSAPP_OWNER_NUMBERS.split(',') : 
-      [process.env.WHATSAPP_PHONE_NUMBER];
+    
+    // Récupérer les numéros owner et les nettoyer
+    let ownerNumbers = [];
+    if (process.env.WHATSAPP_OWNER_NUMBERS) {
+      ownerNumbers = process.env.WHATSAPP_OWNER_NUMBERS
+        .split(',')
+        .map(num => num.trim().replace(/\s+/g, '')) // Enlever espaces
+        .filter(num => num.length > 0);
+    }
+    
+    // Si pas de numéros owner, utiliser le numéro du bot
+    if (ownerNumbers.length === 0) {
+      ownerNumbers = [whatsappBot.phoneNumber];
+      console.log('[COMMANDS] ℹ️  Pas de WHATSAPP_OWNER_NUMBERS, utilisation du numéro du bot');
+    }
+    
+    this.ownerNumbers = ownerNumbers;
+    console.log(`[COMMANDS] 👑 Numéros owners configurés: ${this.ownerNumbers.join(', ')}`);
   }
 
   /**
