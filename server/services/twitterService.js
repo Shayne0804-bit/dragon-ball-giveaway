@@ -1,127 +1,95 @@
-const axios = require('axios');
+const cloudscraper = require('cloudscraper');
 const cheerio = require('cheerio');
 const TweetLog = require('../models/TweetLog');
 
 class TwitterService {
   constructor() {
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
-    // Instances Nitter qui fonctionnent bien
-    this.nitterInstances = [
-      `https://nitter.space/${this.twitterHandle}`,
-      `https://nitter.net/${this.twitterHandle}`,
-      `https://nitter.1d4.us/${this.twitterHandle}`,
-    ];
+    // URL du profil sur Nitter (contourne Cloudflare)
+    this.nitterUrl = `https://nitter.space/${this.twitterHandle}`;
     this.maxResults = 10;
-    
-    // Client axios avec headers complets pour faire croire à un vrai navigateur
-    this.client = axios.create({
-      timeout: 15000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'DNT': '1',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Cache-Control': 'max-age=0',
-      },
-    });
   }
 
   /**
-   * Récupère les derniers tweets en scrapant Nitter
+   * Récupère les derniers tweets en scrapant Nitter.space
    * @returns {Promise<Array>} Tableau des tweets
    */
   async getLatestTweets() {
     try {
-      console.log(`[Twitter] Scraping les tweets de @${this.twitterHandle} depuis Nitter...`);
+      console.log(`[Twitter] Scraping les tweets de @${this.twitterHandle} depuis Nitter.space...`);
+      console.log(`[Twitter] URL: ${this.nitterUrl}`);
       
-      // Essayer chaque instance Nitter
-      for (let attempt = 0; attempt < this.nitterInstances.length; attempt++) {
+      // Utiliser cloudscraper pour contourner Cloudflare
+      const response = await cloudscraper.get(this.nitterUrl);
+      const $ = cheerio.load(response);
+      
+      const tweets = [];
+      
+      // Chercher les tweets - Nitter utilise des divs spécifiques
+      const tweetElements = $('div.tweet, div[data-tweet-id]');
+      
+      console.log(`[Twitter] ${tweetElements.length} éléments trouvés`);
+      
+      tweetElements.each((index, element) => {
+        if (tweets.length >= this.maxResults) return false;
+        
         try {
-          const url = this.nitterInstances[attempt];
-          console.log(`[Twitter] Tentative ${attempt + 1}/${this.nitterInstances.length}: ${url}`);
+          const $tweet = $(element);
           
-          // Ajouter un délai pour éviter les blocages
-          if (attempt > 0) {
-            console.log(`[Twitter] Attente 3s avant retry...`);
-            await new Promise(resolve => setTimeout(resolve, 3000));
-          }
+          // Extraire le texte du tweet
+          const text = $tweet.find('p.tweet-text, p').first().text().trim();
           
-          const response = await this.client.get(url);
-          const $ = cheerio.load(response.data);
+          // Extraire l'ID et le lien
+          const tweetLink = $tweet.find('a[href*="/status/"]').attr('href') || 
+                           $tweet.find('a').attr('href');
+          const tweetId = tweetLink ? tweetLink.split('/status/')[1]?.split('?')[0] : `tweet-${index}`;
           
-          const tweets = [];
+          // Extraire les timestamps
+          const timestamp = $tweet.find('a.tweet-date time').attr('title') || 
+                           new Date().toISOString();
           
-          // Chercher les tweets dans les divs Nitter
-          const tweetElements = $('div.tweet, .timeline-item');
+          // Extraire les métriques (likes, retweets, replies)
+          const stats = $tweet.find('div.tweet-stats div.stat');
+          let likeCount = 0, retweetCount = 0, replyCount = 0;
           
-          console.log(`[Twitter] ${tweetElements.length} éléments trouvés`);
-          
-          tweetElements.each((index, element) => {
-            if (tweets.length >= this.maxResults) return false;
-            
-            try {
-              const $tweet = $(element);
-              
-              // Extraire le texte du tweet
-              const text = $tweet.find('.tweet-text').text().trim();
-              
-              // Extraire l'ID du tweet via le lien
-              const tweetLink = $tweet.find('a[href*="/"][href*="/status/"]').attr('href') || '';
-              const tweetId = tweetLink.match(/\/status\/(\d+)/)?.[1] || `tweet-${index}`;
-              
-              // Extraire le timestamp
-              const timeStr = $tweet.find('a.tweet-date').attr('title') || new Date().toISOString();
-              
-              // Extraire les métriques
-              const stats = $tweet.find('.tweet-stats span');
-              let replyCount = 0, retweetCount = 0, likeCount = 0;
-              
-              stats.each((i, stat) => {
-                const text = $(stat).text().trim();
-                if (text.includes('Reply')) replyCount = parseInt(text) || 0;
-                if (text.includes('Retweet')) retweetCount = parseInt(text) || 0;
-                if (text.includes('Like')) likeCount = parseInt(text) || 0;
-              });
-              
-              if (text) {
-                tweets.push({
-                  id: tweetId,
-                  text: text,
-                  created_at: timeStr,
-                  public_metrics: {
-                    like_count: likeCount,
-                    retweet_count: retweetCount,
-                    reply_count: replyCount,
-                  },
-                  link: `https://twitter.com/${this.twitterHandle}/status/${tweetId}`,
-                });
-              }
-            } catch (elementError) {
-              console.log(`[Twitter] Erreur parsing élément: ${elementError.message}`);
-            }
+          stats.each((i, stat) => {
+            const $stat = $(stat);
+            const count = parseInt($stat.text()) || 0;
+            if ($stat.find('svg').first().hasClass('like')) likeCount = count;
+            if ($stat.find('svg').first().hasClass('retweet')) retweetCount = count;
+            if ($stat.find('svg').first().hasClass('reply')) replyCount = count;
           });
           
-          if (tweets.length > 0) {
-            console.log(`✅ [Twitter] ${tweets.length} tweets extraits depuis ${url}`);
-            return tweets;
-          } else {
-            console.log(`⚠️  [Twitter] Aucun tweet trouvé dans ${url}`);
+          if (text && tweetId && tweetId !== `tweet-${index}`) {
+            tweets.push({
+              id: tweetId,
+              text: text,
+              created_at: timestamp,
+              public_metrics: {
+                like_count: likeCount,
+                retweet_count: retweetCount,
+                reply_count: replyCount,
+              },
+              link: `https://twitter.com/${this.twitterHandle}/status/${tweetId}`,
+            });
+            console.log(`[Twitter] Tweet trouvé: ${tweetId}`);
           }
-        } catch (error) {
-          console.error(`❌ [Twitter] Erreur avec ${this.nitterInstances[attempt]}: ${error.message}`);
+        } catch (elementError) {
+          console.log(`[Twitter] Erreur lors du parsing d'un élément: ${elementError.message}`);
         }
+      });
+      
+      if (tweets.length === 0) {
+        console.log(`[Twitter] ⚠️  Aucun tweet trouvé. Vérifiez que le compte existe.`);
+      } else {
+        console.log(`✅ [Twitter] ${tweets.length} tweets extraits avec succès`);
       }
       
-      console.error(`[Twitter] ❌ Aucune instance Nitter n'a fonctionné`);
-      return [];
+      return tweets;
     } catch (error) {
-      console.error('[Twitter] Erreur générale lors du scraping:');
+      console.error('[Twitter] Erreur lors du scraping Nitter.space:');
+      console.error(`   Type: ${error.code || error.message}`);
+      console.error(`   Status: ${error.status || 'N/A'}`);
       console.error(`   Message: ${error.message}`);
       return [];
     }
