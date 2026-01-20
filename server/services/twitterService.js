@@ -1,21 +1,35 @@
 const Parser = require('rss-parser');
+const https = require('https');
 const TweetLog = require('../models/TweetLog');
 
 class TwitterService {
   constructor() {
+    // Parser avec agent HTTPS qui ignore les erreurs SSL
+    const httpsAgent = new https.Agent({
+      rejectUnauthorized: false, // Pour dev uniquement
+      timeout: 10000,
+    });
+
     this.parser = new Parser({
-      timeout: 10000, // Timeout 10s
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      timeout: 10000,
+      requestOptions: {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        },
+        agent: httpsAgent,
       },
     });
+
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
-    // Plusieurs instances Nitter (fallback)
+    
+    // Plusieurs instances Nitter (ajoutées)
     this.nitterInstances = [
       `https://nitter.net/${this.twitterHandle}/rss`,
       `https://nitter.1d4.us/${this.twitterHandle}/rss`,
       `https://nitter.privacy.com.de/${this.twitterHandle}/rss`,
       `https://nitter.poast.org/${this.twitterHandle}/rss`,
+      `https://nitter.cz/${this.twitterHandle}/rss`,
+      `https://nitter.fdn.fr/${this.twitterHandle}/rss`,
     ];
     this.maxResults = 10;
   }
@@ -38,18 +52,30 @@ class TwitterService {
           
           if (feed.items && feed.items.length > 0) {
             console.log(`✅ [Twitter] Succès avec: ${rssUrl}`);
+            console.log(`[Twitter] ${feed.items.length} éléments trouvés`);
             return this.formatTweets(feed.items);
+          } else {
+            console.log(`⚠️  [Twitter] Aucun élément trouvé avec: ${rssUrl}`);
           }
         } catch (error) {
-          console.log(`❌ [Twitter] Échec avec instance ${i + 1}: ${error.message}`);
-          // Continuer vers la prochaine instance
+          console.error(`❌ [Twitter] Erreur instance ${i + 1}:`);
+          console.error(`   URL: ${this.nitterInstances[i]}`);
+          console.error(`   Type: ${error.code || error.message}`);
+          console.error(`   Message: ${error.message}`);
+          
+          // Attendre avant la prochaine tentative
           if (i < this.nitterInstances.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Attendre 1s
+            console.log(`[Twitter] Attente 2s avant tentative suivante...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
         }
       }
       
-      console.log(`[Twitter] Aucune instance Nitter n'a fonctionné`);
+      console.error(`[Twitter] ❌ AUCUNE instance Nitter n'a fonctionné!`);
+      console.log(`[Twitter] Vérifiez que:`);
+      console.log(`  - Le compte @${this.twitterHandle} existe`);
+      console.log(`  - Le compte n'est pas privé`);
+      console.log(`  - Il y a au moins 1 tweet public`);
       return [];
     } catch (error) {
       console.error('[Twitter] Erreur générale lors de la récupération:', error.message);
@@ -62,7 +88,7 @@ class TwitterService {
    */
   formatTweets(items) {
     return items.slice(0, this.maxResults).map(item => ({
-      id: item.guid || item.link, // Utiliser le GUID ou le lien comme ID unique
+      id: item.guid || item.link,
       text: this.extractText(item.content || item.description),
       created_at: item.pubDate,
       public_metrics: {
@@ -79,9 +105,7 @@ class TwitterService {
    */
   extractText(html) {
     if (!html) return '';
-    // Supprimer les balises HTML
     let text = html.replace(/<[^>]*>/g, '');
-    // Décoder les entités HTML
     text = text
       .replace(/&amp;/g, '&')
       .replace(/&lt;/g, '<')
@@ -152,7 +176,6 @@ ${tweet.text}
 
       let sentCount = 0;
 
-      // Traiter les tweets du plus ancien au plus récent
       for (const tweet of tweets.reverse()) {
         const alreadySent = await this.isTweetAlreadySent(tweet.id);
 
