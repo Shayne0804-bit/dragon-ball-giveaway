@@ -1,59 +1,91 @@
 const axios = require('axios');
+const cheerio = require('cheerio');
 const TweetLog = require('../models/TweetLog');
 
 class TwitterService {
   constructor() {
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
-    // API twiiit.com (gratuit, sans authentification)
-    this.apiUrl = 'https://api.twiiit.com/search';
+    // URL du profil sur twiiit.com
+    this.profileUrl = `https://twiiit.com/user/${this.twitterHandle}`;
     this.maxResults = 10;
     
-    // Client axios avec timeout et User-Agent
+    // Client axios avec User-Agent
     this.client = axios.create({
-      timeout: 10000,
+      timeout: 15000,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       },
     });
   }
 
   /**
-   * Récupère les derniers tweets via twiiit.com (gratuit)
+   * Récupère les derniers tweets en scrapant twiiit.com
    * @returns {Promise<Array>} Tableau des tweets
    */
   async getLatestTweets() {
     try {
-      console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle} via twiiit.com...`);
+      console.log(`[Twitter] Scraping les tweets de @${this.twitterHandle} depuis twiiit.com...`);
+      console.log(`[Twitter] URL: ${this.profileUrl}`);
       
-      const response = await this.client.get(this.apiUrl, {
-        params: {
-          q: `from:${this.twitterHandle}`,
-          count: this.maxResults,
-          sort: 'latest',
-        },
+      const response = await this.client.get(this.profileUrl);
+      const $ = cheerio.load(response.data);
+      
+      const tweets = [];
+      
+      // Chercher les tweets dans les divs avec classe "tweet" ou "status"
+      const tweetElements = $('[data-test-id*="tweet"], .tweet, article[data-tweet-id], .status');
+      
+      console.log(`[Twitter] ${tweetElements.length} éléments trouvés`);
+      
+      tweetElements.each((index, element) => {
+        if (tweets.length >= this.maxResults) return false;
+        
+        try {
+          const $tweet = $(element);
+          
+          // Extraire le texte du tweet
+          const text = $tweet.find('[data-testid="tweetText"], .tweet-text, p').text().trim();
+          
+          // Extraire l'ID du tweet
+          const tweetLink = $tweet.find('a[href*="/status/"]').attr('href') || 
+                           $tweet.find('[data-testid*="tweet"] a').attr('href');
+          const tweetId = tweetLink ? tweetLink.split('/status/')[1] : `tweet-${index}`;
+          
+          // Extraire les timestamps
+          const timestamp = $tweet.find('time').attr('datetime') || new Date().toISOString();
+          
+          // Extraire les métriques
+          const likeCount = parseInt($tweet.find('[data-testid*="Like"]').text() || 0);
+          const retweetCount = parseInt($tweet.find('[data-testid*="Retweet"]').text() || 0);
+          const replyCount = parseInt($tweet.find('[data-testid*="Reply"]').text() || 0);
+          
+          if (text) {
+            tweets.push({
+              id: tweetId,
+              text: text,
+              created_at: timestamp,
+              public_metrics: {
+                like_count: likeCount,
+                retweet_count: retweetCount,
+                reply_count: replyCount,
+              },
+              link: `https://twitter.com/${this.twitterHandle}/status/${tweetId}`,
+            });
+          }
+        } catch (elementError) {
+          console.log(`[Twitter] Erreur lors du parsing d'un élément: ${elementError.message}`);
+        }
       });
-
-      if (!response.data || !response.data.statuses || response.data.statuses.length === 0) {
-        console.log(`[Twitter] Aucun tweet trouvé pour @${this.twitterHandle}`);
-        return [];
+      
+      if (tweets.length === 0) {
+        console.log(`[Twitter] ⚠️  Aucun tweet trouvé. Vérifiez que le compte existe.`);
+      } else {
+        console.log(`✅ [Twitter] ${tweets.length} tweets extraits avec succès`);
       }
-
-      const tweets = response.data.statuses.map(tweet => ({
-        id: tweet.id_str || tweet.id,
-        text: tweet.full_text || tweet.text,
-        created_at: tweet.created_at,
-        public_metrics: {
-          like_count: tweet.favorite_count || 0,
-          retweet_count: tweet.retweet_count || 0,
-          reply_count: tweet.reply_count || 0,
-        },
-        link: `https://twitter.com/${this.twitterHandle}/status/${tweet.id_str || tweet.id}`,
-      }));
-
-      console.log(`✅ [Twitter] ${tweets.length} tweets récupérés avec succès`);
+      
       return tweets;
     } catch (error) {
-      console.error('[Twitter] Erreur lors de la récupération via twiiit.com:');
+      console.error('[Twitter] Erreur lors du scraping twiiit.com:');
       console.error(`   Type: ${error.code || error.message}`);
       console.error(`   Status: ${error.response?.status || 'N/A'}`);
       console.error(`   Message: ${error.message}`);
