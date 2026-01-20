@@ -16,17 +16,20 @@ class TwitterService {
       },
     });
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', ''); // Garder la casse originale
-    // Sources RSS: priorité à rsshub.rss.im (très stable), puis fallbacks
     const handle = this.twitterHandle.toLowerCase(); // Minuscules pour les URLs
+    
+    // URL de base pour RSSHub (locale ou publique)
+    const rssHubUrl = process.env.RSSHUB_URL || 'http://localhost:1200';
+    
+    // Sources RSS: RSSHub local en premier, puis fallbacks publics
     this.rssInstances = [
-      `https://rsshub.rss.im/twitter/user/${handle}`, // RSSHub stable
-      `https://rsshub.rss.im/x/user/${handle}`, // RSSHub X (Twitter)
-      `https://twiiit.com/${handle}/rss`, // Twiiit.com direct
-      `https://rsshub.app/twitter/user/${handle}`, // RSSHub fallback
+      `${rssHubUrl}/twitter/user/${handle}`, // RSSHub local
+      `${rssHubUrl}/x/user/${handle}`, // RSSHub X (Twitter) local
+      `https://rsshub.app/twitter/user/${handle}`, // RSSHub public fallback
+      `https://rsshub.rss.im/twitter/user/${handle}`, // RSSHub stable fallback
+      `https://rsshub.rss.im/x/user/${handle}`, // RSSHub X public
       `https://nitter.space/${handle}/rss`, // Nitter.space
       `https://nitter.poast.org/${handle}/rss`, // Nitter fallback
-      `https://nitter.cz/${handle}/rss`,
-      `https://nitter.1d4.us/${handle}/rss`,
     ];
     this.maxResults = 10;
   }
