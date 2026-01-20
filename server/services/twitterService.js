@@ -1,50 +1,62 @@
-const { Scraper } = require('twitter-scraper');
+const axios = require('axios');
 const TweetLog = require('../models/TweetLog');
 
 class TwitterService {
   constructor() {
-    this.scraper = new Scraper();
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
+    // API twiiit.com (gratuit, sans authentification)
+    this.apiUrl = 'https://api.twiiit.com/search';
     this.maxResults = 10;
+    
+    // Client axios avec timeout et User-Agent
+    this.client = axios.create({
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
   }
 
   /**
-   * Récupère les derniers tweets en scrapant Twitter directement
+   * Récupère les derniers tweets via twiiit.com (gratuit)
    * @returns {Promise<Array>} Tableau des tweets
    */
   async getLatestTweets() {
     try {
-      console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle}...`);
-
-      const tweets = [];
+      console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle} via twiiit.com...`);
       
-      // Scraper les tweets du compte
-      for await (const tweet of this.scraper.getTweets(this.twitterHandle, this.maxResults)) {
-        tweets.push({
-          id: tweet.id,
-          text: tweet.text,
-          created_at: tweet.timestamp ? new Date(tweet.timestamp * 1000).toISOString() : new Date().toISOString(),
-          public_metrics: {
-            like_count: tweet.likes || 0,
-            retweet_count: tweet.retweets || 0,
-            reply_count: tweet.replies || 0,
-          },
-          link: `https://twitter.com/${this.twitterHandle}/status/${tweet.id}`,
-        });
+      const response = await this.client.get(this.apiUrl, {
+        params: {
+          q: `from:${this.twitterHandle}`,
+          count: this.maxResults,
+          sort: 'latest',
+        },
+      });
 
-        if (tweets.length >= this.maxResults) break;
-      }
-
-      if (tweets.length === 0) {
+      if (!response.data || !response.data.statuses || response.data.statuses.length === 0) {
         console.log(`[Twitter] Aucun tweet trouvé pour @${this.twitterHandle}`);
         return [];
       }
 
+      const tweets = response.data.statuses.map(tweet => ({
+        id: tweet.id_str || tweet.id,
+        text: tweet.full_text || tweet.text,
+        created_at: tweet.created_at,
+        public_metrics: {
+          like_count: tweet.favorite_count || 0,
+          retweet_count: tweet.retweet_count || 0,
+          reply_count: tweet.reply_count || 0,
+        },
+        link: `https://twitter.com/${this.twitterHandle}/status/${tweet.id_str || tweet.id}`,
+      }));
+
       console.log(`✅ [Twitter] ${tweets.length} tweets récupérés avec succès`);
       return tweets;
     } catch (error) {
-      console.error('[Twitter] Erreur lors du scraping:', error.message);
-      console.error('[Twitter] Stack:', error.stack);
+      console.error('[Twitter] Erreur lors de la récupération via twiiit.com:');
+      console.error(`   Type: ${error.code || error.message}`);
+      console.error(`   Status: ${error.response?.status || 'N/A'}`);
+      console.error(`   Message: ${error.message}`);
       return [];
     }
   }
@@ -93,7 +105,7 @@ class TwitterService {
 ━━━━━━━━━━━━━━━━━━━━━
 ${tweet.text}
 ━━━━━━━━━━━━━━━━━━━━━
-📊 ${tweet.public_metrics.like_count} ❤️ | ${tweet.public_metrics.retweet_count} 🔄 | ${tweet.public_metrics.reply_count} 💬
+❤️ ${tweet.public_metrics.like_count} | 🔄 ${tweet.public_metrics.retweet_count} | 💬 ${tweet.public_metrics.reply_count}
 🔗 [Voir sur Twitter](${tweet.link})
 📅 ${timestamp}
     `.trim();
