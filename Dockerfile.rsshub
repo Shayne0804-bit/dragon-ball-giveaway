@@ -1,0 +1,15 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY RSSHub/package*.json ./
+
+RUN npm install --legacy-peer-deps
+
+COPY RSSHub .
+
+RUN npm run build
+
+EXPOSE 1200
+
+CMD ["npm", "start"]
