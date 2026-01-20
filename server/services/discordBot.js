@@ -521,6 +521,37 @@ class DiscordBotService {
   }
 
   /**
+   * Envoyer un tweet au canal Discord
+   */
+  async sendTweet(message) {
+    const tweetChannelId = process.env.DISCORD_TWEET_CHANNEL_ID;
+
+    if (!this.isReady || !tweetChannelId) {
+      console.warn(`[DISCORD] ⚠️  Bot non prêt ou canal Twitter non configuré`);
+      return false;
+    }
+
+    try {
+      const channel = await this.client.channels.fetch(tweetChannelId).catch(err => {
+        console.error(`[DISCORD] ❌ Erreur fetch canal Twitter: ${err.message}`);
+        return null;
+      });
+
+      if (!channel) {
+        console.error(`[DISCORD] ❌ Canal Twitter introuvable: ${tweetChannelId}`);
+        return false;
+      }
+
+      await channel.send(`@everyone\n${message}`);
+      console.log('[DISCORD] Tweet envoyé avec succès');
+      return true;
+    } catch (error) {
+      console.error('[DISCORD] Erreur lors de l\'envoi du tweet:', error.message);
+      return false;
+    }
+  }
+
+  /**
    * Arrêter le bot
    */
   async shutdown() {

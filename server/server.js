@@ -29,6 +29,7 @@ const { connectDB } = require('./config/database');
 const discordBot = require('./services/discordBot');
 const autoGiveawayService = require('./services/autoGiveawayService');
 const ReminderService = require('./services/reminderService');
+const twitterScheduler = require('./services/twitterScheduler');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -186,6 +187,12 @@ const startServer = async () => {
       reminderService = new ReminderService(discordBot);
       reminderService.start();
       global.reminderService = reminderService;
+
+      // Envoyer le dernier tweet au démarrage (une seule fois)
+      await twitterScheduler.sendInitialTweet();
+
+      // Démarrer le Twitter scheduler pour les vérifications régulières
+      twitterScheduler.start();
     }
 
     // Démarrer le serveur
@@ -208,6 +215,7 @@ process.on('SIGINT', () => {
   console.log('\n🛑 Arrêt du serveur...');
   autoGiveawayService.stop();
   if (reminderService) reminderService.stop();
+  twitterScheduler.stop();
   discordBot.shutdown();
   process.exit(0);
 });
@@ -216,6 +224,7 @@ process.on('SIGTERM', () => {
   console.log('\n🛑 Arrêt du serveur...');
   autoGiveawayService.stop();
   if (reminderService) reminderService.stop();
+  twitterScheduler.stop();
   discordBot.shutdown();
   process.exit(0);
 });
