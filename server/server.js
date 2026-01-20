@@ -28,10 +28,13 @@ const { connectDB } = require('./config/database');
 
 // Importer les services
 const discordBot = require('./services/discordBot');
-const whatsappBot = require('./services/whatsappBot');
+const WhatsAppBotService = require('./services/whatsappBot');
 const autoGiveawayService = require('./services/autoGiveawayService');
 const ReminderService = require('./services/reminderService');
 const twitterScheduler = require('./services/twitterScheduler');
+
+// Instance du service WhatsApp
+let whatsappBot = null;
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -185,6 +188,8 @@ const startServer = async () => {
 
     // Initialiser le bot WhatsApp
     if (WHATSAPP_ENABLED) {
+      whatsappBot = new WhatsAppBotService();
+      global.whatsappBot = whatsappBot; // Exposer globalement
       const whatsappReady = await whatsappBot.initialize();
       if (whatsappReady) {
         console.log('✅ Bot WhatsApp connecté et prêt');
@@ -232,7 +237,7 @@ process.on('SIGINT', () => {
   if (reminderService) reminderService.stop();
   twitterScheduler.stop();
   discordBot.shutdown();
-  whatsappBot.stop();
+  if (whatsappBot) whatsappBot.stop();
   process.exit(0);
 });
 
@@ -242,7 +247,7 @@ process.on('SIGTERM', () => {
   if (reminderService) reminderService.stop();
   twitterScheduler.stop();
   discordBot.shutdown();
-  whatsappBot.stop();
+  if (whatsappBot) whatsappBot.stop();
   process.exit(0);
 });
 

@@ -3,15 +3,10 @@ FROM node:20-alpine
 # Définir le répertoire de travail
 WORKDIR /app
 
-# Installer les dépendances système pour Puppeteer (utilisé par whatsapp-web.js)
+# Installer les dépendances système minimales
 RUN apk add --no-cache \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
     ca-certificates \
-    ttf-dejavu \
-    font-noto
+    curl
 
 # Copier les fichiers de configuration
 COPY package*.json ./
@@ -22,12 +17,18 @@ RUN npm install --production
 # Copier le code source
 COPY . .
 
-# Créer le répertoire de session WhatsApp pour la persistance
-RUN mkdir -p /app/whatsapp_session
+# Créer le répertoire d'authentification WhatsApp pour la persistance
+RUN mkdir -p /app/whatsapp_auth
 
 # Exposer le port
 EXPOSE 5000
 
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/api/health || exit 1
+
 # Variables d'environnement
 ENV NODE_ENV=production
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=false
+
+CMD ["npm", "start"]

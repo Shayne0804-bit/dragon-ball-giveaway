@@ -7,5 +7,5 @@ restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
 
 [[volumes]]
-mountPath = "/app/whatsapp_session"
-name = "whatsapp_session"
+mountPath = "/app/whatsapp_auth"
+name = "whatsapp_auth"

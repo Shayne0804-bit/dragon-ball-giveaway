@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const whatsappBot = require('../services/whatsappBot');
 
 /**
  * GET /api/whatsapp/status
@@ -8,8 +7,18 @@ const whatsappBot = require('../services/whatsappBot');
  */
 router.get('/status', (req, res) => {
   try {
+    const whatsappBot = global.whatsappBot;
+    
+    if (!whatsappBot) {
+      return res.json({
+        connected: false,
+        timestamp: new Date(),
+        message: 'Bot WhatsApp non initialisé',
+      });
+    }
+
     const status = {
-      connected: whatsappBot.isReady,
+      connected: whatsappBot.isConnected(),
       timestamp: new Date(),
       uptime: Math.floor(process.uptime() / 60),
       environment: process.env.NODE_ENV,
@@ -29,6 +38,12 @@ router.get('/status', (req, res) => {
  */
 router.post('/send-message', async (req, res) => {
   try {
+    const whatsappBot = global.whatsappBot;
+    
+    if (!whatsappBot) {
+      return res.status(503).json({ error: 'Bot WhatsApp non disponible' });
+    }
+
     const { phoneNumber, message } = req.body;
 
     if (!phoneNumber || !message) {
@@ -42,13 +57,9 @@ router.post('/send-message', async (req, res) => {
     //   return res.status(403).json({ error: 'Accès refusé' });
     // }
 
-    const result = await whatsappBot.sendMessage(phoneNumber, message);
+    await whatsappBot.sendMessage(phoneNumber, message);
 
-    if (result) {
-      res.json({ success: true, message: 'Message envoyé' });
-    } else {
-      res.status(500).json({ error: 'Impossible d\'envoyer le message' });
-    }
+    res.json({ success: true, message: 'Message envoyé' });
   } catch (error) {
     console.error('[WHATSAPP ROUTE] Erreur send-message:', error.message);
     res.status(500).json({ error: error.message });
@@ -62,10 +73,16 @@ router.post('/send-message', async (req, res) => {
  */
 router.post('/notify-giveaway', async (req, res) => {
   try {
+    const whatsappBot = global.whatsappBot;
+    
+    if (!whatsappBot) {
+      return res.status(503).json({ error: 'Bot WhatsApp non disponible' });
+    }
+
     const { giveawayId, phoneNumbers } = req.body;
 
     // Validation admin
-    if (!req.session.admin) {
+    if (!req.session || !req.session.admin) {
       return res.status(403).json({ error: 'Accès refusé - admin requis' });
     }
 
@@ -84,11 +101,24 @@ router.post('/notify-giveaway', async (req, res) => {
     }
 
     // Envoyer les notifications
-    await whatsappBot.notifyGiveaway(giveaway, phoneNumbers);
+    let sentCount = 0;
+    for (const phoneNumber of phoneNumbers) {
+      try {
+        const message = `🎁 Nouveau Giveaway: ${giveaway.name}\n\n` +
+                       `📝 Description: ${giveaway.description}\n` +
+                       `🎯 Participants: ${giveaway.participantCount || 0}\n\n` +
+                       `Participe maintenant: ${global.whatsappBot.siteUrl}`;
+        
+        await whatsappBot.sendMessage(phoneNumber, message);
+        sentCount++;
+      } catch (err) {
+        console.error(`[WHATSAPP] Erreur envoi à ${phoneNumber}:`, err.message);
+      }
+    }
 
     res.json({
       success: true,
-      message: `${phoneNumbers.length} notification(s) envoyée(s)`,
+      message: `${sentCount}/${phoneNumbers.length} notification(s) envoyée(s)`,
     });
   } catch (error) {
     console.error('[WHATSAPP ROUTE] Erreur notify-giveaway:', error.message);
@@ -103,10 +133,16 @@ router.post('/notify-giveaway', async (req, res) => {
  */
 router.post('/notify-winner', async (req, res) => {
   try {
+    const whatsappBot = global.whatsappBot;
+    
+    if (!whatsappBot) {
+      return res.status(503).json({ error: 'Bot WhatsApp non disponible' });
+    }
+
     const { winnerId } = req.body;
 
     // Validation admin
-    if (!req.session.admin) {
+    if (!req.session || !req.session.admin) {
       return res.status(403).json({ error: 'Accès refusé - admin requis' });
     }
 
@@ -127,7 +163,13 @@ router.post('/notify-winner', async (req, res) => {
     }
 
     // Envoyer la notification
-    await whatsappBot.notifyWinner(winner, winner.giveawayId);
+    const giveaway = winner.giveawayId;
+    const message = `🎉 FÉLICITATIONS!\n\n` +
+                   `Vous avez remporté: ${giveaway.name}!\n\n` +
+                   `Veuillez nous contacter pour recevoir votre prix.\n` +
+                   `Site: ${global.whatsappBot.siteUrl}`;
+
+    await whatsappBot.sendMessage(winner.phoneNumber, message);
 
     res.json({ success: true, message: 'Notification envoyée au gagnant' });
   } catch (error) {
