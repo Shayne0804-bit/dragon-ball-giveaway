@@ -99,58 +99,104 @@ class WhatsAppBotService {
       // Variable pour tracker si on a déjà généré le code
       let pairingCodeGenerated = false;
 
-      // Connexion
-      this.sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, isNewLogin } = update;
+      // Fallback: Générer le pairing code avec un délai si pas de session
+      if (!hasExistingAuth) {
+        setTimeout(async () => {
+          if (!pairingCodeGenerated && this.sock) {
+            console.error('[WHATSAPP] ⏰ Fallback: Tentative de génération du code d\'appairage (délai 3s)...');
+            try {
+              const pairingCode = await this.sock?.requestPairingCode(this.phoneNumber);
+              if (pairingCode && !pairingCodeGenerated) {
+                pairingCodeGenerated = true;
+                console.error('\n\n');
+                console.error('╔════════════════════════════════════════════════════════════╗');
+                console.error('║     🔐 PREMIÈRE CONNEXION - CODE D\'APPAIRAGE WhatsApp    ║');
+                console.error('╚════════════════════════════════════════════════════════════╝');
+                console.error('');
+                console.error(`  📱 ENTREZ CE CODE dans votre téléphone WhatsApp:`);
+                console.error('');
+                console.error(`     ┌─────────────────────┐`);
+                console.error(`     │  ${pairingCode}      │`);
+                console.error(`     └─────────────────────┘`);
+                console.error('');
+                console.error('  ⏱️  Vous avez 60 secondes pour entrer ce code');
+                console.error('  📍 Allez dans: Paramètres → Appareils liés → Ajouter un appareil');
+                console.error('  💬 Puis sélectionnez "Utiliser un code d\'appairage"');
+                console.error('');
+                console.error('╔════════════════════════════════════════════════════════════╗');
+                console.error('\n');
+                this.lastPairingCode = pairingCode;
+                console.error(`[WHATSAPP] ✅ Code d\'appairage GÉNÉRÉ: ${pairingCode}`);
+                console.error('[WHATSAPP] ✅ Code d\'appairage sauvegardé. En attente de saisie...\n');
+              }
+            } catch (error) {
+              console.error('[WHATSAPP] ❌ Erreur fallback:', error.message);
+            }
+          }
+        }, 3000); // Attendre 3 secondes avant le fallback
+      }
 
-        // Afficher le pairing code dès que possible si pas de session existante
-        if (!hasExistingAuth && !pairingCodeGenerated && connection !== 'closed') {
+      // Événement QR/Pairing code
+      this.sock.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        
+        console.error(`[WHATSAPP] Connection Update: connection=${connection}, qr=${qr ? 'exists' : 'null'}`);
+
+        // Si on a un QR et pas encore généré le code, générer le pairing code
+        if (qr && !hasExistingAuth && !pairingCodeGenerated) {
           pairingCodeGenerated = true;
           try {
-            console.log('[WHATSAPP] 📲 Génération du code d\'appairage...');
+            console.error('[WHATSAPP] 📲 Tentative de génération du code d\'appairage...');
             const pairingCode = await this.sock?.requestPairingCode(this.phoneNumber);
+            
             if (pairingCode) {
-              console.log('\n');
-              console.log('╔════════════════════════════════════════════════════════════╗');
-              console.log('║     🔐 PREMIÈRE CONNEXION - CODE D\'APPAIRAGE WhatsApp    ║');
-              console.log('╚════════════════════════════════════════════════════════════╝');
-              console.log('');
-              console.log(`  📱 ENTREZ CE CODE dans votre téléphone WhatsApp:`);
-              console.log('');
-              console.log(`     ┌─────────────────────┐`);
-              console.log(`     │  ${pairingCode}      │`);
-              console.log(`     └─────────────────────┘`);
-              console.log('');
-              console.log('  ⏱️  Vous avez 60 secondes pour entrer ce code');
-              console.log('  📍 Allez dans: Paramètres → Appareils liés → Ajouter un appareil');
-              console.log('  💬 Puis sélectionnez "Utiliser un code d\'appairage"');
-              console.log('');
-              console.log('╔════════════════════════════════════════════════════════════╗');
-              console.log('');
+              console.error('\n\n');
+              console.error('╔════════════════════════════════════════════════════════════╗');
+              console.error('║     🔐 PREMIÈRE CONNEXION - CODE D\'APPAIRAGE WhatsApp    ║');
+              console.error('╚════════════════════════════════════════════════════════════╝');
+              console.error('');
+              console.error(`  📱 ENTREZ CE CODE dans votre téléphone WhatsApp:`);
+              console.error('');
+              console.error(`     ┌─────────────────────┐`);
+              console.error(`     │  ${pairingCode}      │`);
+              console.error(`     └─────────────────────┘`);
+              console.error('');
+              console.error('  ⏱️  Vous avez 60 secondes pour entrer ce code');
+              console.error('  📍 Allez dans: Paramètres → Appareils liés → Ajouter un appareil');
+              console.error('  💬 Puis sélectionnez "Utiliser un code d\'appairage"');
+              console.error('');
+              console.error('╔════════════════════════════════════════════════════════════╗');
+              console.error('\n');
               this.lastPairingCode = pairingCode;
-              console.log('[WHATSAPP] Code d\'appairage sauvegardé. En attente de saisie...');
+              console.error(`[WHATSAPP] ✅ Code d\'appairage GÉNÉRÉ: ${pairingCode}`);
+              console.error('[WHATSAPP] ✅ Code d\'appairage sauvegardé. En attente de saisie...\n');
             } else {
-              console.log('[WHATSAPP] ⚠️  Pas de code d\'appairage retourné');
+              console.error('[WHATSAPP] ⚠️  Pas de code d\'appairage retourné (null)');
             }
           } catch (error) {
-            console.log('[WHATSAPP] Erreur lors de la génération du code d\'appairage:', error.message);
-            pairingCodeGenerated = false; // Retry si erreur
+            console.error('[WHATSAPP] ❌ Erreur lors de la génération du code d\'appairage:', error.message);
+            console.error('[WHATSAPP] Stack:', error.stack);
+            pairingCodeGenerated = false; // Permettre retry
           }
+        } else if (!qr && pairingCodeGenerated) {
+          console.error('[WHATSAPP] ✓ QR/Code d\'appairage complété');
         }
 
+        // Événement de connexion établie
         if (connection === 'open') {
           this.isReady = true;
           this.reconnectAttempts = 0;
-          if (isNewLogin && !hasExistingAuth) {
+          if (!hasExistingAuth) {
             console.log('[WHATSAPP] ✅ Authentification réussie');
             console.log('[WHATSAPP] 📝 Session sauvegardée pour les redémarrages futurs');
             console.log('[WHATSAPP] 🎉 Bot connecté et prêt à l\'emploi');
-          } else if (hasExistingAuth) {
+          } else {
             console.log('[WHATSAPP] ✅ Connexion avec session persistante');
             console.log('[WHATSAPP] 🎉 Bot reconnecté et prêt');
           }
         }
 
+        // Déconnexion
         if (connection === 'close') {
           const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
           
