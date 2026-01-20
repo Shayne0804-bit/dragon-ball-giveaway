@@ -22,11 +22,40 @@ router.get('/status', (req, res) => {
       timestamp: new Date(),
       uptime: Math.floor(process.uptime() / 60),
       environment: process.env.NODE_ENV,
+      qrGenerated: whatsappBot.qrGenerated || false,
     };
 
     res.json(status);
   } catch (error) {
     console.error('[WHATSAPP ROUTE] Erreur status:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/whatsapp/qr-code
+ * Récupérer le dernier QR code généré (si disponible)
+ * En production, ceci est limité à la première connexion
+ */
+router.get('/qr-code', (req, res) => {
+  try {
+    const whatsappBot = global.whatsappBot;
+    
+    if (!whatsappBot || !whatsappBot.lastQRCode) {
+      return res.status(404).json({
+        error: 'QR code non disponible',
+        message: 'Le bot est peut-être déjà authentifié ou pas encore initialisé'
+      });
+    }
+
+    // Retourner le QR code en ASCII
+    res.json({
+      qr: whatsappBot.lastQRCode,
+      timestamp: new Date(),
+      message: 'Scannez ce code avec WhatsApp'
+    });
+  } catch (error) {
+    console.error('[WHATSAPP ROUTE] Erreur QR:', error.message);
     res.status(500).json({ error: error.message });
   }
 });

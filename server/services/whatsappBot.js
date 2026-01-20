@@ -17,6 +17,8 @@ class WhatsAppBotService {
     this.maxReconnectAttempts = 5;
     this.commandHandler = null;
     this.messageHandlers = null;
+    this.lastQRCode = null; // Stocker le dernier QR code
+    this.qrGenerated = false; // Flag pour savoir si QR a été généré
     
     // Déterminer l'URL du site
     let siteUrl = process.env.CORS_ORIGIN;
@@ -50,6 +52,12 @@ class WhatsAppBotService {
 
       const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
+      // Vérifier si une session existe déjà
+      const hasExistingAuth = Object.keys(state.creds || {}).length > 0;
+      if (hasExistingAuth) {
+        console.log('[WHATSAPP] Session authentifiée détectée - Reconnexion directe');
+      }
+
       // Logger configuration
       const logger = P({ level: 'silent' });
 
@@ -75,15 +83,39 @@ class WhatsAppBotService {
       this.sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, isNewLogin, qr } = update;
 
+        // Mode production - désactiver QR code après la première authentification
+        const isProduction = process.env.NODE_ENV === 'production';
+        
+        // QR Code - Seulement si :
+        // 1. C'est une nouvelle connexion (isNewLogin)
+        // 2. Et pas en production avec session existante
         if (qr) {
-          console.log('[WHATSAPP] ⬇️  QR Code généré - Scannez avec votre téléphone:');
-          qrcode.generate(qr, { small: true });
+          if (isNewLogin && !hasExistingAuth) {
+            // Première connexion - afficher le QR
+            console.log('[WHATSAPP] ⚠️  PREMIÈRE CONNEXION - QR Code généré');
+            console.log('[WHATSAPP] Scannez le code ci-dessous avec WhatsApp:');
+            qrcode.generate(qr, { small: false, width: 10 });
+            this.lastQRCode = qr;
+            this.qrGenerated = true;
+            console.log('[WHATSAPP] Code scanné? Attendez la connexion...');
+          } else if (!isNewLogin || hasExistingAuth) {
+            // Reconnexion avec session existante - pas de QR
+            if (this.qrGenerated) {
+              console.log('[WHATSAPP] Session authentifiée détectée - Reconnexion sans QR');
+            }
+          }
         }
 
         if (connection === 'open') {
           this.isReady = true;
           this.reconnectAttempts = 0;
-          console.log('[WHATSAPP] ✅ Bot connecté et prêt');
+          if (isNewLogin && !hasExistingAuth) {
+            console.log('[WHATSAPP] ✅ Authentification réussie - Session sauvegardée');
+            console.log('[WHATSAPP] 🎉 Bot connecté et prêt à l\'emploi');
+          } else if (hasExistingAuth) {
+            console.log('[WHATSAPP] ✅ Connexion avec session persistante');
+            console.log('[WHATSAPP] 🎉 Bot reconnecté et prêt');
+          }
         }
 
         if (connection === 'close') {
