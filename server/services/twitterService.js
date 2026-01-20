@@ -1,149 +1,84 @@
-const puppeteer = require('puppeteer');
+const Parser = require('rss-parser');
 const TweetLog = require('../models/TweetLog');
 
 class TwitterService {
   constructor() {
+    this.parser = new Parser({
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      },
+    });
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
-    // URL du profil sur twiiit.com
-    this.profileUrl = `https://twiiit.com/user/${this.twitterHandle}`;
+    // Instances Nitter publiques et stables
+    this.nitterInstances = [
+      `https://nitter.poast.org/${this.twitterHandle}/rss`,
+      `https://nitter.cz/${this.twitterHandle}/rss`,
+      `https://nitter.fdn.fr/${this.twitterHandle}/rss`,
+      `https://nitter.1d4.us/${this.twitterHandle}/rss`,
+      `https://nitter.net/${this.twitterHandle}/rss`,
+    ];
     this.maxResults = 10;
-    this.browser = null;
   }
 
   /**
-   * Initialiser le navigateur Puppeteer
-   */
-  async initBrowser() {
-    if (!this.browser) {
-      try {
-        console.log('[Twitter] Initialisation du navigateur Puppeteer...');
-        this.browser = await puppeteer.launch({
-          headless: 'new',
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-gpu',
-            '--disable-dev-shm-usage', // Important pour éviter les problèmes de mémoire
-          ],
-        });
-        console.log('✅ [Twitter] Navigateur prêt');
-      } catch (error) {
-        console.error('[Twitter] Erreur lors du lancement du navigateur:', error.message);
-        throw error;
-      }
-    }
-    return this.browser;
-  }
-
-  /**
-   * Récupère les derniers tweets via Puppeteer + twiiit.com
+   * Récupère les derniers tweets via RSS Nitter (léger & gratuit)
    * @returns {Promise<Array>} Tableau des tweets
    */
   async getLatestTweets() {
-    let page = null;
-    try {
-      console.log(`[Twitter] Scraping les tweets de @${this.twitterHandle} avec Puppeteer...`);
-      
-      const browser = await this.initBrowser();
-      page = await browser.newPage();
-      
-      // Configurer les timeouts
-      await page.setDefaultNavigationTimeout(30000);
-      await page.setDefaultTimeout(15000);
-      
-      // Définir l'User-Agent
-      await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-      
-      console.log(`[Twitter] Navigation vers: ${this.profileUrl}`);
-      await page.goto(this.profileUrl, { waitUntil: 'networkidle2' });
-      
-      // Attendre que les tweets chargent
-      await page.waitForSelector('article, [data-testid*="tweet"]', { timeout: 10000 }).catch(() => {
-        console.log('[Twitter] Pas de tweets trouvés avec les sélecteurs habituels');
-      });
-      
-      // Scroller pour charger plus de tweets
-      console.log('[Twitter] Scroll pour charger plus de tweets...');
-      await page.evaluate(() => {
-        window.scrollBy(0, window.innerHeight);
-      });
-      await page.waitForTimeout(2000);
-      
-      // Extraire les tweets via JavaScript
-      const tweets = await page.evaluate((maxResults) => {
-        const tweetElements = document.querySelectorAll('article, [data-testid*="tweet"], .tweet-item');
-        const tweets = [];
+    console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle} via RSS Nitter...`);
+    
+    // Essayer toutes les instances Nitter
+    for (let i = 0; i < this.nitterInstances.length; i++) {
+      try {
+        const rssUrl = this.nitterInstances[i];
+        console.log(`[Twitter] Tentative ${i + 1}/${this.nitterInstances.length}: ${rssUrl}`);
         
-        tweetElements.forEach((element, index) => {
-          if (tweets.length >= maxResults) return;
+        const feed = await this.parser.parseURL(rssUrl);
+        
+        if (feed.items && feed.items.length > 0) {
+          console.log(`✅ [Twitter] Succès avec: ${rssUrl}`);
           
-          try {
-            // Extraire le texte
-            const textElement = element.querySelector('[data-testid="tweetText"], p, .tweet-text');
-            const text = textElement ? textElement.innerText.trim() : '';
-            
-            if (!text) return; // Passer les éléments vides
-            
-            // Extraire le lien du tweet
-            const linkElement = element.querySelector('a[href*="/status/"]');
-            const link = linkElement ? linkElement.getAttribute('href') : '';
-            const tweetId = link ? link.split('/status/')[1] : `tweet-${index}`;
-            
-            // Extraire le timestamp
-            const timeElement = element.querySelector('time');
-            const timestamp = timeElement ? timeElement.getAttribute('datetime') : new Date().toISOString();
-            
-            // Extraire les métriques
-            const statsElements = element.querySelectorAll('[data-testid*="Count"], .stat-count');
-            let likeCount = 0, retweetCount = 0, replyCount = 0;
-            
-            statsElements.forEach((stat) => {
-              const text = stat.innerText || stat.textContent;
-              if (text && !isNaN(parseInt(text))) {
-                const count = parseInt(text);
-                // Ordre typique: Reply, Retweet, Like
-                if (!replyCount && replyCount !== 0) replyCount = count;
-                else if (!retweetCount && retweetCount !== 0) retweetCount = count;
-                else if (!likeCount && likeCount !== 0) likeCount = count;
-              }
-            });
-            
-            tweets.push({
-              id: tweetId,
-              text: text,
-              created_at: timestamp,
-              public_metrics: {
-                like_count: likeCount,
-                retweet_count: retweetCount,
-                reply_count: replyCount,
-              },
-              link: link,
-            });
-          } catch (error) {
-            console.error(`Erreur lors du parsing d'un élément: ${error.message}`);
-          }
-        });
-        
-        return tweets;
-      }, this.maxResults);
-      
-      if (tweets.length === 0) {
-        console.log(`[Twitter] ⚠️  Aucun tweet trouvé. Vérifiez que le compte existe.`);
-      } else {
-        console.log(`✅ [Twitter] ${tweets.length} tweets extraits avec succès`);
-      }
-      
-      return tweets;
-    } catch (error) {
-      console.error('[Twitter] Erreur lors du scraping:');
-      console.error(`   Type: ${error.code || error.name}`);
-      console.error(`   Message: ${error.message}`);
-      return [];
-    } finally {
-      if (page) {
-        await page.close().catch(() => {});
+          const tweets = feed.items.slice(0, this.maxResults).map(item => ({
+            id: item.guid || item.link,
+            text: this.extractText(item.content || item.description),
+            created_at: item.pubDate,
+            public_metrics: {
+              like_count: 0,
+              retweet_count: 0,
+              reply_count: 0,
+            },
+            link: item.link,
+          }));
+          
+          console.log(`[Twitter] ${tweets.length} tweets récupérés`);
+          return tweets;
+        }
+      } catch (error) {
+        console.log(`❌ [Twitter] Échec avec instance ${i + 1}: ${error.message}`);
+        if (i < this.nitterInstances.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
     }
+    
+    console.error(`[Twitter] ❌ Aucune instance Nitter n'a fonctionné`);
+    return [];
+  }
+
+  /**
+   * Extraire le texte du tweet (nettoyer le HTML)
+   */
+  extractText(html) {
+    if (!html) return '';
+    let text = html.replace(/<[^>]*>/g, '');
+    text = text
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+    return text.trim();
   }
 
   /**
@@ -190,7 +125,6 @@ class TwitterService {
 ━━━━━━━━━━━━━━━━━━━━━
 ${tweet.text}
 ━━━━━━━━━━━━━━━━━━━━━
-❤️ ${tweet.public_metrics.like_count} | 🔄 ${tweet.public_metrics.retweet_count} | 💬 ${tweet.public_metrics.reply_count}
 🔗 [Voir sur Twitter](${tweet.link})
 📅 ${timestamp}
     `.trim();
@@ -208,7 +142,6 @@ ${tweet.text}
 
       let sentCount = 0;
 
-      // Traiter les tweets du plus ancien au plus récent
       for (const tweet of tweets.reverse()) {
         const alreadySent = await this.isTweetAlreadySent(tweet.id);
 
@@ -230,21 +163,6 @@ ${tweet.text}
     } catch (error) {
       console.error('[Twitter] Erreur lors du traitement des tweets:', error.message);
       return 0;
-    }
-  }
-
-  /**
-   * Fermer le navigateur proprement
-   */
-  async closeBrowser() {
-    if (this.browser) {
-      try {
-        await this.browser.close();
-        this.browser = null;
-        console.log('[Twitter] Navigateur Puppeteer fermé');
-      } catch (error) {
-        console.error('[Twitter] Erreur lors de la fermeture du navigateur:', error.message);
-      }
     }
   }
 }
