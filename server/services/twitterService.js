@@ -18,20 +18,10 @@ class TwitterService {
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', ''); // Garder la casse originale
     const handle = this.twitterHandle.toLowerCase(); // Minuscules pour les URLs
     
-    // URL de base pour RSSHub (service Docker ou public)
-    const rssHubUrl = process.env.RSSHUB_URL || 'http://rsshub:1200';
-    
-    // Sources RSS: RSSHub local en premier, puis fallbacks publics et Nitter
+    // Sources RSS pour Twitter - services fiables et accessibles
     this.rssInstances = [
-      `${rssHubUrl}/twitter/user/${handle}`, // RSSHub local/Railway
-      `${rssHubUrl}/x/user/${handle}`, // RSSHub X (Twitter) local/Railway
-      `https://rsshub-public.up.railway.app/twitter/user/${handle}`, // RSSHub public Railway
-      `https://rsshub.fcqxn.com/twitter/user/${handle}`, // RSSHub mirror
-      `https://rss.r.3g5.app/twitter/user/${handle}`, // Alternative RSSHub mirror
-      `https://feed.informate.wiki/twitter/user/${handle}`, // Informate Twitter RSS
-      `https://nitter.net/${handle}/rss`, // Nitter.net (cloudflare-free)
-      `https://nitter.laix.de/${handle}/rss`, // Nitter alternate
-      `https://nitter.poast.org/${handle}/rss`, // Nitter fallback
+      `https://twitrss.me/twitter_user_to_rss.php?user=${handle}`, // Twitrss.me (très stable)
+      `https://nitter.net/${handle}/rss`, // Nitter.net stable
     ];
     this.maxResults = 10;
   }
