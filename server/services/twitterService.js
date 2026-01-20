@@ -10,9 +10,10 @@ class TwitterService {
       },
     });
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
-    // Instances Nitter publiques et stables
-    this.nitterInstances = [
-      `https://nitter.poast.org/${this.twitterHandle}/rss`,
+    // Instances RSSHub et Nitter comme fallback
+    this.rssInstances = [
+      `https://rsshub.app/twitter/user/${this.twitterHandle}`, // RSSHub principal
+      `https://nitter.poast.org/${this.twitterHandle}/rss`, // Nitter fallback
       `https://nitter.cz/${this.twitterHandle}/rss`,
       `https://nitter.fdn.fr/${this.twitterHandle}/rss`,
       `https://nitter.1d4.us/${this.twitterHandle}/rss`,
@@ -22,47 +23,53 @@ class TwitterService {
   }
 
   /**
-   * Récupère les derniers tweets via RSS Nitter (léger & gratuit)
+   * Récupère les derniers tweets via RSSHub ou Nitter
    * @returns {Promise<Array>} Tableau des tweets
    */
   async getLatestTweets() {
-    console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle} via RSS Nitter...`);
+    console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle}...`);
     
-    // Essayer toutes les instances Nitter
-    for (let i = 0; i < this.nitterInstances.length; i++) {
+    // Essayer toutes les instances
+    for (let i = 0; i < this.rssInstances.length; i++) {
       try {
-        const rssUrl = this.nitterInstances[i];
-        console.log(`[Twitter] Tentative ${i + 1}/${this.nitterInstances.length}: ${rssUrl}`);
+        const rssUrl = this.rssInstances[i];
+        const source = i === 0 ? 'RSSHub' : 'Nitter';
+        console.log(`[Twitter] Tentative ${i + 1}/${this.rssInstances.length} (${source}): ${rssUrl}`);
         
         const feed = await this.parser.parseURL(rssUrl);
         
         if (feed.items && feed.items.length > 0) {
-          console.log(`✅ [Twitter] Succès avec: ${rssUrl}`);
+          console.log(`✅ [Twitter] Succès avec ${source}: ${rssUrl}`);
           
           const tweets = feed.items.slice(0, this.maxResults).map(item => ({
-            id: item.guid || item.link,
+            id: item.guid || item.link || `tweet-${item.pubDate}`,
             text: this.extractText(item.content || item.description),
-            created_at: item.pubDate,
+            created_at: item.pubDate || new Date().toISOString(),
             public_metrics: {
               like_count: 0,
               retweet_count: 0,
               reply_count: 0,
             },
-            link: item.link,
+            link: item.link || `https://twitter.com/${this.twitterHandle}`,
           }));
           
           console.log(`[Twitter] ${tweets.length} tweets récupérés`);
           return tweets;
         }
       } catch (error) {
-        console.log(`❌ [Twitter] Échec avec instance ${i + 1}: ${error.message}`);
-        if (i < this.nitterInstances.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+        const source = i === 0 ? 'RSSHub' : 'Nitter';
+        console.log(`❌ [Twitter] Échec avec ${source} (${i + 1}): ${error.message}`);
+        if (i < this.rssInstances.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
         }
       }
     }
     
-    console.error(`[Twitter] ❌ Aucune instance Nitter n'a fonctionné`);
+    console.error(`[Twitter] ❌ Aucune source RSS n'a fonctionné`);
+    console.log(`[Twitter] Vérifiez que:`);
+    console.log(`  1. Le compte @${this.twitterHandle} existe`);
+    console.log(`  2. RSSHub et Nitter sont accessibles`);
+    console.log(`  3. Il y a des tweets publics disponibles`);
     return [];
   }
 
@@ -77,7 +84,8 @@ class TwitterService {
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'");
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
     return text.trim();
   }
 
