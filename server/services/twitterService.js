@@ -18,13 +18,24 @@ class TwitterService {
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', ''); // Garder la casse originale
     const handle = this.twitterHandle.toLowerCase(); // Minuscules pour les URLs
     
-    // Sources RSS pour Twitter - instances Nitter stables
-    this.rssInstances = [
-      `https://nitter.1d4.us/${handle}/rss`, // Nitter US
-      `https://nitter.privacy.com.de/${handle}/rss`, // Nitter privé
-      `https://nitter.cz/${handle}/rss`, // Nitter Czech
-      `https://nitter.bird.mk/${handle}/rss`, // Nitter bird.mk
-    ];
+    // URL de l'instance RSSHub privée (à configurer dans .env après déploiement)
+    const rsshubUrl = process.env.RSSHUB_URL;
+    
+    // Sources RSS pour Twitter - RSSHub privé + fallbacks publics
+    this.rssInstances = rsshubUrl 
+      ? [
+          `${rsshubUrl}/twitter/user/${handle}`, // RSSHub privé Railway
+          `${rsshubUrl}/x/user/${handle}`, // RSSHub privé X endpoint
+          `https://rsshub.app/twitter/user/${handle}`, // RSSHub public fallback
+          `https://nitter.unixfox.eu/${handle}/rss`, // Nitter EU
+        ]
+      : [
+          // Si RSSHUB_URL non configurée, utiliser RSSHub public
+          `https://rsshub.app/twitter/user/${handle}`, // RSSHub public
+          `https://nitter.unixfox.eu/${handle}/rss`, // Nitter EU
+          `https://nitter.mstdn.social/${handle}/rss`, // Nitter Mastodon
+          `https://nitter.kavin.rocks/${handle}/rss`, // Nitter Rocks
+        ];
     this.maxResults = 10;
   }
 
