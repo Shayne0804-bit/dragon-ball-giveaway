@@ -1,56 +1,108 @@
-const { TwitterApi } = require('twitter-api-v2');
+const Parser = require('rss-parser');
 const TweetLog = require('../models/TweetLog');
 
 class TwitterService {
   constructor() {
-    // Créer un client avec uniquement le Bearer Token
-    this.client = new TwitterApi(process.env.TWITTER_BEARER_TOKEN);
+    this.parser = new Parser();
     this.twitterHandle = process.env.TWITTER_ACCOUNT.replace('@', '');
-    this.maxResults = 10; // Récupérer les 10 derniers tweets à chaque check
+    // URL RSS pour récupérer les tweets (gratuit avec Nitter)
+    this.rssUrl = `https://nitter.net/${this.twitterHandle}/rss`;
+    this.maxResults = 10;
   }
 
   /**
-   * Récupère les derniers tweets d'un compte Twitter
+   * Récupère les derniers tweets via RSS (gratuit)
    * @returns {Promise<Array>} Tableau des tweets
    */
   async getLatestTweets() {
     try {
-      console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle}...`);
+      console.log(`[Twitter] Récupération des tweets de @${this.twitterHandle} via RSS...`);
+      console.log(`[Twitter] URL RSS: ${this.rssUrl}`);
 
-      // Récupère l'ID utilisateur
-      const user = await this.client.v2.userByUsername(this.twitterHandle);
-      if (!user || !user.data) {
-        throw new Error(`Utilisateur @${this.twitterHandle} non trouvé`);
-      }
-
-      const userId = user.data.id;
-      console.log(`[Twitter] ID utilisateur trouvé: ${userId}`);
-
-      // Récupère les tweets
-      const tweets = await this.client.v2.userTimeline(userId, {
-        max_results: this.maxResults,
-        'tweet.fields': ['created_at', 'public_metrics'],
-        'expansions': ['author_id'],
-        'user.fields': ['username', 'name', 'profile_image_url'],
-      });
-
-      if (!tweets.data || tweets.data.length === 0) {
-        console.log(`[Twitter] Aucun nouveau tweet trouvé pour @${this.twitterHandle}`);
+      const feed = await this.parser.parseURL(this.rssUrl);
+      
+      if (!feed.items || feed.items.length === 0) {
+        console.log(`[Twitter] Aucun tweet trouvé pour @${this.twitterHandle}`);
         return [];
       }
 
-      console.log(`[Twitter] ${tweets.data.length} tweets récupérés`);
-      return tweets.data;
+      // Limiter aux N derniers tweets
+      const tweets = feed.items.slice(0, this.maxResults).map(item => ({
+        id: item.guid || item.link, // Utiliser le GUID ou le lien comme ID unique
+        text: this.extractText(item.content || item.description),
+        created_at: item.pubDate,
+        public_metrics: {
+          like_count: 0, // RSS ne fournit pas ces infos
+          retweet_count: 0,
+          reply_count: 0,
+        },
+        link: item.link,
+      }));
+
+      console.log(`[Twitter] ${tweets.length} tweets récupérés`);
+      return tweets;
     } catch (error) {
-      console.error('[Twitter] Erreur lors de la récupération des tweets:', error.message);
-      console.error('[Twitter] Stack:', error.stack);
+      console.error('[Twitter] Erreur lors de la récupération du flux RSS:', error.message);
+      // Fallback: essayer avec un autre service RSS
+      console.log('[Twitter] Tentative avec service alternatif...');
+      return this.getLatestTweetsAlternative();
+    }
+  }
+
+  /**
+   * Fallback avec un autre service RSS
+   */
+  async getLatestTweetsAlternative() {
+    try {
+      const rssUrlAlt = `https://feeds.nitter.net/${this.twitterHandle}/rss`;
+      console.log(`[Twitter] Tentative avec URL alternative: ${rssUrlAlt}`);
+      
+      const feed = await this.parser.parseURL(rssUrlAlt);
+      
+      if (!feed.items || feed.items.length === 0) {
+        return [];
+      }
+
+      const tweets = feed.items.slice(0, this.maxResults).map(item => ({
+        id: item.guid || item.link,
+        text: this.extractText(item.content || item.description),
+        created_at: item.pubDate,
+        public_metrics: {
+          like_count: 0,
+          retweet_count: 0,
+          reply_count: 0,
+        },
+        link: item.link,
+      }));
+
+      console.log(`[Twitter] ${tweets.length} tweets récupérés (alternative)`);
+      return tweets;
+    } catch (error) {
+      console.error('[Twitter] Erreur avec URL alternative:', error.message);
       return [];
     }
   }
 
   /**
+   * Extraire le texte du tweet (nettoyer le HTML)
+   */
+  extractText(html) {
+    if (!html) return '';
+    // Supprimer les balises HTML
+    let text = html.replace(/<[^>]*>/g, '');
+    // Décoder les entités HTML
+    text = text
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'");
+    return text.trim();
+  }
+
+  /**
    * Vérifie si un tweet a déjà été envoyé
-   * @param {string} tweetId - ID du tweet Twitter
+   * @param {string} tweetId - ID du tweet
    * @returns {Promise<boolean>}
    */
   async isTweetAlreadySent(tweetId) {
@@ -65,7 +117,7 @@ class TwitterService {
 
   /**
    * Enregistre qu'un tweet a été envoyé
-   * @param {string} tweetId - ID du tweet Twitter
+   * @param {string} tweetId - ID du tweet
    */
   async logTweetSent(tweetId) {
     try {
@@ -85,7 +137,6 @@ class TwitterService {
    * @returns {string} Message formaté
    */
   formatTweetForDiscord(tweet) {
-    const tweetUrl = `https://twitter.com/${this.twitterHandle}/status/${tweet.id}`;
     const timestamp = new Date(tweet.created_at).toLocaleString('fr-FR');
 
     return `
@@ -93,8 +144,7 @@ class TwitterService {
 ━━━━━━━━━━━━━━━━━━━━━
 ${tweet.text}
 ━━━━━━━━━━━━━━━━━━━━━
-📊 ${tweet.public_metrics.like_count} ❤️ | ${tweet.public_metrics.retweet_count} 🔄 | ${tweet.public_metrics.reply_count} 💬
-🔗 [Voir sur Twitter](${tweetUrl})
+🔗 [Voir sur Twitter](${tweet.link})
 📅 ${timestamp}
     `.trim();
   }
