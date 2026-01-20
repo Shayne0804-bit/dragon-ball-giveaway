@@ -66,12 +66,12 @@ class WhatsAppBotService {
 
       const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
-      // Vérifier si une session existe déjà
-      const hasExistingAuth = Object.keys(state.creds || {}).length > 0;
+      // Vérifier si une session existe déjà (vérifier la présence de me.id qui indique une authentification réelle)
+      const hasExistingAuth = !!state.creds?.me?.id;
       if (hasExistingAuth) {
-        console.error('[WHATSAPP] ✅ Session authentifiée détectée - Reconnexion directe');
+        console.error('[WHATSAPP] ✅ Session authentifiée détectée - Reconnexion directe (ID: ' + state.creds.me.id + ')');
       } else {
-        console.error('[WHATSAPP] ⚠️  Pas de session - Code d\'appairage sera généré');
+        console.error('[WHATSAPP] ⚠️  Pas de session authentifiée - Code d\'appairage sera généré');
       }
 
       // Logger configuration
