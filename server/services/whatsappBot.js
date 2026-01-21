@@ -59,19 +59,30 @@ class WhatsAppBotService {
     try {
       console.log('[WHATSAPP] Initialisation du bot avec Baileys...');
       
-      const authPath = path.join(__dirname, '../../whatsapp_auth');
+      // Déterminer le chemin pour sauvegarder les credentials
+      // Utiliser un chemin absolu pour garantir la persistance
+      const authPath = process.env.WHATSAPP_AUTH_PATH || path.join(__dirname, '../../whatsapp_auth');
+      
+      console.log(`[WHATSAPP] 📁 Chemin de sauvegarde des credentials: ${authPath}`);
       
       // Créer le dossier auth s'il n'existe pas
       if (!fs.existsSync(authPath)) {
+        console.log('[WHATSAPP] 📁 Création du dossier auth...');
         fs.mkdirSync(authPath, { recursive: true });
       }
+
+      // Vérifier les fichiers existants
+      const authFiles = fs.readdirSync(authPath);
+      console.log(`[WHATSAPP] 📁 Fichiers trouvés dans ${authPath}:`, authFiles.length > 0 ? authFiles : 'AUCUN');
 
       const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
       // Vérifier si une session existe déjà (vérifier la présence de me.id qui indique une authentification réelle)
       const hasExistingAuth = !!state.creds?.me?.id;
       if (hasExistingAuth) {
-        console.error('[WHATSAPP] ✅ Session authentifiée détectée - Reconnexion directe (ID: ' + state.creds.me.id + ')');
+        console.error('[WHATSAPP] ✅ Session authentifiée détectée - Reconnexion directe');
+        console.error(`[WHATSAPP] ✅ ID du téléphone: ${state.creds.me.id}`);
+        console.error(`[WHATSAPP] ✅ Plateforme: ${state.creds.platform || 'inconnue'}`);
       } else {
         console.error('[WHATSAPP] ⚠️  Pas de session authentifiée - Code d\'appairage sera généré');
       }
@@ -95,8 +106,16 @@ class WhatsAppBotService {
       this.messageHandlers = new WhatsAppMessageHandlers(this);
       console.log('[WHATSAPP] CommandHandler et MessageHandlers initialisés');
 
-      // Sauvegarder les credentials
-      this.sock.ev.on('creds.update', saveCreds);
+      // Sauvegarder les credentials à chaque mise à jour
+      this.sock.ev.on('creds.update', async (cred) => {
+        console.log('[WHATSAPP] 💾 Sauvegarde des credentials...');
+        try {
+          await saveCreds();
+          console.log('[WHATSAPP] ✅ Credentials sauvegardés avec succès');
+        } catch (error) {
+          console.error('[WHATSAPP] ❌ Erreur lors de la sauvegarde des credentials:', error.message);
+        }
+      });
 
       // Variable pour tracker si on a déjà généré le code
       let pairingCodeGenerated = false;

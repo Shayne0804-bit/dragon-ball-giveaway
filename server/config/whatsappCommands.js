@@ -32,6 +32,16 @@ module.exports = {
       usage: ".status",
       permission: "all"
     },
+    tonmaudia: {
+      description: "Réponse sarcastique aléatoire",
+      usage: ".tonmaudia",
+      permission: "all"
+    },
+    "ton maudia": {
+      description: "Réponse sarcastique aléatoire (variante)",
+      usage: ".ton maudia",
+      permission: "all"
+    },
   },
 
   // ===========================

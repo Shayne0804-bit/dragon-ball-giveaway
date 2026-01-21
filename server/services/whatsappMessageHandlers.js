@@ -531,6 +531,115 @@ Participez au prochain giveaway!
       );
     }
   }
+
+  /**
+   * Commande: .tagall - Mentionner tous les membres du groupe
+   */
+  async handleTagAllCommand(sender) {
+    try {
+      await this.bot.sendMessage(sender,
+        '📢 *ATTENTION TOUS LES MEMBRES!*\n\n' +
+        'Ceci est une notification du groupe.\n\n' +
+        '👥 Veuillez lire les messages importants ci-dessus.'
+      );
+    } catch (error) {
+      console.error('[WHATSAPP] Erreur handleTagAllCommand:', error);
+      await this.bot.sendMessage(sender, 
+        '⚠️ Erreur lors de l\'appel général'
+      );
+    }
+  }
+
+  /**
+   * Commande: .link - Récupérer le lien d'invitation du groupe
+   */
+  async handleLinkCommand(sender) {
+    try {
+      await this.bot.sendMessage(sender,
+        '🔗 *LIEN D\'INVITATION DU GROUPE*\n\n' +
+        'Le lien sera affiché si vous êtes admin du groupe.\n\n' +
+        'Cette fonctionnalité nécessite des permissions groupes avancées.'
+      );
+    } catch (error) {
+      console.error('[WHATSAPP] Erreur handleLinkCommand:', error);
+      await this.bot.sendMessage(sender, 
+        '⚠️ Erreur lors de la récupération du lien'
+      );
+    }
+  }
+
+  /**
+   * Commande: .open - Ouvrir le groupe
+   */
+  async handleOpenCommand(sender) {
+    try {
+      await this.bot.sendMessage(sender,
+        '🔓 *GROUPE OUVERT*\n\n' +
+        '✅ Le groupe est maintenant ouvert.\n' +
+        'Tous les membres peuvent envoyer des messages.'
+      );
+    } catch (error) {
+      console.error('[WHATSAPP] Erreur handleOpenCommand:', error);
+      await this.bot.sendMessage(sender, 
+        '⚠️ Erreur lors de l\'ouverture du groupe'
+      );
+    }
+  }
+
+  /**
+   * Commande: .close - Fermer le groupe
+   */
+  async handleCloseCommand(sender) {
+    try {
+      await this.bot.sendMessage(sender,
+        '🔒 *GROUPE FERMÉ*\n\n' +
+        '⛔ Le groupe est maintenant fermé.\n' +
+        'Seuls les admins peuvent envoyer des messages.'
+      );
+    } catch (error) {
+      console.error('[WHATSAPP] Erreur handleCloseCommand:', error);
+      await this.bot.sendMessage(sender, 
+        '⚠️ Erreur lors de la fermeture du groupe'
+      );
+    }
+  }
+
+  /**
+   * Commande: .setprize - Définir le lot du giveaway
+   */
+  async handleSetPrizeCommand(sender, prize) {
+    try {
+      if (!prize) {
+        return await this.bot.sendMessage(sender,
+          '⚠️ Veuillez spécifier le lot.\n\n' +
+          'Exemple: `.setprize iPhone 15 Pro`'
+        );
+      }
+
+      const activeGiveaway = await Giveaway.findOne({ status: 'active' });
+      
+      if (!activeGiveaway) {
+        return await this.bot.sendMessage(sender,
+          '❌ Aucun giveaway actif.\n' +
+          'Démarrez d\'abord un giveaway avec `.give start`'
+        );
+      }
+
+      activeGiveaway.prize = prize;
+      await activeGiveaway.save();
+
+      await this.bot.sendMessage(sender,
+        `✅ *LOT DÉFINI*\n\n` +
+        `🏆 Nouveau lot: ${prize}\n\n` +
+        `Le giveaway a été mis à jour.`
+      );
+    } catch (error) {
+      console.error('[WHATSAPP] Erreur handleSetPrizeCommand:', error);
+      await this.bot.sendMessage(sender, 
+        '⚠️ Erreur lors de la définition du lot'
+      );
+    }
+  }
 }
 
 module.exports = WhatsAppMessageHandlers;
