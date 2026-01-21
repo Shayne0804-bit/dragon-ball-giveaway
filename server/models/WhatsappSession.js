@@ -11,7 +11,6 @@ const whatsappSessionSchema = new mongoose.Schema(
       type: String,
       unique: true,
       default: 'default',
-      index: true,
     },
     
     // Données de credentials Baileys
@@ -34,7 +33,6 @@ const whatsappSessionSchema = new mongoose.Schema(
     // Numéro de téléphone connecté
     phoneNumber: {
       type: String,
-      index: true,
     },
     
     // ID du téléphone (me.id)

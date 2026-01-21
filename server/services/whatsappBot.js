@@ -110,7 +110,7 @@ class WhatsAppBotService {
       }
 
       // Vérifier si une session existe déjà (vérifier la présence de me.id qui indique une authentification réelle)
-      const hasExistingAuth = !!state.creds?.me?.id;
+      let hasExistingAuth = !!state.creds?.me?.id;
       if (hasExistingAuth) {
         console.log('[WHATSAPP] ✅ Session authentifiée détectée - Reconnexion directe');
         console.log(`[WHATSAPP] ✅ ID du téléphone: ${state.creds.me.id}`);
