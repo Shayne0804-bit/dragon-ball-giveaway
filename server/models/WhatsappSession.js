@@ -13,15 +13,19 @@ const whatsappSessionSchema = new mongoose.Schema(
       default: 'default',
     },
     
-    // Données de credentials Baileys
+    // Données de credentials Baileys - Stockées en JSON pur
     credentials: {
-      type: mongoose.Schema.Types.Mixed,
+      type: String, // Stocké en JSON string pour éviter les problèmes BSON Binary
       required: true,
+      get: (v) => v ? JSON.parse(v) : null,
+      set: (v) => typeof v === 'string' ? v : JSON.stringify(v),
     },
     
-    // État de la connexion
+    // État de la connexion - Stocké en JSON pur
     state: {
-      type: mongoose.Schema.Types.Mixed,
+      type: String, // Stocké en JSON string
+      get: (v) => v ? JSON.parse(v) : null,
+      set: (v) => v ? (typeof v === 'string' ? v : JSON.stringify(v)) : null,
     },
     
     // Timestamp de la dernière mise à jour
