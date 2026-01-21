@@ -7,6 +7,7 @@ const path = require('path');
 const axios = require('axios');
 const CommandHandler = require('./whatsappCommandHandler');
 const WhatsAppMessageHandlers = require('./whatsappMessageHandlers');
+const WhatsappSession = require('../models/WhatsappSession');
 
 class WhatsAppBotService {
   constructor() {
@@ -75,7 +76,24 @@ class WhatsAppBotService {
       const authFiles = fs.readdirSync(authPath);
       console.log(`[WHATSAPP] 📁 Fichiers trouvés dans ${authPath}:`, authFiles.length > 0 ? authFiles : 'AUCUN');
 
+      // Essayer de charger depuis MongoDB d'abord (pour persistance entre redéploiements)
+      let mongoSession = null;
+      try {
+        console.log('[WHATSAPP] 🔍 Recherche de session dans MongoDB...');
+        mongoSession = await this.loadSessionFromDatabase();
+      } catch (error) {
+        console.warn('[WHATSAPP] ⚠️  Impossible de charger depuis MongoDB:', error.message);
+      }
+
       const { state, saveCreds } = await useMultiFileAuthState(authPath);
+
+      // Si session dans MongoDB, restaurer les credentials
+      if (mongoSession && mongoSession.credentials) {
+        console.log('[WHATSAPP] ✅ Session restaurée depuis MongoDB');
+        if (state.creds) {
+          Object.assign(state.creds, mongoSession.credentials);
+        }
+      }
 
       // Vérifier si une session existe déjà (vérifier la présence de me.id qui indique une authentification réelle)
       const hasExistingAuth = !!state.creds?.me?.id;
@@ -110,8 +128,13 @@ class WhatsAppBotService {
       this.sock.ev.on('creds.update', async (cred) => {
         console.log('[WHATSAPP] 💾 Sauvegarde des credentials...');
         try {
+          // Sauvegarder dans les fichiers locaux
           await saveCreds();
-          console.log('[WHATSAPP] ✅ Credentials sauvegardés avec succès');
+          console.log('[WHATSAPP] ✅ Credentials sauvegardés localement');
+          
+          // Sauvegarder aussi dans MongoDB pour persistance entre redéploiements
+          await this.saveSessionToDatabase();
+          console.log('[WHATSAPP] ✅ Credentials sauvegardés dans MongoDB');
         } catch (error) {
           console.error('[WHATSAPP] ❌ Erreur lors de la sauvegarde des credentials:', error.message);
         }
@@ -419,6 +442,81 @@ class WhatsAppBotService {
    */
   isConnected() {
     return this.isReady && this.sock !== null;
+  }
+
+  /**
+   * Sauvegarder la session dans MongoDB pour persistance entre redéploiements
+   */
+  async saveSessionToDatabase() {
+    try {
+      if (!this.sock || !this.sock.authState || !this.sock.authState.creds) {
+        console.log('[WHATSAPP] 💾 Session non disponible pour sauvegarde MongoDB');
+        return false;
+      }
+
+      const credentials = this.sock.authState.creds;
+      const state = this.sock.authState.state;
+
+      const sessionData = {
+        credentials: credentials,
+        state: state,
+        phoneNumber: this.phoneNumber,
+        meId: credentials.me?.id,
+        connectionStatus: this.isReady ? 'connected' : 'disconnected',
+      };
+
+      const session = await WhatsappSession.findOneAndUpdate(
+        { sessionId: 'default' },
+        sessionData,
+        { upsert: true, new: true }
+      );
+
+      console.log('[WHATSAPP] ✅ Session sauvegardée dans MongoDB');
+      return true;
+    } catch (error) {
+      console.error('[WHATSAPP] ❌ Erreur lors de la sauvegarde MongoDB:', error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Charger la session depuis MongoDB
+   */
+  async loadSessionFromDatabase() {
+    try {
+      const session = await WhatsappSession.findOne({ sessionId: 'default' });
+
+      if (session && session.credentials) {
+        console.log('[WHATSAPP] ✅ Session trouvée dans MongoDB');
+        console.log(`[WHATSAPP] 📱 Téléphone: ${session.phoneNumber}`);
+        console.log(`[WHATSAPP] 🆔 ID: ${session.meId}`);
+        
+        return {
+          credentials: session.credentials,
+          state: session.state,
+        };
+      }
+
+      console.log('[WHATSAPP] ℹ️  Aucune session dans MongoDB');
+      return null;
+    } catch (error) {
+      console.error('[WHATSAPP] Erreur lors de la lecture MongoDB:', error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Supprimer la session de MongoDB
+   */
+  async deleteSessionFromDatabase() {
+    try {
+      await WhatsappSession.deleteOne({ sessionId: 'default' });
+      console.log('[WHATSAPP] 🗑️  Session supprimée de MongoDB');
+      return true;
+    } catch (error) {
+      console.error('[WHATSAPP] Erreur lors de la suppression:', error.message);
+      return false;
+    }
   }
 }
 
