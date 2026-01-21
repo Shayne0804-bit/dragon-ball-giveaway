@@ -101,22 +101,35 @@ class WhatsAppBotService {
       // Variable pour tracker si on a déjà généré le code
       let pairingCodeGenerated = false;
 
-      // Fallback: Générer le pairing code avec un délai si pas de session
-      if (!hasExistingAuth) {
-        setTimeout(async () => {
-          if (!pairingCodeGenerated && this.sock) {
-            console.error('[WHATSAPP] ⏰ Fallback: Tentative de génération du code d\'appairage (délai 3s)...');
+      // Événement QR/Pairing code
+      this.sock.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect, qr, isNewLogin } = update;
+        
+        console.error(`[WHATSAPP] Connection Update: connection=${connection}, qr=${qr ? 'REÇU' : 'null'}, hasExistingAuth=${hasExistingAuth}, pairingCodeGenerated=${pairingCodeGenerated}`);
+
+        // Si on a un QR et pas encore généré le code, générer le pairing code + afficher le QR
+        if (qr && !hasExistingAuth && !pairingCodeGenerated) {
+          pairingCodeGenerated = true;
+          try {
+            console.error('[WHATSAPP] 📲 QR event reçu - Génération du code d\'appairage...');
+            
+            // 1. Afficher le QR code directement
+            console.error('\n\n');
+            console.error('╔════════════════════════════════════════════════════════════╗');
+            console.error('║              📱 OPTION 1: SCANNER LE QR CODE               ║');
+            console.error('╚════════════════════════════════════════════════════════════╝');
+            qrcode.generate(qr, { small: false, width: 10 });
+            console.error('\n');
+
+            // 2. Générer et afficher le code d'appairage
             try {
-              console.error('[WHATSAPP] 🔧 Numéro du bot pour le pairing: ' + this.phoneNumber);
-              // Demander le code d'appairage Baileys valide
               const pairingCode = await this.sock.requestPairingCode(this.phoneNumber);
               console.error('[WHATSAPP] 📝 Code d\'appairage retourné par Baileys:', pairingCode);
               
-              if (pairingCode && pairingCode.length === 8 && !pairingCodeGenerated) {
-                pairingCodeGenerated = true;
-                console.error('\n\n');
+              if (pairingCode && pairingCode.length === 8) {
+                console.error('\n');
                 console.error('╔════════════════════════════════════════════════════════════╗');
-                console.error('║     🔐 PREMIÈRE CONNEXION - CODE D\'APPAIRAGE WhatsApp    ║');
+                console.error('║         🔐 OPTION 2: UTILISER LE CODE D\'APPAIRAGE        ║');
                 console.error('╚════════════════════════════════════════════════════════════╝');
                 console.error('');
                 console.error(`  📱 ENTREZ CE CODE dans votre téléphone WhatsApp:`);
@@ -132,63 +145,21 @@ class WhatsAppBotService {
                 console.error('╔════════════════════════════════════════════════════════════╗');
                 console.error('\n');
                 this.lastPairingCode = pairingCode;
-                console.error(`[WHATSAPP] ✅ Code d\'appairage VALIDE GÉNÉRÉ: ${pairingCode}`);
-                console.error('[WHATSAPP] ✅ Code d\'appairage sauvegardé. En attente de saisie...\n');
+                console.error(`[WHATSAPP] ✅ Code d\'appairage VALIDE: ${pairingCode}`);
+                console.error('[WHATSAPP] ✅ En attente de saisie du code ou scan du QR...\n');
               } else {
                 console.error('[WHATSAPP] ⚠️  Code d\'appairage invalide:', pairingCode);
-                console.error('[WHATSAPP] ⚠️  Attendu: 8 caractères alphanumériques (format Crockford)');
+                console.error('[WHATSAPP] ⚠️  Attendu: 8 caractères (format Crockford)');
+                console.error('[WHATSAPP] ℹ️  Utilisez le QR code pour vous connecter\n');
               }
             } catch (error) {
-              console.error('[WHATSAPP] ❌ Erreur fallback:', error.message);
-              console.error('[WHATSAPP] Stack fallback:', error.stack);
+              console.error('[WHATSAPP] ⚠️  Impossible de générer le code d\'appairage:', error.message);
+              console.error('[WHATSAPP] ℹ️  Utilisez le QR code pour vous connecter\n');
             }
-          }
-        }, 3000); // Attendre 3 secondes avant le fallback
-      }
-
-      // Événement QR/Pairing code
-      this.sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr, isNewLogin } = update;
-        
-        console.error(`[WHATSAPP] Connection Update: connection=${connection}, qr=${qr ? 'exists' : 'null'}, hasExistingAuth=${hasExistingAuth}, pairingCodeGenerated=${pairingCodeGenerated}`);
-
-        // Si on a un QR et pas encore généré le code, générer le pairing code
-        if (qr && !hasExistingAuth && !pairingCodeGenerated) {
-          pairingCodeGenerated = true;
-          try {
-            console.error('[WHATSAPP] 📲 QR event - Tentative de génération du code d\'appairage...');
-            const pairingCode = await this.sock.requestPairingCode(this.phoneNumber);
-            console.error('[WHATSAPP] 📝 Code d\'appairage retourné par Baileys (QR event):', pairingCode);
             
-            if (pairingCode && pairingCode.length === 8) {
-              console.error('\n\n');
-              console.error('╔════════════════════════════════════════════════════════════╗');
-              console.error('║     🔐 PREMIÈRE CONNEXION - CODE D\'APPAIRAGE WhatsApp    ║');
-              console.error('╚════════════════════════════════════════════════════════════╝');
-              console.error('');
-              console.error(`  📱 ENTREZ CE CODE dans votre téléphone WhatsApp:`);
-              console.error('');
-              console.error(`     ┌─────────────────────┐`);
-              console.error(`     │  ${pairingCode}      │`);
-              console.error(`     └─────────────────────┘`);
-              console.error('');
-              console.error('  ⏱️  Vous avez 60 secondes pour entrer ce code');
-              console.error('  📍 Allez dans: Paramètres → Appareils liés → Ajouter un appareil');
-              console.error('  💬 Puis sélectionnez "Utiliser un code d\'appairage"');
-              console.error('');
-              console.error('╔════════════════════════════════════════════════════════════╗');
-              console.error('\n');
-              this.lastPairingCode = pairingCode;
-              console.error(`[WHATSAPP] ✅ Code d\'appairage VALIDE (QR event): ${pairingCode}`);
-              console.error('[WHATSAPP] ✅ Code d\'appairage sauvegardé. En attente de saisie...\n');
-            } else {
-              console.error('[WHATSAPP] ⚠️  Code d\'appairage invalide du QR event:', pairingCode);
-              console.error('[WHATSAPP] ⚠️  Attendu: 8 caractères alphanumériques (format Crockford)');
-            }
           } catch (error) {
-            console.error('[WHATSAPP] ❌ Erreur lors de la génération du code d\'appairage (QR event):', error.message);
-            console.error('[WHATSAPP] Stack (QR event):', error.stack);
-            pairingCodeGenerated = false; // Permettre retry
+            console.error('[WHATSAPP] ❌ Erreur QR event:', error.message);
+            pairingCodeGenerated = false;
           }
         } else if (!qr && pairingCodeGenerated) {
           console.error('[WHATSAPP] ✓ QR/Code d\'appairage complété');
