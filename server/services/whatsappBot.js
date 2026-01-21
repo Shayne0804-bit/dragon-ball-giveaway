@@ -91,12 +91,19 @@ class WhatsAppBotService {
       if (mongoSession && mongoSession.credentials) {
         try {
           console.log('[WHATSAPP] 🔄 Restauration des credentials depuis MongoDB...');
-          // Copier les credentials restorés
-          state.creds = mongoSession.credentials;
-          if (mongoSession.state) {
-            Object.assign(state, mongoSession.state);
+          
+          // Vérifier que les credentials contiennent au minimum me.id
+          if (!mongoSession.credentials.me || !mongoSession.credentials.me.id) {
+            console.warn('[WHATSAPP] ⚠️  Credentials MongoDB invalides (me.id manquant) - Utilisation fichiers locaux');
+          } else {
+            // Credentials semble valides, les restaurer
+            state.creds = mongoSession.credentials;
+            if (mongoSession.state) {
+              Object.assign(state, mongoSession.state);
+            }
+            console.log('[WHATSAPP] ✅ Session restaurée depuis MongoDB');
+            console.log('[WHATSAPP] 📱 ID du téléphone restauré:', mongoSession.credentials.me.id);
           }
-          console.log('[WHATSAPP] ✅ Session restaurée depuis MongoDB');
         } catch (error) {
           console.warn('[WHATSAPP] ⚠️  Impossible de restaurer MongoDB, utilisation des fichiers locaux:', error.message);
         }
@@ -105,11 +112,11 @@ class WhatsAppBotService {
       // Vérifier si une session existe déjà (vérifier la présence de me.id qui indique une authentification réelle)
       const hasExistingAuth = !!state.creds?.me?.id;
       if (hasExistingAuth) {
-        console.error('[WHATSAPP] ✅ Session authentifiée détectée - Reconnexion directe');
-        console.error(`[WHATSAPP] ✅ ID du téléphone: ${state.creds.me.id}`);
-        console.error(`[WHATSAPP] ✅ Plateforme: ${state.creds.platform || 'inconnue'}`);
+        console.log('[WHATSAPP] ✅ Session authentifiée détectée - Reconnexion directe');
+        console.log(`[WHATSAPP] ✅ ID du téléphone: ${state.creds.me.id}`);
+        console.log(`[WHATSAPP] ✅ Plateforme: ${state.creds.platform || 'inconnue'}`);
       } else {
-        console.error('[WHATSAPP] ⚠️  Pas de session authentifiée - Code d\'appairage sera généré');
+        console.log('[WHATSAPP] ⚠️  Pas de session authentifiée - Code d\'appairage sera généré');
       }
 
       // Logger configuration
@@ -248,6 +255,30 @@ class WhatsAppBotService {
         // Déconnexion
         if (connection === 'close') {
           const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+          const errorCode = lastDisconnect?.error?.output?.statusCode;
+          const errorMessage = lastDisconnect?.error?.message;
+          
+          console.error(`[WHATSAPP] ❌ Déconnexion: Code=${errorCode}, Message=${errorMessage}`);
+          
+          // Si déconnexion immédiate après restauration MongoDB, les credentials sont mauvais
+          if (hasExistingAuth && this.reconnectAttempts === 0) {
+            console.error('[WHATSAPP] 🚨 DÉCONNEXION IMMÉDIATE! Les credentials MongoDB sont probablement invalides');
+            console.error('[WHATSAPP] 🔄 Suppression de la session MongoDB et génération d\'un nouveau QR...');
+            
+            // Supprimer la mauvaise session de MongoDB
+            await this.deleteSessionFromDatabase();
+            
+            // Effacer la session actuelle pour forcer un nouveau QR
+            hasExistingAuth = false;
+            this.reconnectAttempts = 0;
+            
+            // Attendre un peu avant de relancer
+            setTimeout(() => {
+              console.log('[WHATSAPP] 🔄 Relance de l\'initialisation...');
+              this.initialize();
+            }, 2000);
+            return;
+          }
           
           if (shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
             this.reconnectAttempts++;
