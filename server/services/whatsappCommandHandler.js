@@ -50,13 +50,14 @@ class CommandHandler {
    * Vérifier la permission de l'utilisateur
    */
   async checkPermission(userNumber, requiredPermission) {
-    // Nettoyer le numéro utilisateur (enlever @c.us et espaces)
+    // Nettoyer le numéro utilisateur (enlever @c.us, @lid et espaces)
     const cleanedUserNumber = userNumber
-      .replace('@c.us', '')
+      .replace(/@c.us|@lid|@g.us/g, '')  // Enlever tous les formats WhatsApp
       .replace(/\D/g, '') // Garder seulement les chiffres
       .trim();
 
     console.log(`[COMMANDS] 🔐 Vérification permission: ${userNumber} → ${cleanedUserNumber}`);
+    console.log(`[COMMANDS] 🔐 Format original: ${userNumber.split('@')[1] || 'DIRECT'}`);
     console.log(`[COMMANDS] 🔐 Numéros owners: ${JSON.stringify(this.ownerNumbers)}`);
 
     if (requiredPermission === 'all') {
@@ -250,6 +251,10 @@ Exemple: .ping
           await this.handleTonmaudiaCommand(sender);
           break;
 
+        case 'whoami':
+          await this.handleWhoamiCommand(sender);
+          break;
+
         case 'status':
           await this.bot.messageHandlers.handleStatusCommand(sender);
           break;
@@ -413,6 +418,16 @@ Exemple: .ping
     const randomInsult = insults[Math.floor(Math.random() * insults.length)];
     await this.bot.sendMessage(sender, randomInsult);
   }
+
+  /**
+   * Afficher l'ID de l'utilisateur (pour debugging)
+   */
+  async handleWhoamiCommand(sender) {
+    const cleanedNumber = sender.replace(/@c.us|@lid|@g.us/g, '').replace(/\D/g, '').trim();
+    const message = `👤 *Votre ID WhatsApp:*\n\n📱 Format complet: ${sender}\n🔢 Numéro nettoyé: ${cleanedNumber}\n\n_Pour ajouter ce numéro à la liste d'admin, configurez le dans .env_`;
+    await this.bot.sendMessage(sender, message);
+  }
+
 }
 
 module.exports = CommandHandler;

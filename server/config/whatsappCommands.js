@@ -42,6 +42,11 @@ module.exports = {
       usage: ".ton maudia",
       permission: "all"
     },
+    whoami: {
+      description: "Affiche votre ID WhatsApp (pour debugging)",
+      usage: ".whoami",
+      permission: "all"
+    },
   },
 
   // ===========================
