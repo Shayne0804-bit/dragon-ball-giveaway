@@ -238,12 +238,7 @@ Exemple: .ping
           break;
 
         case 'owner':
-          await this.bot.sendMessage(targetJid,
-            `👑 *CONTACT ADMINISTRATEUR*\n\n` +
-            `📱 Numéro: ${this.ownerNumbers[0]}\n` +
-            `💬 Répondez à ce message pour contacter l'admin\n\n` +
-            `Heures de support: 24/7`
-          );
+          await this.handleOwnerCommand(targetJid, sender);
           break;
 
         case 'tonmaudia':
@@ -429,6 +424,64 @@ Exemple: .ping
     const cleanedNumber = targetJid.replace(/@c.us|@lid|@g.us/g, '').replace(/\D/g, '').trim();
     const message = `👤 *Votre ID WhatsApp:*\n\n📱 Format complet: ${targetJid}\n🔢 Numéro nettoyé: ${cleanedNumber}\n\n_Pour ajouter ce numéro à la liste d'admin, configurez le dans .env_`;
     await this.bot.sendMessage(targetJid, message);
+  }
+
+  /**
+   * Afficher les numéros des administrateurs du groupe
+   */
+  async handleOwnerCommand(targetJid, sender) {
+    try {
+      // Vérifier si c'est un groupe
+      const isGroup = targetJid.includes('@g.us');
+      
+      if (isGroup) {
+        // C'est un groupe - afficher tous les admins du groupe
+        try {
+          const groupMetadata = await this.bot.sock.groupMetadata(targetJid);
+          const admins = groupMetadata.participants.filter(p => p.admin);
+          
+          if (admins.length === 0) {
+            return await this.bot.sendMessage(targetJid,
+              '⚠️ Aucun administrateur trouvé dans le groupe.'
+            );
+          }
+
+          let adminList = '👑 *ADMINISTRATEURS DU GROUPE*\n\n';
+          admins.forEach((admin, index) => {
+            const number = admin.id.replace(/@c.us|@s.whatsapp.net/g, '');
+            adminList += `${index + 1}. 📱 +${number}\n`;
+          });
+
+          adminList += `\n📊 Total: ${admins.length} administrateur(s)`;
+
+          await this.bot.sendMessage(targetJid, adminList);
+          console.log(`[COMMANDS] 👑 Liste des admins du groupe affichée - ${admins.length} admin(s)`);
+        } catch (error) {
+          console.error('[COMMANDS] Erreur lors de la récupération des admins du groupe:', error);
+          await this.bot.sendMessage(targetJid,
+            `⚠️ Erreur lors de la récupération des administrateurs.\n` +
+            `Détails: ${error.message}`
+          );
+        }
+      } else {
+        // Message direct - afficher les admins configurés
+        let adminList = '👑 *ADMINISTRATEURS CONFIGURÉS*\n\n';
+        this.ownerNumbers.forEach((number, index) => {
+          adminList += `${index + 1}. 📱 +${number}\n`;
+        });
+
+        adminList += `\n💬 Contactez l'un d'eux pour l'assistance.\n`;
+        adminList += `⏰ Heures de support: 24/7`;
+
+        await this.bot.sendMessage(targetJid, adminList);
+      }
+    } catch (error) {
+      console.error('[COMMANDS] Erreur handleOwnerCommand:', error);
+      await this.bot.sendMessage(targetJid,
+        `⚠️ Erreur lors de l'affichage des administrateurs.\n` +
+        `Détails: ${error.message}`
+      );
+    }
   }
 
 }

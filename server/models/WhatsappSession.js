@@ -30,6 +30,12 @@ const whatsappSessionSchema = new mongoose.Schema(
       default: Date.now,
     },
     
+    // Timestamp de la dernière sauvegarde réussie
+    lastSaved: {
+      type: Date,
+      default: Date.now,
+    },
+    
     // Numéro de téléphone connecté
     phoneNumber: {
       type: String,

@@ -81,8 +81,14 @@ class WhatsAppBotService {
       try {
         console.log('[WHATSAPP] 🔍 Recherche de session dans MongoDB...');
         mongoSession = await this.loadSessionFromDatabase();
+        if (mongoSession) {
+          console.log('[WHATSAPP] ✅ Session trouvée dans MongoDB - Cette session sera utilisée');
+        } else {
+          console.log('[WHATSAPP] ℹ️  Aucune session dans MongoDB');
+        }
       } catch (error) {
         console.warn('[WHATSAPP] ⚠️  Impossible de charger depuis MongoDB:', error.message);
+        console.warn('[WHATSAPP] ℹ️  Le bot essaiera de charger depuis les fichiers locaux');
       }
 
       const { state, saveCreds } = await useMultiFileAuthState(authPath);
@@ -146,6 +152,18 @@ class WhatsAppBotService {
           // MongoDB sera sauvegardé seulement à la connexion réussie
           await saveCreds();
           console.log('[WHATSAPP] ✅ Credentials sauvegardés localement');
+          
+          // AUSSI sauvegarder dans MongoDB immédiatement pour la persistance
+          // Mais vérifier que nous avons un ID valide
+          if (this.sock?.authState?.creds?.me?.id) {
+            try {
+              await this.saveSessionToDatabase();
+              console.log('[WHATSAPP] ✅ Credentials aussi sauvegardés dans MongoDB');
+            } catch (mongoError) {
+              console.warn('[WHATSAPP] ⚠️  Impossible de sauvegarder dans MongoDB:', mongoError.message);
+              console.warn('[WHATSAPP] ℹ️  Les credentials restent dans les fichiers locaux');
+            }
+          }
         } catch (error) {
           console.error('[WHATSAPP] ❌ Erreur lors de la sauvegarde locale:', error.message);
         }
@@ -518,12 +536,24 @@ class WhatsAppBotService {
       const credentials = this.sock.authState.creds;
       const state = this.sock.authState.state;
 
+      // Vérifier que nous avons les données critiques
+      if (!credentials.me || !credentials.me.id) {
+        console.warn('[WHATSAPP] ⚠️  Credentials invalides (me.id manquant) - Sauvegarde annulée');
+        return false;
+      }
+
+      console.log('[WHATSAPP] 💾 Préparation de la sauvegarde MongoDB...');
+      console.log('[WHATSAPP]   - ID du téléphone:', credentials.me.id);
+      console.log('[WHATSAPP]   - Numéro:', this.phoneNumber);
+      console.log('[WHATSAPP]   - État de connexion:', this.isReady ? 'connecté' : 'déconnecté');
+
       const sessionData = {
         credentials: credentials,
         state: state,
         phoneNumber: this.phoneNumber,
         meId: credentials.me?.id,
         connectionStatus: this.isReady ? 'connected' : 'disconnected',
+        lastSaved: new Date(),
       };
 
       const session = await WhatsappSession.findOneAndUpdate(
@@ -533,6 +563,7 @@ class WhatsAppBotService {
       );
 
       console.log('[WHATSAPP] ✅ Session sauvegardée dans MongoDB avec succès');
+      console.log('[WHATSAPP]   - ID: ' + session._id);
       return true;
     } catch (error) {
       console.error('[WHATSAPP] ❌ Erreur lors de la sauvegarde MongoDB:', error.message);
@@ -559,8 +590,16 @@ class WhatsAppBotService {
 
       if (session && session.credentials) {
         console.log('[WHATSAPP] ✅ Session trouvée dans MongoDB');
-        console.log(`[WHATSAPP] 📱 Téléphone: ${session.phoneNumber}`);
-        console.log(`[WHATSAPP] 🆔 ID: ${session.meId}`);
+        console.log(`[WHATSAPP]   - Téléphone: ${session.phoneNumber}`);
+        console.log(`[WHATSAPP]   - ID: ${session.meId}`);
+        console.log(`[WHATSAPP]   - État: ${session.connectionStatus}`);
+        console.log(`[WHATSAPP]   - Sauvegardée le: ${session.lastSaved}`);
+        
+        // Vérifier que les credentials sont valides
+        if (!session.credentials.me || !session.credentials.me.id) {
+          console.warn('[WHATSAPP] ⚠️  Session trouvée mais credentials invalides (me.id manquant)');
+          return null;
+        }
         
         return {
           credentials: session.credentials,
