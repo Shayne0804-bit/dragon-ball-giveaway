@@ -486,7 +486,8 @@ Pour désigner le gagnant!`;
       // Chercher le dernier giveaway terminé ou actif
       const giveaway = await Giveaway.findOne({ 
         status: { $in: ['active', 'ended'] }
-      }).sort({ createdAt: -1 });
+      }).sort({ createdAt: -1 })
+        .populate('photos');
 
       if (!giveaway) {
         return await this.bot.sendMessage(targetJid,
@@ -519,16 +520,32 @@ Pour désigner le gagnant!`;
       giveaway.status = 'finished';
       await giveaway.save();
 
-      const message = `
-*🎉 GAGNANT SÉLECTIONNÉ! 🎉*
+      const message = `*🎉 GAGNANT SÉLECTIONNÉ! 🎉*
 
 🎁 Giveaway: ${giveaway.name}
 🏆 Prix: ${giveaway.prize}
 
-👤 Gagnant ID: ${winner._id}
+👤 ID Gagnant: ${winner._id}
+🎊 Félicitations!
 
-✅ Giveaway terminé avec succès!
-      `.trim();
+✅ Giveaway terminé avec succès!`;
+
+      // Envoyer avec image si disponible
+      if (giveaway.photos && giveaway.photos.length > 0) {
+        const photo = giveaway.photos[0];
+        try {
+          const imageBuffer = Buffer.from(photo.imageData, 'base64');
+          await this.bot.sock.sendMessage(targetJid, {
+            image: imageBuffer,
+            caption: message,
+            mimetype: photo.mimetype || 'image/jpeg',
+          });
+          console.log('[WHATSAPP] 🏆 Gagnant désigné avec photo');
+          return;
+        } catch (imageError) {
+          console.warn('[WHATSAPP] ⚠️  Erreur envoi image:', imageError.message);
+        }
+      }
 
       await this.bot.sendMessage(targetJid, message);
     } catch (error) {
@@ -546,7 +563,8 @@ Pour désigner le gagnant!`;
     try {
       const activeGiveaway = await Giveaway.findOne({ 
         status: { $in: ['active', 'ended', 'finished'] }
-      }).sort({ createdAt: -1 });
+      }).sort({ createdAt: -1 })
+        .populate('photos');
 
       if (!activeGiveaway) {
         return await this.bot.sendMessage(targetJid,
@@ -555,18 +573,39 @@ Pour désigner le gagnant!`;
       }
 
       // Supprimer les participants
-      await Participant.deleteMany({ giveawayId: activeGiveaway._id });
+      const deleteResult = await Participant.deleteMany({ giveawayId: activeGiveaway._id });
 
       // Réinitialiser l'état
       activeGiveaway.status = 'active';
       await activeGiveaway.save();
 
-      await this.bot.sendMessage(targetJid,
-        `✅ Giveaway réinitialisé!\n\n` +
-        `🎁 ${activeGiveaway.name}\n` +
-        `👥 Participants: 0\n\n` +
-        `Prêt pour une nouvelle vague de participants!`
-      );
+      const message = `✅ *GIVEAWAY RÉINITIALISÉ!*
+
+🎁 ${activeGiveaway.name}
+👥 Participants supprimés: ${deleteResult.deletedCount}
+🏆 Prix: ${activeGiveaway.prize}
+
+📊 Compteur remis à zéro!
+Prêt pour une nouvelle vague!`;
+
+      // Envoyer avec image si disponible
+      if (activeGiveaway.photos && activeGiveaway.photos.length > 0) {
+        const photo = activeGiveaway.photos[0];
+        try {
+          const imageBuffer = Buffer.from(photo.imageData, 'base64');
+          await this.bot.sock.sendMessage(targetJid, {
+            image: imageBuffer,
+            caption: message,
+            mimetype: photo.mimetype || 'image/jpeg',
+          });
+          console.log('[WHATSAPP] 🔄 Giveaway réinitialisé avec photo');
+          return;
+        } catch (imageError) {
+          console.warn('[WHATSAPP] ⚠️  Erreur envoi image:', imageError.message);
+        }
+      }
+
+      await this.bot.sendMessage(targetJid, message);
     } catch (error) {
       console.error('[WHATSAPP] Erreur handleResetCommand:', error);
       await this.bot.sendMessage(targetJid, 
@@ -598,6 +637,7 @@ Pour désigner le gagnant!`;
       }
 
       let successCount = 0;
+      let failCount = 0;
       for (const user of users) {
         try {
           if (user.whatsapp?.number) {
@@ -608,13 +648,21 @@ Pour désigner le gagnant!`;
           }
         } catch (err) {
           console.error(`[WHATSAPP] Erreur broadcast pour ${user._id}:`, err.message);
+          failCount++;
         }
       }
 
-      await this.bot.sendMessage(targetJid,
-        `✅ Broadcast envoyé!\n\n` +
-        `📨 Messages envoyés: ${successCount}/${users.length}`
-      );
+      const broadcastMessage = `✅ *BROADCAST ENVOYÉ!*
+
+📨 Succès: ${successCount}
+❌ Erreurs: ${failCount}
+📊 Total: ${users.length}
+
+Message:
+"${message}"`;
+
+      await this.bot.sendMessage(targetJid, broadcastMessage);
+      console.log(`[WHATSAPP] 📢 Broadcast: ${successCount}/${users.length} réussi`);
     } catch (error) {
       console.error('[WHATSAPP] Erreur handleBroadcastCommand:', error);
       await this.bot.sendMessage(targetJid, 
@@ -628,29 +676,44 @@ Pour désigner le gagnant!`;
    */
   async handleRestartCommand(targetJid) {
     try {
+      const startTime = new Date();
+      
       await this.bot.sendMessage(targetJid,
-        `🔄 Redémarrage du bot en cours...\n\n` +
+        `🔄 *REDÉMARRAGE DU BOT*\n\n` +
+        `⏹️ Arrêt des services...\n` +
+        `💾 Sauvegarde des données...\n` +
         `⏳ Veuillez patienter...`
       );
+
+      console.log('[WHATSAPP] 🔄 Redémarrage initié');
 
       // Attendre un peu avant de redémarrer
       setTimeout(async () => {
         try {
           await this.bot.restart();
+          const uptime = Math.round((new Date() - startTime) / 1000);
+          
           await this.bot.sendMessage(targetJid, 
-            `✅ Bot redémarré avec succès!`
+            `✅ *BOT REDÉMARRÉ!*\n\n` +
+            `⏱️ Temps de redémarrage: ${uptime}s\n` +
+            `📱 Statut: En ligne\n` +
+            `✨ Tous les services actifs!`
           );
+          console.log(`[WHATSAPP] ✅ Bot redémarré en ${uptime}s`);
         } catch (err) {
           console.error('[WHATSAPP] Erreur lors du redémarrage:', err);
           await this.bot.sendMessage(targetJid, 
-            `❌ Erreur lors du redémarrage: ${err.message}`
+            `❌ *ERREUR REDÉMARRAGE*\n\n` +
+            `❌ Détails: ${err.message}\n` +
+            `🔧 Intervention manuelle requise`
           );
         }
-      }, 1000);
+      }, 1500);
     } catch (error) {
       console.error('[WHATSAPP] Erreur handleRestartCommand:', error);
       await this.bot.sendMessage(targetJid, 
-        '⚠️ Erreur lors du redémarrage'
+        '⚠️ Erreur lors du redémarrage\n' +
+        `Détails: ${error.message}`
       );
     }
   }
@@ -661,25 +724,44 @@ Pour désigner le gagnant!`;
   async handleModeCommand(targetJid, mode) {
     try {
       const validModes = ['public', 'private'];
+      const currentMode = process.env.WHATSAPP_MODE || 'public';
       
       if (!mode || !validModes.includes(mode.toLowerCase())) {
         return await this.bot.sendMessage(targetJid,
-          `❌ Utilisation: .mode <public|private>\n\n` +
-          `Mode actuel: ${process.env.WHATSAPP_MODE || 'public'}`
+          `❌ *CHANGEMENT DE MODE*\n\n` +
+          `📋 Utilisation: .mode <public|private>\n\n` +
+          `🔹 Mode actuel: ${currentMode.toUpperCase()}\n\n` +
+          `📋 Modes disponibles:\n` +
+          `  • public - Tous les utilisateurs\n` +
+          `  • private - Groupes admins uniquement`
         );
       }
 
-      // Vous pouvez implémenter la logique selon vos besoins
       const newMode = mode.toLowerCase();
+      const previousMode = currentMode;
 
-      await this.bot.sendMessage(targetJid,
-        `✅ Mode changé à: ${newMode.toUpperCase()}\n\n` +
-        `🔒 Le bot fonctionnera en mode ${newMode}.`
-      );
+      // Mettre à jour la variable d'environnement (en mémoire)
+      process.env.WHATSAPP_MODE = newMode;
+
+      const modeDescription = newMode === 'public' 
+        ? '🌍 Mode PUBLIC - Bot disponible pour tous' 
+        : '🔒 Mode PRIVÉ - Bot réservé aux admins';
+
+      const message = `✅ *MODE CHANGÉ!*\n\n` +
+        `⚙️ ${modeDescription}\n\n` +
+        `📊 Informations:\n` +
+        `  Mode précédent: ${previousMode.toUpperCase()}\n` +
+        `  Nouveau mode: ${newMode.toUpperCase()}\n` +
+        `  Statut: 🟢 Actif\n\n` +
+        `💡 Les changements s'appliqueront aux prochaines commandes.`;
+
+      await this.bot.sendMessage(targetJid, message);
+      console.log(`[WHATSAPP] ⚙️ Mode changé: ${previousMode} → ${newMode}`);
     } catch (error) {
       console.error('[WHATSAPP] Erreur handleModeCommand:', error);
       await this.bot.sendMessage(targetJid, 
-        '⚠️ Erreur lors du changement de mode'
+        '⚠️ Erreur lors du changement de mode\n' +
+        `Détails: ${error.message}`
       );
     }
   }
@@ -842,32 +924,63 @@ ${groupLink}
     try {
       if (!prize) {
         return await this.bot.sendMessage(targetJid,
-          '⚠️ Veuillez spécifier le lot.\n\n' +
-          'Exemple: `.setprize iPhone 15 Pro`'
+          `❌ *DÉFINITION DU LOT*\n\n` +
+          `📋 Utilisation: .setprize <lot>\n\n` +
+          `Exemple: .setprize iPhone 15 Pro Max\n\n` +
+          `💡 Vous pouvez ajouter une description du lot après le nom.`
         );
       }
 
-      const activeGiveaway = await Giveaway.findOne({ status: 'active' });
+      const activeGiveaway = await Giveaway.findOne({ status: 'active' })
+        .populate('photos');
       
       if (!activeGiveaway) {
         return await this.bot.sendMessage(targetJid,
-          '❌ Aucun giveaway actif.\n' +
-          'Démarrez d\'abord un giveaway avec `.give start`'
+          `❌ *PAS DE GIVEAWAY ACTIF*\n\n` +
+          `Démarrez d'abord un giveaway avec:\n` +
+          `.give start "NomGiveaway" "prix"`
         );
       }
 
+      const previousPrize = activeGiveaway.prize || 'Aucun';
       activeGiveaway.prize = prize;
       await activeGiveaway.save();
 
-      await this.bot.sendMessage(targetJid,
-        `✅ *LOT DÉFINI*\n\n` +
-        `🏆 Nouveau lot: ${prize}\n\n` +
-        `Le giveaway a été mis à jour.`
-      );
+      const participantCount = await Participant.countDocuments({ 
+        giveawayId: activeGiveaway._id 
+      });
+
+      const message = `✅ *LOT MIS À JOUR!*\n\n` +
+        `🎁 Giveaway: ${activeGiveaway.name}\n\n` +
+        `🏆 Ancien lot: ${previousPrize}\n` +
+        `🏅 Nouveau lot: ${prize}\n\n` +
+        `📊 Participants actuels: ${participantCount}\n` +
+        `✅ Statut: Mise à jour réussie!`;
+
+      // Envoyer avec image si disponible
+      if (activeGiveaway.photos && activeGiveaway.photos.length > 0) {
+        const photo = activeGiveaway.photos[0];
+        try {
+          const imageBuffer = Buffer.from(photo.imageData, 'base64');
+          await this.bot.sock.sendMessage(targetJid, {
+            image: imageBuffer,
+            caption: message,
+            mimetype: photo.mimetype || 'image/jpeg',
+          });
+          console.log('[WHATSAPP] 🎁 Lot mis à jour avec photo');
+          return;
+        } catch (imageError) {
+          console.warn('[WHATSAPP] ⚠️  Erreur envoi image:', imageError.message);
+        }
+      }
+
+      await this.bot.sendMessage(targetJid, message);
+      console.log(`[WHATSAPP] ✅ Lot changé: "${previousPrize}" → "${prize}"`);
     } catch (error) {
       console.error('[WHATSAPP] Erreur handleSetPrizeCommand:', error);
       await this.bot.sendMessage(targetJid, 
-        '⚠️ Erreur lors de la définition du lot'
+        '⚠️ Erreur lors de la définition du lot\n' +
+        `Détails: ${error.message}`
       );
     }
   }

@@ -8,11 +8,16 @@ const axios = require('axios');
 const CommandHandler = require('./whatsappCommandHandler');
 const WhatsAppMessageHandlers = require('./whatsappMessageHandlers');
 const WhatsappSession = require('../models/WhatsappSession');
+const redisService = require('./redisService');
+const WhatsAppHeartbeat = require('./whatsappHeartbeat');
 
 class WhatsAppBotService {
   constructor() {
     this.sock = null;
     this.isReady = false;
+    this.redis = redisService; // Injecter Redis
+    this.heartbeat = null; // Service heartbeat
+    
     // Nettoyer le numéro: enlever les espaces et caractères spéciaux, garder juste les chiffres
     const rawPhone = process.env.WHATSAPP_PHONE_NUMBER || '';
     // Extraire uniquement les chiffres
@@ -60,8 +65,13 @@ class WhatsAppBotService {
     try {
       console.log('[WHATSAPP] Initialisation du bot avec Baileys...');
       
+      // Initialiser Redis avec fallback
+      console.log('[WHATSAPP] 🔄 Initialisation de Redis...');
+      await this.redis.initialize();
+      const redisStats = await this.redis.getStats();
+      console.log(`[WHATSAPP] Redis mode: ${redisStats.mode} (Connecté: ${redisStats.redisConnected})`);
+      
       // Déterminer le chemin pour sauvegarder les credentials
-      // Utiliser un chemin absolu pour garantir la persistance
       const authPath = process.env.WHATSAPP_AUTH_PATH || path.join(__dirname, '../../whatsapp_auth');
       
       console.log(`[WHATSAPP] 📁 Chemin de sauvegarde des credentials: ${authPath}`);
@@ -76,46 +86,64 @@ class WhatsAppBotService {
       const authFiles = fs.readdirSync(authPath);
       console.log(`[WHATSAPP] 📁 Fichiers trouvés dans ${authPath}:`, authFiles.length > 0 ? authFiles : 'AUCUN');
 
-      // Essayer de charger depuis MongoDB d'abord (pour persistance entre redéploiements)
-      let mongoSession = null;
+      // Essayer de charger depuis Redis EN PRIORITÉ
+      let redisSession = null;
       try {
-        console.log('[WHATSAPP] 🔍 Recherche de session dans MongoDB...');
-        mongoSession = await this.loadSessionFromDatabase();
-        if (mongoSession) {
-          console.log('[WHATSAPP] ✅ Session trouvée dans MongoDB - Cette session sera utilisée');
+        console.log('[WHATSAPP] 🔍 Recherche de session dans Redis...');
+        redisSession = await this.redis.loadCredentials();
+        if (redisSession) {
+          console.log('[WHATSAPP] ✅ Session trouvée dans Redis - Restauration rapide');
         } else {
-          console.log('[WHATSAPP] ℹ️  Aucune session dans MongoDB');
+          console.log('[WHATSAPP] ℹ️  Aucune session dans Redis');
         }
       } catch (error) {
-        console.warn('[WHATSAPP] ⚠️  Impossible de charger depuis MongoDB:', error.message);
-        console.warn('[WHATSAPP] ℹ️  Le bot essaiera de charger depuis les fichiers locaux');
+        console.warn('[WHATSAPP] ⚠️  Impossible de charger depuis Redis:', error.message);
+      }
+
+      // Fallback: Essayer MongoDB si Redis n'a rien
+      let mongoSession = null;
+      if (!redisSession) {
+        try {
+          console.log('[WHATSAPP] 🔍 Recherche de session dans MongoDB (fallback)...');
+          mongoSession = await this.loadSessionFromDatabase();
+          if (mongoSession) {
+            console.log('[WHATSAPP] ✅ Session trouvée dans MongoDB - Fallback activé');
+          } else {
+            console.log('[WHATSAPP] ℹ️  Aucune session dans MongoDB');
+          }
+        } catch (error) {
+          console.warn('[WHATSAPP] ⚠️  Impossible de charger depuis MongoDB:', error.message);
+          console.warn('[WHATSAPP] ℹ️  Le bot essaiera de charger depuis les fichiers locaux');
+        }
       }
 
       const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
-      // Si session dans MongoDB, restaurer les credentials
-      if (mongoSession && mongoSession.credentials) {
+      // Restaurer les credentials - Priorité: Redis > MongoDB > Fichiers
+      let sessionToRestore = redisSession || mongoSession;
+      
+      if (sessionToRestore && sessionToRestore.credentials) {
         try {
-          console.log('[WHATSAPP] 🔄 Restauration des credentials depuis MongoDB...');
+          console.log('[WHATSAPP] 🔄 Restauration des credentials...');
           
           // Vérifier que les credentials contiennent au minimum me.id
-          if (!mongoSession.credentials.me || !mongoSession.credentials.me.id) {
-            console.warn('[WHATSAPP] ⚠️  Credentials MongoDB invalides (me.id manquant) - Utilisation fichiers locaux');
+          if (!sessionToRestore.credentials.me || !sessionToRestore.credentials.me.id) {
+            console.warn('[WHATSAPP] ⚠️  Credentials invalides (me.id manquant) - Utilisation fichiers locaux');
           } else {
             // Credentials semble valides, les restaurer
-            state.creds = mongoSession.credentials;
-            if (mongoSession.state) {
-              Object.assign(state, mongoSession.state);
+            state.creds = sessionToRestore.credentials;
+            if (sessionToRestore.state) {
+              Object.assign(state, sessionToRestore.state);
             }
-            console.log('[WHATSAPP] ✅ Session restaurée depuis MongoDB');
-            console.log('[WHATSAPP] 📱 ID du téléphone restauré:', mongoSession.credentials.me.id);
+            console.log('[WHATSAPP] ✅ Session restaurée');
+            console.log('[WHATSAPP] 📱 ID du téléphone restauré:', sessionToRestore.credentials.me.id);
           }
         } catch (error) {
-          console.warn('[WHATSAPP] ⚠️  Impossible de restaurer MongoDB, utilisation des fichiers locaux:', error.message);
+          console.warn('[WHATSAPP] ⚠️  Impossible de restaurer session, utilisation des fichiers locaux:', error.message);
         }
       }
 
-      // Vérifier si une session existe déjà (vérifier la présence de me.id qui indique une authentification réelle)
+      // Vérifier si une session existe déjà
       let hasExistingAuth = !!state.creds?.me?.id;
       if (hasExistingAuth) {
         console.log('[WHATSAPP] ✅ Session authentifiée détectée - Reconnexion directe');
@@ -136,7 +164,7 @@ class WhatsAppBotService {
         syncFullHistory: false,
         markOnlineOnConnect: true,
         generateHighQualityLinkPreview: true,
-        pairingCodeTimeoutMs: 60000, // 60 secondes pour entrer le code
+        pairingCodeTimeoutMs: 60000,
       });
 
       // Initialiser le gestionnaire de commandes
@@ -144,23 +172,26 @@ class WhatsAppBotService {
       this.messageHandlers = new WhatsAppMessageHandlers(this);
       console.log('[WHATSAPP] CommandHandler et MessageHandlers initialisés');
 
-      // Sauvegarder les credentials à chaque mise à jour (localement seulement)
+      // Sauvegarder les credentials à chaque mise à jour
       this.sock.ev.on('creds.update', async (cred) => {
         console.log('[WHATSAPP] 💾 Mise à jour des credentials détectée...');
         try {
-          // Sauvegarder SEULEMENT dans les fichiers locaux
-          // MongoDB sera sauvegardé seulement à la connexion réussie
+          // Sauvegarder dans les fichiers locaux
           await saveCreds();
           console.log('[WHATSAPP] ✅ Credentials sauvegardés localement');
           
-          // AUSSI sauvegarder dans MongoDB immédiatement pour la persistance
-          // Mais vérifier que nous avons un ID valide
+          // AUSSI sauvegarder dans Redis + MongoDB pour la persistance
           if (this.sock?.authState?.creds?.me?.id) {
             try {
+              // Priorité 1: Redis (le plus rapide)
+              await this.redis.saveCredentials(this.sock.authState.creds, 86400 * 30);
+              console.log('[WHATSAPP] ✅ Credentials sauvegardés dans Redis');
+              
+              // Priorité 2: MongoDB (fallback)
               await this.saveSessionToDatabase();
               console.log('[WHATSAPP] ✅ Credentials aussi sauvegardés dans MongoDB');
-            } catch (mongoError) {
-              console.warn('[WHATSAPP] ⚠️  Impossible de sauvegarder dans MongoDB:', mongoError.message);
+            } catch (backupError) {
+              console.warn('[WHATSAPP] ⚠️  Erreur sauvegarde backup:', backupError.message);
               console.warn('[WHATSAPP] ℹ️  Les credentials restent dans les fichiers locaux');
             }
           }
@@ -236,7 +267,6 @@ class WhatsAppBotService {
               console.error('[WHATSAPP] ⚠️  Impossible de générer le code d\'appairage:', error.message);
               console.error('[WHATSAPP] ℹ️  Utilisez le QR code pour vous connecter\n');
             }
-            
           } catch (error) {
             console.error('[WHATSAPP] ❌ Erreur QR event:', error.message);
             pairingCodeGenerated = false;
@@ -250,14 +280,29 @@ class WhatsAppBotService {
           this.isReady = true;
           this.reconnectAttempts = 0;
           
-          // Sauvegarder dans MongoDB UNIQUEMENT quand la connexion est réussie
+          // Sauvegarder dans Redis + MongoDB quand connexion réussie
           try {
-            console.log('[WHATSAPP] 💾 Sauvegarde de la session dans MongoDB...');
+            console.log('[WHATSAPP] 💾 Sauvegarde de la session (Redis + MongoDB)...');
+            
+            // Redis en priorité
+            if (this.sock?.authState?.creds) {
+              await this.redis.saveCredentials(this.sock.authState.creds, 86400 * 30);
+              console.log('[WHATSAPP] ✅ Session sauvegardée dans Redis');
+            }
+            
+            // MongoDB en backup
             await this.saveSessionToDatabase();
-            console.log('[WHATSAPP] ✅ Session sauvegardée dans MongoDB avec succès');
+            console.log('[WHATSAPP] ✅ Session aussi sauvegardée dans MongoDB');
           } catch (error) {
-            console.error('[WHATSAPP] ❌ Erreur lors de la sauvegarde MongoDB:', error.message);
-            console.error('[WHATSAPP] ⚠️  MongoDB non disponible? Connexion continue mais sans persistance');
+            console.error('[WHATSAPP] ❌ Erreur lors de la sauvegarde:', error.message);
+            console.error('[WHATSAPP] ⚠️  La connexion continue mais sans persistance optimale');
+          }
+          
+          // Démarrer le heartbeat si pas déjà démarré
+          if (!this.heartbeat) {
+            console.log('[WHATSAPP] 💓 Démarrage du service Heartbeat...');
+            this.heartbeat = new WhatsAppHeartbeat(this);
+            this.heartbeat.start();
           }
           
           if (!hasExistingAuth) {
@@ -486,6 +531,18 @@ class WhatsAppBotService {
    */
   async stop() {
     try {
+      // Arrêter le heartbeat
+      if (this.heartbeat) {
+        this.heartbeat.stop();
+        this.heartbeat = null;
+      }
+      
+      // Arrêter Redis
+      if (this.redis) {
+        await this.redis.disconnect();
+      }
+      
+      // Arrêter le socket
       if (this.sock) {
         await this.sock.logout();
         this.isReady = false;
