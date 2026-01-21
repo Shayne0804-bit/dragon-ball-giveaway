@@ -325,14 +325,21 @@ class WhatsAppBotService {
           continue;
         }
 
-        const sender = message.key.remoteJid;
+        const remoteJid = message.key.remoteJid;
+        const participant = message.key.participant; // Auteur réel dans un groupe
+        
+        // Dans un groupe, utiliser le participant (numéro réel de l'utilisateur)
+        // Dans un chat direct, utiliser remoteJid (numéro du contact)
+        const sender = participant || remoteJid;
+        const isGroup = remoteJid.includes('@g.us');
+        
         const messageBody = message.message?.conversation || 
                            message.message?.extendedTextMessage?.text || '';
 
-        console.log(`[WHATSAPP] Message de ${sender}: ${messageBody}`);
+        console.log(`[WHATSAPP] Message${isGroup ? ' (GROUPE)' : ''} de ${sender}: ${messageBody}`);
 
         // Traiter le message
-        await this.processMessage(sender, messageBody);
+        await this.processMessage(sender, messageBody, remoteJid);
       }
     } catch (error) {
       console.error('[WHATSAPP] Erreur lors du traitement des messages:', error.message);
@@ -342,7 +349,7 @@ class WhatsAppBotService {
   /**
    * Traiter un message spécifique
    */
-  async processMessage(sender, messageBody) {
+  async processMessage(sender, messageBody, remoteJid) {
     try {
       // Ignorer les messages vides
       if (!messageBody || messageBody.trim().length === 0) {
