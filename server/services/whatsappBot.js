@@ -256,6 +256,11 @@ class WhatsAppBotService {
    */
   async processMessage(sender, messageBody) {
     try {
+      // Ignorer les messages vides
+      if (!messageBody || messageBody.trim().length === 0) {
+        return;
+      }
+
       // Check if message starts with command prefix
       const prefix = process.env.WHATSAPP_COMMAND_PREFIX || '.';
       
@@ -264,6 +269,7 @@ class WhatsAppBotService {
         if (this.commandHandler) {
           const parsed = this.commandHandler.parseCommand(messageBody);
           if (parsed) {
+            console.log(`[WHATSAPP] Commande détectée: ${parsed.command}`);
             await this.commandHandler.handleCommand(
               parsed.command,
               parsed.args,
@@ -275,17 +281,13 @@ class WhatsAppBotService {
         }
       }
       
-      // Default response for non-command messages
-      await this.sendMessage(sender, 
-        `👋 Bienvenue sur Dragon Ball Giveaway!\n\n` +
-        `Tapez ${prefix}help pour voir les commandes disponibles.\n\n` +
-        `🎁 Lien du site: ${this.siteUrl}`
-      );
+      // ⚠️ NE PAS répondre automatiquement à tous les messages
+      // Cela cause du spam dans les groupes et discussions
+      // Le bot répondra UNIQUEMENT aux commandes
+      console.log(`[WHATSAPP] Message standard ignoré (pas une commande): ${messageBody.substring(0, 50)}`);
+      
     } catch (error) {
       console.error('[WHATSAPP] Erreur lors du traitement du message:', error.message);
-      await this.sendMessage(sender, 
-        '⚠️ Une erreur est survenue lors du traitement de votre message'
-      );
     }
   }
 
