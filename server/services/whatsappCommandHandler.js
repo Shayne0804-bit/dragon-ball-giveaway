@@ -176,7 +176,10 @@ Exemple: .ping
   /**
    * Traiter une commande
    */
-  async handleCommand(command, args, sender, whatsappBot) {
+  async handleCommand(command, args, sender, whatsappBot, remoteJid = null) {
+    // Si remoteJid non fourni, utiliser sender (pour rétro-compatibilité)
+    const targetJid = remoteJid || sender;
+    
     // Essayer de construire des commandes multi-mots
     // Ex: "give start" au lieu de "give" + "start"
     let fullCommand = command;
@@ -196,7 +199,7 @@ Exemple: .ping
     // Commande non trouvée
     if (!commandInfo) {
       console.log(`[COMMANDS] ❌ Commande inconnue: ${this.commandPrefix}${fullCommand}`);
-      return await this.bot.sendMessage(sender, 
+      return await this.bot.sendMessage(targetJid, 
         `❌ Commande inconnue: ${this.commandPrefix}${fullCommand}\n\n` +
         `Tapez ${this.commandPrefix}menu pour voir toutes les commandes.`
       );
@@ -208,7 +211,7 @@ Exemple: .ping
     const hasPermission = await this.checkPermission(sender, commandInfo.permission);
     if (!hasPermission) {
       console.log(`[COMMANDS] ❌ Permission refusée pour ${sender} - Commande: ${fullCommand}`);
-      return await this.bot.sendMessage(sender,
+      return await this.bot.sendMessage(targetJid,
         `❌ Vous n'avez pas les permissions pour utiliser cette commande.\n` +
         `${commandInfo.usage} - ${commandInfo.description}`
       );
@@ -220,22 +223,22 @@ Exemple: .ping
     try {
       switch (fullCommand) {
         case 'menu':
-          await this.bot.sendMessage(sender, this.generateMenu());
+          await this.bot.sendMessage(targetJid, this.generateMenu());
           break;
 
         case 'help':
-          await this.bot.sendMessage(sender, this.generateHelp());
+          await this.bot.sendMessage(targetJid, this.generateHelp());
           break;
 
         case 'ping':
           const uptime = Math.floor(process.uptime() / 60);
-          await this.bot.sendMessage(sender, 
+          await this.bot.sendMessage(targetJid, 
             `🏓 *PONG!*\n\nLe bot répond correctement!\n⏱️ Uptime: ${uptime} minutes`
           );
           break;
 
         case 'owner':
-          await this.bot.sendMessage(sender,
+          await this.bot.sendMessage(targetJid,
             `👑 *CONTACT ADMINISTRATEUR*\n\n` +
             `📱 Numéro: ${this.ownerNumbers[0]}\n` +
             `💬 Répondez à ce message pour contacter l'admin\n\n` +
@@ -244,87 +247,87 @@ Exemple: .ping
           break;
 
         case 'tonmaudia':
-          await this.handleTonmaudiaCommand(sender);
+          await this.handleTonmaudiaCommand(targetJid);
           break;
 
         case 'ton maudia':
-          await this.handleTonmaudiaCommand(sender);
+          await this.handleTonmaudiaCommand(targetJid);
           break;
 
         case 'whoami':
-          await this.handleWhoamiCommand(sender);
+          await this.handleWhoamiCommand(targetJid);
           break;
 
         case 'status':
-          await this.bot.messageHandlers.handleStatusCommand(sender);
+          await this.bot.messageHandlers.handleStatusCommand(targetJid);
           break;
 
         case 'give info':
-          await this.bot.messageHandlers.handleGiveInfoCommand(sender);
+          await this.bot.messageHandlers.handleGiveInfoCommand(targetJid);
           break;
 
         case 'give prize':
-          await this.bot.messageHandlers.handleGivePrizeCommand(sender);
+          await this.bot.messageHandlers.handleGivePrizeCommand(targetJid);
           break;
 
         case 'give link':
-          await this.bot.messageHandlers.handleGiveLinkCommand(sender);
+          await this.bot.messageHandlers.handleGiveLinkCommand(targetJid);
           break;
 
         case 'give participants':
-          await this.bot.messageHandlers.handleGiveParticipantsCommand(sender);
+          await this.bot.messageHandlers.handleGiveParticipantsCommand(targetJid);
           break;
 
         case 'winner':
-          await this.bot.messageHandlers.handleWinnerCommand(sender);
+          await this.bot.messageHandlers.handleWinnerCommand(targetJid);
           break;
 
         case 'give start':
-          await this.bot.messageHandlers.handleGiveStartCommand(sender, commandArgs);
+          await this.bot.messageHandlers.handleGiveStartCommand(targetJid, commandArgs);
           break;
 
         case 'give end':
-          await this.bot.messageHandlers.handleGiveEndCommand(sender);
+          await this.bot.messageHandlers.handleGiveEndCommand(targetJid);
           break;
 
         case 'draw':
-          await this.bot.messageHandlers.handleDrawCommand(sender);
+          await this.bot.messageHandlers.handleDrawCommand(targetJid);
           break;
 
         case 'reset':
-          await this.bot.messageHandlers.handleResetCommand(sender);
+          await this.bot.messageHandlers.handleResetCommand(targetJid);
           break;
 
         case 'broadcast':
-          await this.bot.messageHandlers.handleBroadcastCommand(sender, commandArgs.join(' '));
+          await this.bot.messageHandlers.handleBroadcastCommand(targetJid, commandArgs.join(' '));
           break;
 
         case 'restart':
-          await this.bot.messageHandlers.handleRestartCommand(sender);
+          await this.bot.messageHandlers.handleRestartCommand(targetJid);
           break;
 
         case 'mode':
-          await this.bot.messageHandlers.handleModeCommand(sender, commandArgs[0]);
+          await this.bot.messageHandlers.handleModeCommand(targetJid, commandArgs[0]);
           break;
 
         case 'tagall':
-          await this.bot.messageHandlers.handleTagAllCommand(sender);
+          await this.bot.messageHandlers.handleTagAllCommand(targetJid);
           break;
 
         case 'link':
-          await this.bot.messageHandlers.handleLinkCommand(sender);
+          await this.bot.messageHandlers.handleLinkCommand(targetJid);
           break;
 
         case 'open':
-          await this.bot.messageHandlers.handleOpenCommand(sender);
+          await this.bot.messageHandlers.handleOpenCommand(targetJid);
           break;
 
         case 'close':
-          await this.bot.messageHandlers.handleCloseCommand(sender);
+          await this.bot.messageHandlers.handleCloseCommand(targetJid);
           break;
 
         case 'setprize':
-          await this.bot.messageHandlers.handleSetPrizeCommand(sender, commandArgs.join(' '));
+          await this.bot.messageHandlers.handleSetPrizeCommand(targetJid, commandArgs.join(' '));
           break;
 
         default:
@@ -366,7 +369,7 @@ Exemple: .ping
   /**
    * Générer une réponse sarcastique/caustique aléatoire (Insultes Ivoiriennes)
    */
-  async handleTonmaudiaCommand(sender) {
+  async handleTonmaudiaCommand(targetJid) {
     const insults = [
       "🇮🇻 Ton maudia tu es débile! Débile complet même les poubelles te rejettent!",
       "😏 Ton maudia c'est un nul! Tu fais honte à ta maman et à tout le village!",
@@ -416,16 +419,16 @@ Exemple: .ping
     ];
 
     const randomInsult = insults[Math.floor(Math.random() * insults.length)];
-    await this.bot.sendMessage(sender, randomInsult);
+    await this.bot.sendMessage(targetJid, randomInsult);
   }
 
   /**
    * Afficher l'ID de l'utilisateur (pour debugging)
    */
-  async handleWhoamiCommand(sender) {
-    const cleanedNumber = sender.replace(/@c.us|@lid|@g.us/g, '').replace(/\D/g, '').trim();
-    const message = `👤 *Votre ID WhatsApp:*\n\n📱 Format complet: ${sender}\n🔢 Numéro nettoyé: ${cleanedNumber}\n\n_Pour ajouter ce numéro à la liste d'admin, configurez le dans .env_`;
-    await this.bot.sendMessage(sender, message);
+  async handleWhoamiCommand(targetJid) {
+    const cleanedNumber = targetJid.replace(/@c.us|@lid|@g.us/g, '').replace(/\D/g, '').trim();
+    const message = `👤 *Votre ID WhatsApp:*\n\n📱 Format complet: ${targetJid}\n🔢 Numéro nettoyé: ${cleanedNumber}\n\n_Pour ajouter ce numéro à la liste d'admin, configurez le dans .env_`;
+    await this.bot.sendMessage(targetJid, message);
   }
 
 }

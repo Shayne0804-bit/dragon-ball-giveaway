@@ -369,7 +369,8 @@ class WhatsAppBotService {
               parsed.command,
               parsed.args,
               sender,
-              this
+              this,
+              remoteJid  // Ajouter le remoteJid pour envoyer au groupe/contact correct
             );
             return;
           }
