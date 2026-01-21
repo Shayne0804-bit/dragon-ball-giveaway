@@ -788,14 +788,24 @@ Message:
         );
       }
 
-      // Créer le message avec mentions
+      // Créer le message avec mentions @ pour chaque membre
       const mentionedJids = members.map(member => member.id);
       
+      // Créer les mentions avec @
+      let mentionText = '📢 *ATTENTION TOUS LES MEMBRES!*\n\n';
+      
+      // Ajouter chaque mention avec @
+      for (const member of members) {
+        const displayName = groupMetadata.subject || 'Groupe';
+        mentionText += `@${member.id.replace('@s.whatsapp.net', '')} `;
+      }
+      
+      mentionText += `\n\n👥 Vous avez tous été mentionnés.\n` +
+                     `📌 Veuillez lire les messages importants du groupe.\n\n` +
+                     `Total de membres: ${members.length}`;
+      
       const message = {
-        text: `📢 *ATTENTION TOUS LES MEMBRES!*\n\n` +
-              `👥 Vous avez tous été mentionnés.\n` +
-              `📌 Veuillez lire les messages importants du groupe.\n\n` +
-              `Total de membres: ${members.length}`,
+        text: mentionText,
         mentions: mentionedJids,
       };
 
