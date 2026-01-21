@@ -1,7 +1,7 @@
 const makeWASocket = require('@whiskeysockets/baileys').default;
 const { useMultiFileAuthState, DisconnectReason, isJidBroadcast } = require('@whiskeysockets/baileys');
 const P = require('pino');
-const qrcode = require('qrcode-terminal');
+const QRCode = require('qrcode');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
@@ -111,15 +111,24 @@ class WhatsAppBotService {
         if (qr && !hasExistingAuth && !pairingCodeGenerated) {
           pairingCodeGenerated = true;
           try {
-            console.error('[WHATSAPP] 📲 QR event reçu - Génération du code d\'appairage...');
+            console.error('[WHATSAPP] 📲 QR event reçu - Génération du code d\'appairage et URL QR...');
             
-            // 1. Afficher le QR code directement
-            console.error('\n\n');
-            console.error('╔════════════════════════════════════════════════════════════╗');
-            console.error('║              📱 OPTION 1: SCANNER LE QR CODE               ║');
-            console.error('╚════════════════════════════════════════════════════════════╝');
-            qrcode.generate(qr, { small: false, width: 10 });
-            console.error('\n');
+            // 1. Générer une URL QR code scannable
+            try {
+              const qrUrl = await QRCode.toDataURL(qr);
+              console.error('\n\n');
+              console.error('╔════════════════════════════════════════════════════════════╗');
+              console.error('║              📱 OPTION 1: SCANNER LE QR CODE               ║');
+              console.error('╚════════════════════════════════════════════════════════════╝');
+              console.error('');
+              console.error('🔗 URL du QR Code (copier dans un navigateur):');
+              console.error(`   https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(qr)}`);
+              console.error('');
+              console.error('📱 Ou scanner le code directement avec votre téléphone WhatsApp');
+              console.error('\n');
+            } catch (qrError) {
+              console.error('[WHATSAPP] ⚠️  Impossible de générer l\'URL QR:', qrError.message);
+            }
 
             // 2. Générer et afficher le code d'appairage
             try {
@@ -127,7 +136,7 @@ class WhatsAppBotService {
               console.error('[WHATSAPP] 📝 Code d\'appairage retourné par Baileys:', pairingCode);
               
               if (pairingCode && pairingCode.length === 8) {
-                console.error('\n');
+                console.error('');
                 console.error('╔════════════════════════════════════════════════════════════╗');
                 console.error('║         🔐 OPTION 2: UTILISER LE CODE D\'APPAIRAGE        ║');
                 console.error('╚════════════════════════════════════════════════════════════╝');
