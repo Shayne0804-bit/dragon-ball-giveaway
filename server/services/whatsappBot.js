@@ -89,9 +89,16 @@ class WhatsAppBotService {
 
       // Si session dans MongoDB, restaurer les credentials
       if (mongoSession && mongoSession.credentials) {
-        console.log('[WHATSAPP] ✅ Session restaurée depuis MongoDB');
-        if (state.creds) {
-          Object.assign(state.creds, mongoSession.credentials);
+        try {
+          console.log('[WHATSAPP] 🔄 Restauration des credentials depuis MongoDB...');
+          // Copier les credentials restorés
+          state.creds = mongoSession.credentials;
+          if (mongoSession.state) {
+            Object.assign(state, mongoSession.state);
+          }
+          console.log('[WHATSAPP] ✅ Session restaurée depuis MongoDB');
+        } catch (error) {
+          console.warn('[WHATSAPP] ⚠️  Impossible de restaurer MongoDB, utilisation des fichiers locaux:', error.message);
         }
       }
 
@@ -457,6 +464,13 @@ class WhatsAppBotService {
    */
   async saveSessionToDatabase() {
     try {
+      // Vérifier que Mongoose est connecté
+      const mongooseState = require('mongoose').connection.readyState;
+      if (mongooseState !== 1) {
+        console.warn('[WHATSAPP] ⚠️  MongoDB non connecté (état:', mongooseState, ') - Sauvegarde échouée');
+        return false;
+      }
+
       if (!this.sock || !this.sock.authState || !this.sock.authState.creds) {
         console.log('[WHATSAPP] 💾 Session non disponible pour sauvegarde MongoDB');
         return false;
@@ -479,10 +493,12 @@ class WhatsAppBotService {
         { upsert: true, new: true }
       );
 
-      console.log('[WHATSAPP] ✅ Session sauvegardée dans MongoDB');
+      console.log('[WHATSAPP] ✅ Session sauvegardée dans MongoDB avec succès');
       return true;
     } catch (error) {
       console.error('[WHATSAPP] ❌ Erreur lors de la sauvegarde MongoDB:', error.message);
+      console.error('[WHATSAPP] ⚠️  Stack:', error.stack);
+      console.error('[WHATSAPP] ℹ️  La session reste sauvegardée localement (whatsapp_auth/)');
       return false;
     }
   }
@@ -492,6 +508,14 @@ class WhatsAppBotService {
    */
   async loadSessionFromDatabase() {
     try {
+      // Vérifier que Mongoose est connecté
+      const mongooseState = require('mongoose').connection.readyState;
+      if (mongooseState !== 1) {
+        console.log('[WHATSAPP] ⚠️  MongoDB non connecté (état:', mongooseState, ')');
+        return null;
+      }
+
+      console.log('[WHATSAPP] 🔍 Recherche de session dans MongoDB...');
       const session = await WhatsappSession.findOne({ sessionId: 'default' });
 
       if (session && session.credentials) {
@@ -508,7 +532,8 @@ class WhatsAppBotService {
       console.log('[WHATSAPP] ℹ️  Aucune session dans MongoDB');
       return null;
     } catch (error) {
-      console.error('[WHATSAPP] Erreur lors de la lecture MongoDB:', error.message);
+      console.error('[WHATSAPP] ❌ Erreur lors de la lecture MongoDB:', error.message);
+      console.error('[WHATSAPP] ⚠️  Stack:', error.stack);
       return null;
     }
   }
@@ -518,6 +543,13 @@ class WhatsAppBotService {
    */
   async deleteSessionFromDatabase() {
     try {
+      // Vérifier que Mongoose est connecté
+      const mongooseState = require('mongoose').connection.readyState;
+      if (mongooseState !== 1) {
+        console.log('[WHATSAPP] ⚠️  MongoDB non connecté - Impossible de supprimer');
+        return false;
+      }
+
       await WhatsappSession.deleteOne({ sessionId: 'default' });
       console.log('[WHATSAPP] 🗑️  Session supprimée de MongoDB');
       return true;
