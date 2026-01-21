@@ -124,19 +124,16 @@ class WhatsAppBotService {
       this.messageHandlers = new WhatsAppMessageHandlers(this);
       console.log('[WHATSAPP] CommandHandler et MessageHandlers initialisés');
 
-      // Sauvegarder les credentials à chaque mise à jour
+      // Sauvegarder les credentials à chaque mise à jour (localement seulement)
       this.sock.ev.on('creds.update', async (cred) => {
-        console.log('[WHATSAPP] 💾 Sauvegarde des credentials...');
+        console.log('[WHATSAPP] 💾 Mise à jour des credentials détectée...');
         try {
-          // Sauvegarder dans les fichiers locaux
+          // Sauvegarder SEULEMENT dans les fichiers locaux
+          // MongoDB sera sauvegardé seulement à la connexion réussie
           await saveCreds();
           console.log('[WHATSAPP] ✅ Credentials sauvegardés localement');
-          
-          // Sauvegarder aussi dans MongoDB pour persistance entre redéploiements
-          await this.saveSessionToDatabase();
-          console.log('[WHATSAPP] ✅ Credentials sauvegardés dans MongoDB');
         } catch (error) {
-          console.error('[WHATSAPP] ❌ Erreur lors de la sauvegarde des credentials:', error.message);
+          console.error('[WHATSAPP] ❌ Erreur lors de la sauvegarde locale:', error.message);
         }
       });
 
@@ -220,6 +217,17 @@ class WhatsAppBotService {
         if (connection === 'open') {
           this.isReady = true;
           this.reconnectAttempts = 0;
+          
+          // Sauvegarder dans MongoDB UNIQUEMENT quand la connexion est réussie
+          try {
+            console.log('[WHATSAPP] 💾 Sauvegarde de la session dans MongoDB...');
+            await this.saveSessionToDatabase();
+            console.log('[WHATSAPP] ✅ Session sauvegardée dans MongoDB avec succès');
+          } catch (error) {
+            console.error('[WHATSAPP] ❌ Erreur lors de la sauvegarde MongoDB:', error.message);
+            console.error('[WHATSAPP] ⚠️  MongoDB non disponible? Connexion continue mais sans persistance');
+          }
+          
           if (!hasExistingAuth) {
             console.log('[WHATSAPP] ✅ Authentification réussie');
             console.log('[WHATSAPP] 📝 Session sauvegardée pour les redémarrages futurs');
