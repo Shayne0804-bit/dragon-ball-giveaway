@@ -202,6 +202,8 @@ class WhatsAppBotService {
 
       // Variable pour tracker si on a déjà généré le code
       let pairingCodeGenerated = false;
+      let connectionStartTime = null;
+      let attemptingRestoredSession = hasExistingAuth; // Track si on essaie une session restaurée
 
       // Événement QR/Pairing code
       this.sock.ev.on('connection.update', async (update) => {
@@ -209,9 +211,16 @@ class WhatsAppBotService {
         
         console.error(`[WHATSAPP] Connection Update: connection=${connection}, qr=${qr ? 'REÇU' : 'null'}, hasExistingAuth=${hasExistingAuth}, pairingCodeGenerated=${pairingCodeGenerated}`);
 
+        // Démarrer le timer si on vient de démarrer une connexion
+        if (connection === 'connecting' && !connectionStartTime) {
+          connectionStartTime = Date.now();
+          console.log('[WHATSAPP] ⏱️  Début de la tentative de connexion');
+        }
+
         // Si on a un QR et pas encore généré le code, générer le pairing code + afficher le QR
-        if (qr && !hasExistingAuth && !pairingCodeGenerated) {
+        if (qr && !pairingCodeGenerated) {
           pairingCodeGenerated = true;
+          attemptingRestoredSession = false; // On génère un nouveau QR = nouvelle session
           try {
             console.error('[WHATSAPP] 📲 QR event reçu - Génération du code d\'appairage et URL QR...');
             
@@ -320,24 +329,38 @@ class WhatsAppBotService {
           const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
           const errorCode = lastDisconnect?.error?.output?.statusCode;
           const errorMessage = lastDisconnect?.error?.message;
+          const connectionDuration = connectionStartTime ? (Date.now() - connectionStartTime) / 1000 : null;
           
           console.error(`[WHATSAPP] ❌ Déconnexion: Code=${errorCode}, Message=${errorMessage}`);
+          if (connectionDuration) {
+            console.error(`[WHATSAPP] ⏱️  Durée de connexion: ${connectionDuration.toFixed(1)}s`);
+          }
           
-          // Si déconnexion immédiate après restauration MongoDB, les credentials sont mauvais
-          if (hasExistingAuth && this.reconnectAttempts === 0) {
-            console.error('[WHATSAPP] 🚨 DÉCONNEXION IMMÉDIATE! Les credentials MongoDB sont probablement invalides');
-            console.error('[WHATSAPP] 🔄 Suppression de la session MongoDB et génération d\'un nouveau QR...');
+          // DÉTECTION: Si une session restaurée se déconnecte en moins de 10s = session cassée
+          if (attemptingRestoredSession && connectionDuration && connectionDuration < 10 && !qr) {
+            console.error('[WHATSAPP] 🚨 ERREUR: La session restaurée est INVALIDE ou CASSÉE!');
+            console.error('[WHATSAPP] 🔄 Suppression des anciennes sessions (Redis + MongoDB + Fichiers)...');
             
-            // Supprimer la mauvaise session de MongoDB
-            await this.deleteSessionFromDatabase();
+            // Supprimer partout
+            try {
+              await this.deleteSessionFromDatabase(); // MongoDB
+              await this.redis.deleteCredentials(); // Redis
+              // Fichiers locaux: suppression au prochain démarrage
+              console.log('[WHATSAPP] 🗑️  Sessions supprimées');
+            } catch (delErr) {
+              console.warn('[WHATSAPP] ⚠️  Erreur suppression sessions:', delErr.message);
+            }
             
-            // Effacer la session actuelle pour forcer un nouveau QR
+            // Force un nouveau QR
             hasExistingAuth = false;
+            pairingCodeGenerated = false;
+            attemptingRestoredSession = false;
             this.reconnectAttempts = 0;
+            connectionStartTime = null;
             
-            // Attendre un peu avant de relancer
+            console.log('[WHATSAPP] 📱 Génération d\'un nouveau QR...');
             setTimeout(() => {
-              console.log('[WHATSAPP] 🔄 Relance de l\'initialisation...');
+              console.log('[WHATSAPP] 🔄 Redémarrage pour générer un nouveau QR');
               this.initialize();
             }, 2000);
             return;

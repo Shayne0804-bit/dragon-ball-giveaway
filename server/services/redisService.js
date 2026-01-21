@@ -153,6 +153,34 @@ class RedisService {
   }
 
   /**
+   * Supprimer les credentials WhatsApp en cache
+   */
+  async deleteCredentials() {
+    try {
+      const key = 'whatsapp:creds';
+
+      if (this.mode === 'redis' && this.isConnected) {
+        try {
+          await this.client.del(key);
+          console.log('[REDIS] 🗑️  Credentials supprimés de Redis');
+          return true;
+        } catch (err) {
+          console.warn('[REDIS] ⚠️  Erreur suppression Redis:', err.message);
+        }
+      } else {
+        // Mode mémoire
+        this.memoryCache.delete(key);
+        this.memoryTTL.delete(key);
+        console.log('[REDIS-MEM] 🗑️  Credentials supprimés de la mémoire');
+        return true;
+      }
+    } catch (error) {
+      console.error('[REDIS] ❌ Erreur deleteCredentials:', error.message);
+      return false;
+    }
+  }
+
+  /**
    * Mettre à jour le heartbeat
    */
   async setHeartbeat(ttl = 600) {
