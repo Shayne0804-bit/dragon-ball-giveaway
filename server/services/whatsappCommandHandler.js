@@ -3,11 +3,14 @@
  */
 
 const commands = require('../config/whatsappCommands');
+const OtakuRPGCommands = require('./otakuRPGCommands');
+const commandDispatcher = require('./commandDispatcher');
 
 class CommandHandler {
   constructor(whatsappBot) {
     this.bot = whatsappBot;
-    this.commandPrefix = '.';
+    this.commandPrefix = '!'; // Changé de '.' à '!'
+    this.otakuRPG = new OtakuRPGCommands(whatsappBot);
     
     // Récupérer les numéros owner et les nettoyer (garder seulement les chiffres)
     let ownerNumbers = [];
@@ -99,46 +102,94 @@ class CommandHandler {
   }
 
   /**
-   * Générer le menu des commandes
+   * Générer le menu des commandes Otaku RPG
    */
   generateMenu() {
-    let menu = '╔════════════════════════════════╗\n';
-    menu += '║   🤖 COMMANDES DU BOT 🤖        ║\n';
-    menu += '╚════════════════════════════════╝\n\n';
+    let menu = '╔════════════════════════════════════════╗\n';
+    menu += '║   🎌 SYSTÈME OTAKU RPG 🎌              ║\n';
+    menu += '║   Bienvenue dans l\'univers Otaku!     ║\n';
+    menu += '╚════════════════════════════════════════╝\n\n';
 
-    // Commandes générales
-    menu += '📋 *COMMANDES GÉNÉRALES*\n';
+    menu += '⭐ *PROFIL & STATISTIQUES*\n';
     menu += '─────────────────────────\n';
-    Object.entries(commands.GENERAL).forEach(([cmd, info]) => {
+    Object.entries(commands.PROFILE).forEach(([cmd, info]) => {
       menu += `${info.usage} - ${info.description}\n`;
     });
 
-    menu += '\n🎁 *COMMANDES GIVEAWAY (UTILISATEURS)*\n';
+    menu += '\n⚔️ *COMBATS & DUELS*\n';
     menu += '─────────────────────────\n';
-    Object.entries(commands.GIVEAWAY_USER).forEach(([cmd, info]) => {
+    Object.entries(commands.COMBAT).forEach(([cmd, info]) => {
       menu += `${info.usage} - ${info.description}\n`;
     });
 
-    menu += '\n👥 *COMMANDES GROUPE (ADMIN)*\n';
+    menu += '\n🎯 *QUÊTES & MISSIONS*\n';
+    menu += '─────────────────────────\n';
+    Object.entries(commands.QUESTS).forEach(([cmd, info]) => {
+      menu += `${info.usage} - ${info.description}\n`;
+    });
+
+    menu += '\n📚 *QUIZ & QUESTIONS*\n';
+    menu += '─────────────────────────\n';
+    Object.entries(commands.QUIZ).forEach(([cmd, info]) => {
+      menu += `${info.usage} - ${info.description}\n`;
+    });
+
+    menu += '\n🎌 *ANIME & MANGA*\n';
+    menu += '─────────────────────────\n';
+    Object.entries(commands.ANIME).forEach(([cmd, info]) => {
+      menu += `${info.usage} - ${info.description}\n`;
+    });
+
+    menu += '\n🖼️ *IMAGES & ASSETS*\n';
+    menu += '─────────────────────────\n';
+    Object.entries(commands.IMAGES).forEach(([cmd, info]) => {
+      menu += `${info.usage} - ${info.description}\n`;
+    });
+
+    menu += '\n👘 *PERSONNAGES ANIME*\n';
+    menu += '─────────────────────────\n';
+    Object.entries(commands.CHARACTERS).forEach(([cmd, info]) => {
+      menu += `${info.usage}\n`;
+    });
+
+    menu += '\n🎲 *MINI-JEUX*\n';
+    menu += '─────────────────────────\n';
+    Object.entries(commands.MINIGAMES).forEach(([cmd, info]) => {
+      menu += `${info.usage} - ${info.description}\n`;
+    });
+
+    menu += '\n💎 *LOOT & INVENTAIRE*\n';
+    menu += '─────────────────────────\n';
+    Object.entries(commands.LOOT).forEach(([cmd, info]) => {
+      menu += `${info.usage} - ${info.description}\n`;
+    });
+
+    menu += '\n🏆 *CLASSEMENTS*\n';
+    menu += '─────────────────────────\n';
+    Object.entries(commands.RANKING).forEach(([cmd, info]) => {
+      menu += `${info.usage} - ${info.description}\n`;
+    });
+
+    menu += '\n😂 *FUN & ENTERTAINMENT*\n';
+    menu += '─────────────────────────\n';
+    Object.entries(commands.FUN).forEach(([cmd, info]) => {
+      menu += `${info.usage} - ${info.description}\n`;
+    });
+
+    menu += '\n🤖 *BOT & INFORMATION*\n';
+    menu += '─────────────────────────\n';
+    Object.entries(commands.BOT_INFO).forEach(([cmd, info]) => {
+      menu += `${info.usage} - ${info.description}\n`;
+    });
+
+    menu += '\n📋 *GROUPE & ADMINISTRATION*\n';
     menu += '─────────────────────────\n';
     Object.entries(commands.GROUP_ADMIN).forEach(([cmd, info]) => {
       menu += `${info.usage} - ${info.description}\n`;
     });
 
-    menu += '\n👑 *COMMANDES GIVEAWAY (ADMIN)*\n';
-    menu += '─────────────────────────\n';
-    Object.entries(commands.GIVEAWAY_ADMIN).forEach(([cmd, info]) => {
-      menu += `${info.usage} - ${info.description}\n`;
-    });
-
-    menu += '\n⚙️ *COMMANDES OWNER (IMPORTANTES)*\n';
-    menu += '─────────────────────────\n';
-    Object.entries(commands.OWNER).forEach(([cmd, info]) => {
-      menu += `${info.usage} - ${info.description}\n`;
-    });
-
-    menu += '\n\n💡 Pour plus d\'aide: .help\n';
-    menu += '📱 Contact: .owner\n';
+    menu += '\n\n💡 Tapez !help [commande] pour plus de détails\n';
+    menu += '🎌 Total: 57 commandes disponibles!\n';
 
     return menu;
   }
@@ -147,30 +198,38 @@ class CommandHandler {
    * Générer l'aide rapide
    */
   generateHelp() {
-    return `╔════════════════════════════════╗
-║        🆘 AIDE RAPIDE 🆘         ║
-╚════════════════════════════════╝
+    return `╔════════════════════════════════════╗
+║     🆘 AIDE - SYSTÈME OTAKU RPG 🆘  ║
+╚════════════════════════════════════╝
 
-*Commandes de base:*
-.menu - Voir toutes les commandes
-.ping - Vérifier si le bot répond
-.status - État du giveaway actuel
+*Commandes essentielles:*
+!menu - Voir toutes les commandes disponibles
+!ping - Vérifier si le bot répond
+!profil - Voir ton profil otaku complet
+!stats - Tes statistiques détaillées
+!help [commande] - Aide sur une commande
 
-*Pour participer au giveaway:*
-.give info - Infos du giveaway
-.give link - Lien de participation
-.give participants - Nombre de participants
-.winner - Voir le gagnant
+*Grind XP (pour monter de niveau):*
+!quotidien - Mission quotidienne (50 XP)
+!hebdo - Mission hebdomadaire (200 XP)
+!duel @user - Duel contre un joueur (gagne XP)
+!pfc [pierre|feuille|ciseaux] - Mini-jeu (5-20 XP)
 
-*Besoin d'aide?*
-Tapez: .owner
-Pour contacter l'administrateur
+*Divertissement:*
+!quiz - Quiz otaku aléatoire
+!waifu - Image waifu aléatoire
+!anime [nom] - Infos sur un anime
+!ship @user1 @user2 - Shipper deux personnes
+
+*Admin:*
+!tagall - Mentionner tous les membres
+!link - Lien d'invitation du groupe
 
 *Utilisation:*
-Les commandes commencent par un point (.)
-Exemple: .ping
+Les commandes commencent par ! (point d'exclamation)
+Exemple: !ping ou !profil
 
-📱 Pour plus d'aide: Contactez .owner`;
+📱 Pour contacter l'admin: Utilisez !menu`;
   }
 
   /**
@@ -219,123 +278,90 @@ Exemple: .ping
 
     console.log(`[COMMANDS] ✅ Permission accordée pour ${sender} - Commande: ${fullCommand}`);
 
-    // Traiter la commande
+    // Traiter la commande via le dispatcher
+    await this.dispatchCommand(fullCommand, commandArgs, sender, targetJid);
+  }
+
+  /**
+   * Dispatcher central des commandes
+   */
+  async dispatchCommand(fullCommand, commandArgs, sender, targetJid) {
     try {
-      switch (fullCommand) {
-        case 'menu':
-          await this.bot.sendMessage(targetJid, this.generateMenu());
-          break;
+      const handler = commandDispatcher[fullCommand];
 
-        case 'help':
-          await this.bot.sendMessage(targetJid, this.generateHelp());
-          break;
-
-        case 'ping':
-          const uptime = Math.floor(process.uptime() / 60);
-          await this.bot.sendMessage(targetJid, 
-            `🏓 *PONG!*\n\nLe bot répond correctement!\n⏱️ Uptime: ${uptime} minutes`
-          );
-          break;
-
-        case 'owner':
-          await this.handleOwnerCommand(targetJid, sender);
-          break;
-
-        case 'tonmaudia':
-          await this.handleTonmaudiaCommand(targetJid);
-          break;
-
-        case 'ton maudia':
-          await this.handleTonmaudiaCommand(targetJid);
-          break;
-
-        case 'whoami':
-          await this.handleWhoamiCommand(targetJid);
-          break;
-
-        case 'status':
-          await this.bot.messageHandlers.handleStatusCommand(targetJid);
-          break;
-
-        case 'give info':
-          await this.bot.messageHandlers.handleGiveInfoCommand(targetJid);
-          break;
-
-        case 'give prize':
-          await this.bot.messageHandlers.handleGivePrizeCommand(targetJid);
-          break;
-
-        case 'give link':
-          await this.bot.messageHandlers.handleGiveLinkCommand(targetJid);
-          break;
-
-        case 'give participants':
-          await this.bot.messageHandlers.handleGiveParticipantsCommand(targetJid);
-          break;
-
-        case 'winner':
-          await this.bot.messageHandlers.handleWinnerCommand(targetJid);
-          break;
-
-        case 'give start':
-          await this.bot.messageHandlers.handleGiveStartCommand(targetJid, commandArgs);
-          break;
-
-        case 'give end':
-          await this.bot.messageHandlers.handleGiveEndCommand(targetJid);
-          break;
-
-        case 'draw':
-          await this.bot.messageHandlers.handleDrawCommand(targetJid);
-          break;
-
-        case 'reset':
-          await this.bot.messageHandlers.handleResetCommand(targetJid);
-          break;
-
-        case 'broadcast':
-          await this.bot.messageHandlers.handleBroadcastCommand(targetJid, commandArgs.join(' '));
-          break;
-
-        case 'restart':
-          await this.bot.messageHandlers.handleRestartCommand(targetJid);
-          break;
-
-        case 'mode':
-          await this.bot.messageHandlers.handleModeCommand(targetJid, commandArgs[0]);
-          break;
-
-        case 'tagall':
-          await this.bot.messageHandlers.handleTagAllCommand(targetJid);
-          break;
-
-        case 'link':
-          await this.bot.messageHandlers.handleLinkCommand(targetJid);
-          break;
-
-        case 'open':
-          await this.bot.messageHandlers.handleOpenCommand(targetJid);
-          break;
-
-        case 'close':
-          await this.bot.messageHandlers.handleCloseCommand(targetJid);
-          break;
-
-        case 'setprize':
-          await this.bot.messageHandlers.handleSetPrizeCommand(targetJid, commandArgs.join(' '));
-          break;
-
-        default:
-          await this.bot.sendMessage(sender,
-            `⚠️ Commande non implémentée: ${this.commandPrefix}${fullCommand}`
-          );
+      if (!handler) {
+        return await this.bot.sendMessage(sender,
+          `⚠️ Commande non implémentée: ${this.commandPrefix}${fullCommand}\n\n` +
+          `Tapez ${this.commandPrefix}menu pour voir toutes les commandes.`
+        );
       }
+
+      // Traiter les commandes "BUILTIN"
+      if (handler.startsWith('BUILTIN_')) {
+        switch (handler) {
+          case 'BUILTIN_MENU':
+            return await this.bot.sendMessage(targetJid, this.generateMenu());
+          case 'BUILTIN_HELP':
+            return await this.bot.sendMessage(targetJid, this.generateHelp());
+          case 'BUILTIN_OWNER':
+            return await this.handleOwnerCommand(targetJid, sender);
+          case 'BUILTIN_TONMAUDIA':
+            return await this.handleTonmaudiaCommand(targetJid);
+          case 'BUILTIN_WHOAMI':
+            return await this.handleWhoamiCommand(targetJid);
+          case 'BUILTIN_GIVEAWAY_STATUS':
+            return await this.bot.messageHandlers.handleStatusCommand(targetJid);
+          case 'BUILTIN_GIVE_INFO':
+            return await this.bot.messageHandlers.handleGiveInfoCommand(targetJid);
+          case 'BUILTIN_GIVE_PRIZE':
+            return await this.bot.messageHandlers.handleGivePrizeCommand(targetJid);
+          case 'BUILTIN_GIVE_LINK':
+            return await this.bot.messageHandlers.handleGiveLinkCommand(targetJid);
+          case 'BUILTIN_GIVE_PARTICIPANTS':
+            return await this.bot.messageHandlers.handleGiveParticipantsCommand(targetJid);
+          case 'BUILTIN_WINNER':
+            return await this.bot.messageHandlers.handleWinnerCommand(targetJid);
+          case 'BUILTIN_GIVE_START':
+            return await this.bot.messageHandlers.handleGiveStartCommand(targetJid, commandArgs);
+          case 'BUILTIN_GIVE_END':
+            return await this.bot.messageHandlers.handleGiveEndCommand(targetJid);
+          case 'BUILTIN_DRAW':
+            return await this.bot.messageHandlers.handleDrawCommand(targetJid);
+          case 'BUILTIN_RESET':
+            return await this.bot.messageHandlers.handleResetCommand(targetJid);
+          case 'BUILTIN_BROADCAST':
+            return await this.bot.messageHandlers.handleBroadcastCommand(targetJid, commandArgs.join(' '));
+          case 'BUILTIN_RESTART':
+            return await this.bot.messageHandlers.handleRestartCommand(targetJid);
+          case 'BUILTIN_MODE':
+            return await this.bot.messageHandlers.handleModeCommand(targetJid, commandArgs[0]);
+          case 'BUILTIN_TAGALL':
+            return await this.bot.messageHandlers.handleTagAllCommand(targetJid);
+          case 'BUILTIN_LINK':
+            return await this.bot.messageHandlers.handleLinkCommand(targetJid);
+          case 'BUILTIN_OPEN':
+            return await this.bot.messageHandlers.handleOpenCommand(targetJid);
+          case 'BUILTIN_CLOSE':
+            return await this.bot.messageHandlers.handleCloseCommand(targetJid);
+          case 'BUILTIN_SETPRIZE':
+            return await this.bot.messageHandlers.handleSetPrizeCommand(targetJid, commandArgs.join(' '));
+        }
+      }
+
+      // Traiter les commandes Otaku RPG via la méthode correspondante
+      if (typeof this.otakuRPG[handler] === 'function') {
+        return await this.otakuRPG[handler](sender, commandArgs, targetJid);
+      }
+
+      return await this.bot.sendMessage(sender,
+        `⚠️ Handler non trouvé pour: ${this.commandPrefix}${fullCommand}`
+      );
     } catch (error) {
       console.error(`[WHATSAPP] Erreur lors de la commande ${fullCommand}:`, error.message);
       console.error('[WHATSAPP] Stack:', error.stack);
       await this.bot.sendMessage(sender,
         `❌ Erreur lors de l'exécution de la commande.\n` +
-        `Veuillez réessayer ou contacter l'admin avec .owner`
+        `Veuillez réessayer ou contacter l'admin.`
       );
     }
   }
@@ -483,7 +509,6 @@ Exemple: .ping
       );
     }
   }
-
 }
 
 module.exports = CommandHandler;
