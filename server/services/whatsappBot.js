@@ -443,7 +443,7 @@ class WhatsAppBotService {
       }
 
       // Check if message starts with command prefix
-      const prefix = process.env.WHATSAPP_COMMAND_PREFIX || '.';
+      const prefix = process.env.WHATSAPP_COMMAND_PREFIX || '!'; // Changé de '.' à '!'
       
       if (messageBody.startsWith(prefix)) {
         // Try to handle as a command
